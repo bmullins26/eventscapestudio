@@ -1,19 +1,34 @@
 import { Link } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
 
+export type BrandApp = "studio" | "portal" | "admin";
+
 interface BrandProps {
   size?: "sm" | "md" | "lg";
   showTagline?: boolean;
+  app?: BrandApp;
   href?: string;
   className?: string;
 }
 
-export function Brand({ size = "md", showTagline = false, href = "/", className }: BrandProps) {
+const APP_LABEL: Record<BrandApp, string> = {
+  studio: "Studio",
+  portal: "Vendor Portal",
+  admin: "Admin Console",
+};
+
+export function Brand({ size = "md", showTagline = false, app, href = "/", className }: BrandProps) {
   const sizes = {
     sm: { mark: "h-8 w-8", title: "text-lg", sub: "text-[10px]" },
     md: { mark: "h-10 w-10", title: "text-2xl", sub: "text-[11px]" },
     lg: { mark: "h-16 w-16", title: "text-4xl", sub: "text-xs" },
   }[size];
+
+  const sublabel = app
+    ? APP_LABEL[app]
+    : showTagline
+      ? "The Event Platform · Plan · Organize · Celebrate"
+      : "The Event Platform";
 
   const content = (
     <span className={cn("inline-flex items-center gap-3", className)}>
@@ -24,7 +39,7 @@ export function Brand({ size = "md", showTagline = false, href = "/", className 
           <span>Scape</span>
         </span>
         <span className={cn("mt-0.5 uppercase tracking-[0.32em] text-muted-foreground", sizes.sub)}>
-          Studio{showTagline ? " · Plan · Organize · Celebrate" : ""}
+          {sublabel}
         </span>
       </span>
     </span>
