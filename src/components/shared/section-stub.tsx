@@ -17,7 +17,7 @@ interface SectionStubProps {
 export function SectionStub({ eyebrow, title, description, icon, emptyTitle, emptyDescription, action, children }: SectionStubProps) {
   return (
     <div className="space-y-8">
-      <PageHeader eyebrow={eyebrow} title={title} description={description} action={action} />
+      <PageHeader eyebrow={eyebrow} title={title} description={description} actions={action} />
       {children ?? <EmptyState icon={icon} title={emptyTitle} description={emptyDescription} />}
     </div>
   );
