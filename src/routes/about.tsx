@@ -5,7 +5,7 @@ export const Route = createFileRoute("/about")({
   head: () => ({
     meta: [
       { title: "About · EventScape" },
-      { name: "description", content: "EventScape Studio is built for event organizers who care about the details." },
+      { name: "description", content: "EventScape is built for event organizers who care about the details." },
       { property: "og:title", content: "About · EventScape" },
       { property: "og:description", content: "Our mission: make every event beautifully organized." },
     ],

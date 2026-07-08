@@ -32,7 +32,7 @@ function FeaturesPage() {
         <p className="text-xs font-medium uppercase tracking-[0.32em] text-primary">Features</p>
         <h1 className="mt-5 font-display text-5xl font-semibold sm:text-6xl">Every event, elegantly organized.</h1>
         <p className="mx-auto mt-6 max-w-2xl text-base text-muted-foreground">
-          EventScape Studio unifies applications, booths, vendors, sponsors, payments, and communication into one calm workspace.
+          EventScape unifies applications, booths, vendors, sponsors, payments, and communication into one calm workspace.
         </p>
       </section>
       <section className="mx-auto max-w-6xl px-6 pb-24">
