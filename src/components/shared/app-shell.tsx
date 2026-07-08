@@ -112,7 +112,7 @@ export function AppShell({ variant, title, sections, children }: AppShellProps) 
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex items-center justify-between border-b border-border/60 bg-background/80 px-4 py-3 backdrop-blur lg:hidden">
-          <Brand size="sm" />
+          <Brand size="sm" app={variant} />
           <Button variant="ghost" size="icon" onClick={signOut} title="Sign out">
             <LogOut className="h-4 w-4" />
           </Button>
