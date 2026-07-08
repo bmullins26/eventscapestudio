@@ -86,6 +86,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(false);
   }, [loadContext]);
 
+  // Load persisted active event when active org changes
+  useEffect(() => {
+    if (!session?.user?.id || !activeOrgId) { setActiveEventIdState(null); return; }
+    void supabase
+      .from("user_org_prefs")
+      .select("active_event_id")
+      .eq("user_id", session.user.id)
+      .eq("organization_id", activeOrgId)
+      .maybeSingle()
+      .then(({ data }) => setActiveEventIdState(data?.active_event_id ?? null));
+  }, [session?.user?.id, activeOrgId]);
+
+  const setActiveEventId = useCallback(async (id: string | null) => {
+    setActiveEventIdState(id);
+    if (!session?.user?.id || !activeOrgId) return;
+    await supabase.from("user_org_prefs").upsert({
+      user_id: session.user.id,
+      organization_id: activeOrgId,
+      active_event_id: id,
+    }, { onConflict: "user_id,organization_id" });
+  }, [session?.user?.id, activeOrgId]);
+
   useEffect(() => {
     if (typeof window === "undefined") { setLoading(false); return; }
     void refresh();
@@ -100,7 +122,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
-    setSession(null); setRoles([]); setOrganizations([]); setActiveOrgId(null);
+    setSession(null); setRoles([]); setOrganizations([]); setActiveOrgId(null); setActiveEventIdState(null);
   }, []);
 
   const value = useMemo<AuthState>(() => {
