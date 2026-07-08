@@ -19,23 +19,24 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
+function slugify(name: string) {
+  const base = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "").slice(0, 40) || "studio";
+  return `${base}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
 function AuthPage() {
   const navigate = useNavigate();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
-  const [role, setRole] = useState<"organizer" | "vendor">("organizer");
+  const [orgName, setOrgName] = useState("");
   const [loading, setLoading] = useState(false);
 
-  async function assignRoleAndOrg(userId: string, wantRole: "organizer" | "vendor", name: string) {
-    await supabase.from("user_roles").upsert({ user_id: userId, role: wantRole }, { onConflict: "user_id,role" });
-    if (wantRole === "organizer") {
-      const orgName = name ? `${name.split(" ")[0]}'s Studio` : "My Studio";
-      await supabase.from("organizations").insert({ name: orgName, owner_id: userId });
-    } else {
-      await supabase.from("vendors").insert({ business_name: name || "New Vendor", user_id: userId, email });
-    }
+  async function bootstrapOrganizer(userId: string, name: string, orgLabel: string) {
+    await supabase.from("user_roles").upsert({ user_id: userId, role: "organizer" }, { onConflict: "user_id,role" });
+    const label = orgLabel.trim() || (name ? `${name.split(" ")[0]}'s Studio` : "My Studio");
+    await supabase.from("organizations").insert({ name: label, slug: slugify(label), owner_id: userId });
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -49,15 +50,15 @@ function AuthPage() {
         });
         if (error) throw error;
         if (data.user) {
-          await assignRoleAndOrg(data.user.id, role, fullName);
+          await bootstrapOrganizer(data.user.id, fullName, orgName);
         }
         toast.success("Welcome to EventScape Studio!");
-        navigate({ to: "/dashboard" });
+        navigate({ to: "/app" });
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         toast.success("Signed in");
-        navigate({ to: "/dashboard" });
+        navigate({ to: "/app" });
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Something went wrong");
@@ -71,7 +72,7 @@ function AuthPage() {
     try {
       const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
       if (result.error) throw result.error;
-      if (!result.redirected) navigate({ to: "/dashboard" });
+      if (!result.redirected) navigate({ to: "/app" });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Google sign-in failed");
       setLoading(false);
@@ -130,6 +131,10 @@ function AuthPage() {
                   <Input id="name" required value={fullName} onChange={(e) => setFullName(e.target.value)} />
                 </div>
                 <div className="space-y-2">
+                  <Label htmlFor="orgName">Studio / Organization name</Label>
+                  <Input id="orgName" placeholder="e.g. Rose Market Co." value={orgName} onChange={(e) => setOrgName(e.target.value)} />
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="email2">Email</Label>
                   <Input id="email2" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
                 </div>
@@ -137,20 +142,10 @@ function AuthPage() {
                   <Label htmlFor="password2">Password</Label>
                   <Input id="password2" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
                 </div>
-                <div className="space-y-2">
-                  <Label>I am joining as</Label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button type="button" onClick={() => setRole("organizer")} className={`rounded-xl border px-3 py-3 text-sm transition ${role === "organizer" ? "border-primary bg-primary-soft text-primary-deep" : "border-border text-muted-foreground hover:bg-secondary"}`}>
-                      <div className="font-medium">Event Organizer</div>
-                      <div className="text-xs opacity-80">Run events & markets</div>
-                    </button>
-                    <button type="button" onClick={() => setRole("vendor")} className={`rounded-xl border px-3 py-3 text-sm transition ${role === "vendor" ? "border-primary bg-primary-soft text-primary-deep" : "border-border text-muted-foreground hover:bg-secondary"}`}>
-                      <div className="font-medium">Vendor</div>
-                      <div className="text-xs opacity-80">Apply to events</div>
-                    </button>
-                  </div>
-                </div>
-                <Button type="submit" className="w-full" disabled={loading}>Create account</Button>
+                <p className="rounded-lg bg-secondary/50 p-3 text-xs text-muted-foreground">
+                  Vendor accounts are invitation-only. If an organizer invited you, use the link or code in your invitation email instead.
+                </p>
+                <Button type="submit" className="w-full" disabled={loading}>Create organizer account</Button>
               </form>
             </TabsContent>
           </Tabs>

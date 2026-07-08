@@ -9,20 +9,70 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as PricingRouteImport } from './routes/pricing'
+import { Route as FeaturesRouteImport } from './routes/features'
+import { Route as ContactRouteImport } from './routes/contact'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AboutRouteImport } from './routes/about'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthenticatedVendorsRouteImport } from './routes/_authenticated/vendors'
-import { Route as AuthenticatedStaffRouteImport } from './routes/_authenticated/staff'
-import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
-import { Route as AuthenticatedEventsRouteImport } from './routes/_authenticated/events'
-import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedStudioRouteImport } from './routes/_authenticated/studio'
+import { Route as AuthenticatedPortalRouteImport } from './routes/_authenticated/portal'
+import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
-import { Route as AuthenticatedVendorDashboardRouteImport } from './routes/_authenticated/vendor.dashboard'
+import { Route as AuthenticatedStudioIndexRouteImport } from './routes/_authenticated/studio.index'
+import { Route as AuthenticatedPortalIndexRouteImport } from './routes/_authenticated/portal.index'
+import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
+import { Route as AuthenticatedStudioVenuesRouteImport } from './routes/_authenticated/studio.venues'
+import { Route as AuthenticatedStudioVendorsRouteImport } from './routes/_authenticated/studio.vendors'
+import { Route as AuthenticatedStudioStaffRouteImport } from './routes/_authenticated/studio.staff'
+import { Route as AuthenticatedStudioSponsorsRouteImport } from './routes/_authenticated/studio.sponsors'
+import { Route as AuthenticatedStudioSettingsRouteImport } from './routes/_authenticated/studio.settings'
+import { Route as AuthenticatedStudioReportsRouteImport } from './routes/_authenticated/studio.reports'
+import { Route as AuthenticatedStudioPaymentsRouteImport } from './routes/_authenticated/studio.payments'
+import { Route as AuthenticatedStudioMessagingRouteImport } from './routes/_authenticated/studio.messaging'
+import { Route as AuthenticatedStudioEventsRouteImport } from './routes/_authenticated/studio.events'
+import { Route as AuthenticatedStudioBoothsRouteImport } from './routes/_authenticated/studio.booths'
+import { Route as AuthenticatedStudioApplicationsRouteImport } from './routes/_authenticated/studio.applications'
+import { Route as AuthenticatedPortalProfileRouteImport } from './routes/_authenticated/portal.profile'
+import { Route as AuthenticatedPortalPaymentsRouteImport } from './routes/_authenticated/portal.payments'
+import { Route as AuthenticatedPortalMessagesRouteImport } from './routes/_authenticated/portal.messages'
+import { Route as AuthenticatedPortalHelpRouteImport } from './routes/_authenticated/portal.help'
+import { Route as AuthenticatedPortalEventsRouteImport } from './routes/_authenticated/portal.events'
+import { Route as AuthenticatedPortalDocumentsRouteImport } from './routes/_authenticated/portal.documents'
+import { Route as AuthenticatedPortalBoothRouteImport } from './routes/_authenticated/portal.booth'
+import { Route as AuthenticatedPortalApplicationsRouteImport } from './routes/_authenticated/portal.applications'
+import { Route as AuthenticatedPortalAnnouncementsRouteImport } from './routes/_authenticated/portal.announcements'
+import { Route as AuthenticatedAdminSupportRouteImport } from './routes/_authenticated/admin.support'
+import { Route as AuthenticatedAdminSubscriptionsRouteImport } from './routes/_authenticated/admin.subscriptions'
+import { Route as AuthenticatedAdminSettingsRouteImport } from './routes/_authenticated/admin.settings'
+import { Route as AuthenticatedAdminOrganizationsRouteImport } from './routes/_authenticated/admin.organizations'
+import { Route as AuthenticatedAdminLogsRouteImport } from './routes/_authenticated/admin.logs'
+import { Route as AuthenticatedAdminAnalyticsRouteImport } from './routes/_authenticated/admin.analytics'
 
+const PricingRoute = PricingRouteImport.update({
+  id: '/pricing',
+  path: '/pricing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FeaturesRoute = FeaturesRouteImport.update({
+  id: '/features',
+  path: '/features',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContactRoute = ContactRouteImport.update({
+  id: '/contact',
+  path: '/contact',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AboutRoute = AboutRouteImport.update({
+  id: '/about',
+  path: '/about',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
@@ -34,29 +84,19 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedVendorsRoute = AuthenticatedVendorsRouteImport.update({
-  id: '/vendors',
-  path: '/vendors',
+const AuthenticatedStudioRoute = AuthenticatedStudioRouteImport.update({
+  id: '/studio',
+  path: '/studio',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedStaffRoute = AuthenticatedStaffRouteImport.update({
-  id: '/staff',
-  path: '/staff',
+const AuthenticatedPortalRoute = AuthenticatedPortalRouteImport.update({
+  id: '/portal',
+  path: '/portal',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedEventsRoute = AuthenticatedEventsRouteImport.update({
-  id: '/events',
-  path: '/events',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
+const AuthenticatedAppRoute = AuthenticatedAppRouteImport.update({
+  id: '/app',
+  path: '/app',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
@@ -64,98 +104,469 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedVendorDashboardRoute =
-  AuthenticatedVendorDashboardRouteImport.update({
-    id: '/vendor/dashboard',
-    path: '/vendor/dashboard',
-    getParentRoute: () => AuthenticatedRouteRoute,
+const AuthenticatedStudioIndexRoute =
+  AuthenticatedStudioIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedStudioRoute,
+  } as any)
+const AuthenticatedPortalIndexRoute =
+  AuthenticatedPortalIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedPortalRoute,
+  } as any)
+const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedAdminRoute,
+} as any)
+const AuthenticatedStudioVenuesRoute =
+  AuthenticatedStudioVenuesRouteImport.update({
+    id: '/venues',
+    path: '/venues',
+    getParentRoute: () => AuthenticatedStudioRoute,
+  } as any)
+const AuthenticatedStudioVendorsRoute =
+  AuthenticatedStudioVendorsRouteImport.update({
+    id: '/vendors',
+    path: '/vendors',
+    getParentRoute: () => AuthenticatedStudioRoute,
+  } as any)
+const AuthenticatedStudioStaffRoute =
+  AuthenticatedStudioStaffRouteImport.update({
+    id: '/staff',
+    path: '/staff',
+    getParentRoute: () => AuthenticatedStudioRoute,
+  } as any)
+const AuthenticatedStudioSponsorsRoute =
+  AuthenticatedStudioSponsorsRouteImport.update({
+    id: '/sponsors',
+    path: '/sponsors',
+    getParentRoute: () => AuthenticatedStudioRoute,
+  } as any)
+const AuthenticatedStudioSettingsRoute =
+  AuthenticatedStudioSettingsRouteImport.update({
+    id: '/settings',
+    path: '/settings',
+    getParentRoute: () => AuthenticatedStudioRoute,
+  } as any)
+const AuthenticatedStudioReportsRoute =
+  AuthenticatedStudioReportsRouteImport.update({
+    id: '/reports',
+    path: '/reports',
+    getParentRoute: () => AuthenticatedStudioRoute,
+  } as any)
+const AuthenticatedStudioPaymentsRoute =
+  AuthenticatedStudioPaymentsRouteImport.update({
+    id: '/payments',
+    path: '/payments',
+    getParentRoute: () => AuthenticatedStudioRoute,
+  } as any)
+const AuthenticatedStudioMessagingRoute =
+  AuthenticatedStudioMessagingRouteImport.update({
+    id: '/messaging',
+    path: '/messaging',
+    getParentRoute: () => AuthenticatedStudioRoute,
+  } as any)
+const AuthenticatedStudioEventsRoute =
+  AuthenticatedStudioEventsRouteImport.update({
+    id: '/events',
+    path: '/events',
+    getParentRoute: () => AuthenticatedStudioRoute,
+  } as any)
+const AuthenticatedStudioBoothsRoute =
+  AuthenticatedStudioBoothsRouteImport.update({
+    id: '/booths',
+    path: '/booths',
+    getParentRoute: () => AuthenticatedStudioRoute,
+  } as any)
+const AuthenticatedStudioApplicationsRoute =
+  AuthenticatedStudioApplicationsRouteImport.update({
+    id: '/applications',
+    path: '/applications',
+    getParentRoute: () => AuthenticatedStudioRoute,
+  } as any)
+const AuthenticatedPortalProfileRoute =
+  AuthenticatedPortalProfileRouteImport.update({
+    id: '/profile',
+    path: '/profile',
+    getParentRoute: () => AuthenticatedPortalRoute,
+  } as any)
+const AuthenticatedPortalPaymentsRoute =
+  AuthenticatedPortalPaymentsRouteImport.update({
+    id: '/payments',
+    path: '/payments',
+    getParentRoute: () => AuthenticatedPortalRoute,
+  } as any)
+const AuthenticatedPortalMessagesRoute =
+  AuthenticatedPortalMessagesRouteImport.update({
+    id: '/messages',
+    path: '/messages',
+    getParentRoute: () => AuthenticatedPortalRoute,
+  } as any)
+const AuthenticatedPortalHelpRoute = AuthenticatedPortalHelpRouteImport.update({
+  id: '/help',
+  path: '/help',
+  getParentRoute: () => AuthenticatedPortalRoute,
+} as any)
+const AuthenticatedPortalEventsRoute =
+  AuthenticatedPortalEventsRouteImport.update({
+    id: '/events',
+    path: '/events',
+    getParentRoute: () => AuthenticatedPortalRoute,
+  } as any)
+const AuthenticatedPortalDocumentsRoute =
+  AuthenticatedPortalDocumentsRouteImport.update({
+    id: '/documents',
+    path: '/documents',
+    getParentRoute: () => AuthenticatedPortalRoute,
+  } as any)
+const AuthenticatedPortalBoothRoute =
+  AuthenticatedPortalBoothRouteImport.update({
+    id: '/booth',
+    path: '/booth',
+    getParentRoute: () => AuthenticatedPortalRoute,
+  } as any)
+const AuthenticatedPortalApplicationsRoute =
+  AuthenticatedPortalApplicationsRouteImport.update({
+    id: '/applications',
+    path: '/applications',
+    getParentRoute: () => AuthenticatedPortalRoute,
+  } as any)
+const AuthenticatedPortalAnnouncementsRoute =
+  AuthenticatedPortalAnnouncementsRouteImport.update({
+    id: '/announcements',
+    path: '/announcements',
+    getParentRoute: () => AuthenticatedPortalRoute,
+  } as any)
+const AuthenticatedAdminSupportRoute =
+  AuthenticatedAdminSupportRouteImport.update({
+    id: '/support',
+    path: '/support',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminSubscriptionsRoute =
+  AuthenticatedAdminSubscriptionsRouteImport.update({
+    id: '/subscriptions',
+    path: '/subscriptions',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminSettingsRoute =
+  AuthenticatedAdminSettingsRouteImport.update({
+    id: '/settings',
+    path: '/settings',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminOrganizationsRoute =
+  AuthenticatedAdminOrganizationsRouteImport.update({
+    id: '/organizations',
+    path: '/organizations',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminLogsRoute = AuthenticatedAdminLogsRouteImport.update({
+  id: '/logs',
+  path: '/logs',
+  getParentRoute: () => AuthenticatedAdminRoute,
+} as any)
+const AuthenticatedAdminAnalyticsRoute =
+  AuthenticatedAdminAnalyticsRouteImport.update({
+    id: '/analytics',
+    path: '/analytics',
+    getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
-  '/admin': typeof AuthenticatedAdminRoute
-  '/dashboard': typeof AuthenticatedDashboardRoute
-  '/events': typeof AuthenticatedEventsRoute
-  '/settings': typeof AuthenticatedSettingsRoute
-  '/staff': typeof AuthenticatedStaffRoute
-  '/vendors': typeof AuthenticatedVendorsRoute
-  '/vendor/dashboard': typeof AuthenticatedVendorDashboardRoute
+  '/contact': typeof ContactRoute
+  '/features': typeof FeaturesRoute
+  '/pricing': typeof PricingRoute
+  '/admin': typeof AuthenticatedAdminRouteWithChildren
+  '/app': typeof AuthenticatedAppRoute
+  '/portal': typeof AuthenticatedPortalRouteWithChildren
+  '/studio': typeof AuthenticatedStudioRouteWithChildren
+  '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
+  '/admin/logs': typeof AuthenticatedAdminLogsRoute
+  '/admin/organizations': typeof AuthenticatedAdminOrganizationsRoute
+  '/admin/settings': typeof AuthenticatedAdminSettingsRoute
+  '/admin/subscriptions': typeof AuthenticatedAdminSubscriptionsRoute
+  '/admin/support': typeof AuthenticatedAdminSupportRoute
+  '/portal/announcements': typeof AuthenticatedPortalAnnouncementsRoute
+  '/portal/applications': typeof AuthenticatedPortalApplicationsRoute
+  '/portal/booth': typeof AuthenticatedPortalBoothRoute
+  '/portal/documents': typeof AuthenticatedPortalDocumentsRoute
+  '/portal/events': typeof AuthenticatedPortalEventsRoute
+  '/portal/help': typeof AuthenticatedPortalHelpRoute
+  '/portal/messages': typeof AuthenticatedPortalMessagesRoute
+  '/portal/payments': typeof AuthenticatedPortalPaymentsRoute
+  '/portal/profile': typeof AuthenticatedPortalProfileRoute
+  '/studio/applications': typeof AuthenticatedStudioApplicationsRoute
+  '/studio/booths': typeof AuthenticatedStudioBoothsRoute
+  '/studio/events': typeof AuthenticatedStudioEventsRoute
+  '/studio/messaging': typeof AuthenticatedStudioMessagingRoute
+  '/studio/payments': typeof AuthenticatedStudioPaymentsRoute
+  '/studio/reports': typeof AuthenticatedStudioReportsRoute
+  '/studio/settings': typeof AuthenticatedStudioSettingsRoute
+  '/studio/sponsors': typeof AuthenticatedStudioSponsorsRoute
+  '/studio/staff': typeof AuthenticatedStudioStaffRoute
+  '/studio/vendors': typeof AuthenticatedStudioVendorsRoute
+  '/studio/venues': typeof AuthenticatedStudioVenuesRoute
+  '/admin/': typeof AuthenticatedAdminIndexRoute
+  '/portal/': typeof AuthenticatedPortalIndexRoute
+  '/studio/': typeof AuthenticatedStudioIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
-  '/admin': typeof AuthenticatedAdminRoute
-  '/dashboard': typeof AuthenticatedDashboardRoute
-  '/events': typeof AuthenticatedEventsRoute
-  '/settings': typeof AuthenticatedSettingsRoute
-  '/staff': typeof AuthenticatedStaffRoute
-  '/vendors': typeof AuthenticatedVendorsRoute
-  '/vendor/dashboard': typeof AuthenticatedVendorDashboardRoute
+  '/contact': typeof ContactRoute
+  '/features': typeof FeaturesRoute
+  '/pricing': typeof PricingRoute
+  '/app': typeof AuthenticatedAppRoute
+  '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
+  '/admin/logs': typeof AuthenticatedAdminLogsRoute
+  '/admin/organizations': typeof AuthenticatedAdminOrganizationsRoute
+  '/admin/settings': typeof AuthenticatedAdminSettingsRoute
+  '/admin/subscriptions': typeof AuthenticatedAdminSubscriptionsRoute
+  '/admin/support': typeof AuthenticatedAdminSupportRoute
+  '/portal/announcements': typeof AuthenticatedPortalAnnouncementsRoute
+  '/portal/applications': typeof AuthenticatedPortalApplicationsRoute
+  '/portal/booth': typeof AuthenticatedPortalBoothRoute
+  '/portal/documents': typeof AuthenticatedPortalDocumentsRoute
+  '/portal/events': typeof AuthenticatedPortalEventsRoute
+  '/portal/help': typeof AuthenticatedPortalHelpRoute
+  '/portal/messages': typeof AuthenticatedPortalMessagesRoute
+  '/portal/payments': typeof AuthenticatedPortalPaymentsRoute
+  '/portal/profile': typeof AuthenticatedPortalProfileRoute
+  '/studio/applications': typeof AuthenticatedStudioApplicationsRoute
+  '/studio/booths': typeof AuthenticatedStudioBoothsRoute
+  '/studio/events': typeof AuthenticatedStudioEventsRoute
+  '/studio/messaging': typeof AuthenticatedStudioMessagingRoute
+  '/studio/payments': typeof AuthenticatedStudioPaymentsRoute
+  '/studio/reports': typeof AuthenticatedStudioReportsRoute
+  '/studio/settings': typeof AuthenticatedStudioSettingsRoute
+  '/studio/sponsors': typeof AuthenticatedStudioSponsorsRoute
+  '/studio/staff': typeof AuthenticatedStudioStaffRoute
+  '/studio/vendors': typeof AuthenticatedStudioVendorsRoute
+  '/studio/venues': typeof AuthenticatedStudioVenuesRoute
+  '/admin': typeof AuthenticatedAdminIndexRoute
+  '/portal': typeof AuthenticatedPortalIndexRoute
+  '/studio': typeof AuthenticatedStudioIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
-  '/_authenticated/admin': typeof AuthenticatedAdminRoute
-  '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
-  '/_authenticated/events': typeof AuthenticatedEventsRoute
-  '/_authenticated/settings': typeof AuthenticatedSettingsRoute
-  '/_authenticated/staff': typeof AuthenticatedStaffRoute
-  '/_authenticated/vendors': typeof AuthenticatedVendorsRoute
-  '/_authenticated/vendor/dashboard': typeof AuthenticatedVendorDashboardRoute
+  '/contact': typeof ContactRoute
+  '/features': typeof FeaturesRoute
+  '/pricing': typeof PricingRoute
+  '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
+  '/_authenticated/app': typeof AuthenticatedAppRoute
+  '/_authenticated/portal': typeof AuthenticatedPortalRouteWithChildren
+  '/_authenticated/studio': typeof AuthenticatedStudioRouteWithChildren
+  '/_authenticated/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
+  '/_authenticated/admin/logs': typeof AuthenticatedAdminLogsRoute
+  '/_authenticated/admin/organizations': typeof AuthenticatedAdminOrganizationsRoute
+  '/_authenticated/admin/settings': typeof AuthenticatedAdminSettingsRoute
+  '/_authenticated/admin/subscriptions': typeof AuthenticatedAdminSubscriptionsRoute
+  '/_authenticated/admin/support': typeof AuthenticatedAdminSupportRoute
+  '/_authenticated/portal/announcements': typeof AuthenticatedPortalAnnouncementsRoute
+  '/_authenticated/portal/applications': typeof AuthenticatedPortalApplicationsRoute
+  '/_authenticated/portal/booth': typeof AuthenticatedPortalBoothRoute
+  '/_authenticated/portal/documents': typeof AuthenticatedPortalDocumentsRoute
+  '/_authenticated/portal/events': typeof AuthenticatedPortalEventsRoute
+  '/_authenticated/portal/help': typeof AuthenticatedPortalHelpRoute
+  '/_authenticated/portal/messages': typeof AuthenticatedPortalMessagesRoute
+  '/_authenticated/portal/payments': typeof AuthenticatedPortalPaymentsRoute
+  '/_authenticated/portal/profile': typeof AuthenticatedPortalProfileRoute
+  '/_authenticated/studio/applications': typeof AuthenticatedStudioApplicationsRoute
+  '/_authenticated/studio/booths': typeof AuthenticatedStudioBoothsRoute
+  '/_authenticated/studio/events': typeof AuthenticatedStudioEventsRoute
+  '/_authenticated/studio/messaging': typeof AuthenticatedStudioMessagingRoute
+  '/_authenticated/studio/payments': typeof AuthenticatedStudioPaymentsRoute
+  '/_authenticated/studio/reports': typeof AuthenticatedStudioReportsRoute
+  '/_authenticated/studio/settings': typeof AuthenticatedStudioSettingsRoute
+  '/_authenticated/studio/sponsors': typeof AuthenticatedStudioSponsorsRoute
+  '/_authenticated/studio/staff': typeof AuthenticatedStudioStaffRoute
+  '/_authenticated/studio/vendors': typeof AuthenticatedStudioVendorsRoute
+  '/_authenticated/studio/venues': typeof AuthenticatedStudioVenuesRoute
+  '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
+  '/_authenticated/portal/': typeof AuthenticatedPortalIndexRoute
+  '/_authenticated/studio/': typeof AuthenticatedStudioIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/about'
     | '/auth'
+    | '/contact'
+    | '/features'
+    | '/pricing'
     | '/admin'
-    | '/dashboard'
-    | '/events'
-    | '/settings'
-    | '/staff'
-    | '/vendors'
-    | '/vendor/dashboard'
+    | '/app'
+    | '/portal'
+    | '/studio'
+    | '/admin/analytics'
+    | '/admin/logs'
+    | '/admin/organizations'
+    | '/admin/settings'
+    | '/admin/subscriptions'
+    | '/admin/support'
+    | '/portal/announcements'
+    | '/portal/applications'
+    | '/portal/booth'
+    | '/portal/documents'
+    | '/portal/events'
+    | '/portal/help'
+    | '/portal/messages'
+    | '/portal/payments'
+    | '/portal/profile'
+    | '/studio/applications'
+    | '/studio/booths'
+    | '/studio/events'
+    | '/studio/messaging'
+    | '/studio/payments'
+    | '/studio/reports'
+    | '/studio/settings'
+    | '/studio/sponsors'
+    | '/studio/staff'
+    | '/studio/vendors'
+    | '/studio/venues'
+    | '/admin/'
+    | '/portal/'
+    | '/studio/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/about'
     | '/auth'
+    | '/contact'
+    | '/features'
+    | '/pricing'
+    | '/app'
+    | '/admin/analytics'
+    | '/admin/logs'
+    | '/admin/organizations'
+    | '/admin/settings'
+    | '/admin/subscriptions'
+    | '/admin/support'
+    | '/portal/announcements'
+    | '/portal/applications'
+    | '/portal/booth'
+    | '/portal/documents'
+    | '/portal/events'
+    | '/portal/help'
+    | '/portal/messages'
+    | '/portal/payments'
+    | '/portal/profile'
+    | '/studio/applications'
+    | '/studio/booths'
+    | '/studio/events'
+    | '/studio/messaging'
+    | '/studio/payments'
+    | '/studio/reports'
+    | '/studio/settings'
+    | '/studio/sponsors'
+    | '/studio/staff'
+    | '/studio/vendors'
+    | '/studio/venues'
     | '/admin'
-    | '/dashboard'
-    | '/events'
-    | '/settings'
-    | '/staff'
-    | '/vendors'
-    | '/vendor/dashboard'
+    | '/portal'
+    | '/studio'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/about'
     | '/auth'
+    | '/contact'
+    | '/features'
+    | '/pricing'
     | '/_authenticated/admin'
-    | '/_authenticated/dashboard'
-    | '/_authenticated/events'
-    | '/_authenticated/settings'
-    | '/_authenticated/staff'
-    | '/_authenticated/vendors'
-    | '/_authenticated/vendor/dashboard'
+    | '/_authenticated/app'
+    | '/_authenticated/portal'
+    | '/_authenticated/studio'
+    | '/_authenticated/admin/analytics'
+    | '/_authenticated/admin/logs'
+    | '/_authenticated/admin/organizations'
+    | '/_authenticated/admin/settings'
+    | '/_authenticated/admin/subscriptions'
+    | '/_authenticated/admin/support'
+    | '/_authenticated/portal/announcements'
+    | '/_authenticated/portal/applications'
+    | '/_authenticated/portal/booth'
+    | '/_authenticated/portal/documents'
+    | '/_authenticated/portal/events'
+    | '/_authenticated/portal/help'
+    | '/_authenticated/portal/messages'
+    | '/_authenticated/portal/payments'
+    | '/_authenticated/portal/profile'
+    | '/_authenticated/studio/applications'
+    | '/_authenticated/studio/booths'
+    | '/_authenticated/studio/events'
+    | '/_authenticated/studio/messaging'
+    | '/_authenticated/studio/payments'
+    | '/_authenticated/studio/reports'
+    | '/_authenticated/studio/settings'
+    | '/_authenticated/studio/sponsors'
+    | '/_authenticated/studio/staff'
+    | '/_authenticated/studio/vendors'
+    | '/_authenticated/studio/venues'
+    | '/_authenticated/admin/'
+    | '/_authenticated/portal/'
+    | '/_authenticated/studio/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AboutRoute: typeof AboutRoute
   AuthRoute: typeof AuthRoute
+  ContactRoute: typeof ContactRoute
+  FeaturesRoute: typeof FeaturesRoute
+  PricingRoute: typeof PricingRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/pricing': {
+      id: '/pricing'
+      path: '/pricing'
+      fullPath: '/pricing'
+      preLoaderRoute: typeof PricingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/features': {
+      id: '/features'
+      path: '/features'
+      fullPath: '/features'
+      preLoaderRoute: typeof FeaturesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contact': {
+      id: '/contact'
+      path: '/contact'
+      fullPath: '/contact'
+      preLoaderRoute: typeof ContactRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth': {
       id: '/auth'
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/about': {
+      id: '/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof AboutRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -172,39 +583,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/vendors': {
-      id: '/_authenticated/vendors'
-      path: '/vendors'
-      fullPath: '/vendors'
-      preLoaderRoute: typeof AuthenticatedVendorsRouteImport
+    '/_authenticated/studio': {
+      id: '/_authenticated/studio'
+      path: '/studio'
+      fullPath: '/studio'
+      preLoaderRoute: typeof AuthenticatedStudioRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/staff': {
-      id: '/_authenticated/staff'
-      path: '/staff'
-      fullPath: '/staff'
-      preLoaderRoute: typeof AuthenticatedStaffRouteImport
+    '/_authenticated/portal': {
+      id: '/_authenticated/portal'
+      path: '/portal'
+      fullPath: '/portal'
+      preLoaderRoute: typeof AuthenticatedPortalRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/settings': {
-      id: '/_authenticated/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/events': {
-      id: '/_authenticated/events'
-      path: '/events'
-      fullPath: '/events'
-      preLoaderRoute: typeof AuthenticatedEventsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/dashboard': {
-      id: '/_authenticated/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+    '/_authenticated/app': {
+      id: '/_authenticated/app'
+      path: '/app'
+      fullPath: '/app'
+      preLoaderRoute: typeof AuthenticatedAppRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/admin': {
@@ -214,34 +611,309 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/vendor/dashboard': {
-      id: '/_authenticated/vendor/dashboard'
-      path: '/vendor/dashboard'
-      fullPath: '/vendor/dashboard'
-      preLoaderRoute: typeof AuthenticatedVendorDashboardRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+    '/_authenticated/studio/': {
+      id: '/_authenticated/studio/'
+      path: '/'
+      fullPath: '/studio/'
+      preLoaderRoute: typeof AuthenticatedStudioIndexRouteImport
+      parentRoute: typeof AuthenticatedStudioRoute
+    }
+    '/_authenticated/portal/': {
+      id: '/_authenticated/portal/'
+      path: '/'
+      fullPath: '/portal/'
+      preLoaderRoute: typeof AuthenticatedPortalIndexRouteImport
+      parentRoute: typeof AuthenticatedPortalRoute
+    }
+    '/_authenticated/admin/': {
+      id: '/_authenticated/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/studio/venues': {
+      id: '/_authenticated/studio/venues'
+      path: '/venues'
+      fullPath: '/studio/venues'
+      preLoaderRoute: typeof AuthenticatedStudioVenuesRouteImport
+      parentRoute: typeof AuthenticatedStudioRoute
+    }
+    '/_authenticated/studio/vendors': {
+      id: '/_authenticated/studio/vendors'
+      path: '/vendors'
+      fullPath: '/studio/vendors'
+      preLoaderRoute: typeof AuthenticatedStudioVendorsRouteImport
+      parentRoute: typeof AuthenticatedStudioRoute
+    }
+    '/_authenticated/studio/staff': {
+      id: '/_authenticated/studio/staff'
+      path: '/staff'
+      fullPath: '/studio/staff'
+      preLoaderRoute: typeof AuthenticatedStudioStaffRouteImport
+      parentRoute: typeof AuthenticatedStudioRoute
+    }
+    '/_authenticated/studio/sponsors': {
+      id: '/_authenticated/studio/sponsors'
+      path: '/sponsors'
+      fullPath: '/studio/sponsors'
+      preLoaderRoute: typeof AuthenticatedStudioSponsorsRouteImport
+      parentRoute: typeof AuthenticatedStudioRoute
+    }
+    '/_authenticated/studio/settings': {
+      id: '/_authenticated/studio/settings'
+      path: '/settings'
+      fullPath: '/studio/settings'
+      preLoaderRoute: typeof AuthenticatedStudioSettingsRouteImport
+      parentRoute: typeof AuthenticatedStudioRoute
+    }
+    '/_authenticated/studio/reports': {
+      id: '/_authenticated/studio/reports'
+      path: '/reports'
+      fullPath: '/studio/reports'
+      preLoaderRoute: typeof AuthenticatedStudioReportsRouteImport
+      parentRoute: typeof AuthenticatedStudioRoute
+    }
+    '/_authenticated/studio/payments': {
+      id: '/_authenticated/studio/payments'
+      path: '/payments'
+      fullPath: '/studio/payments'
+      preLoaderRoute: typeof AuthenticatedStudioPaymentsRouteImport
+      parentRoute: typeof AuthenticatedStudioRoute
+    }
+    '/_authenticated/studio/messaging': {
+      id: '/_authenticated/studio/messaging'
+      path: '/messaging'
+      fullPath: '/studio/messaging'
+      preLoaderRoute: typeof AuthenticatedStudioMessagingRouteImport
+      parentRoute: typeof AuthenticatedStudioRoute
+    }
+    '/_authenticated/studio/events': {
+      id: '/_authenticated/studio/events'
+      path: '/events'
+      fullPath: '/studio/events'
+      preLoaderRoute: typeof AuthenticatedStudioEventsRouteImport
+      parentRoute: typeof AuthenticatedStudioRoute
+    }
+    '/_authenticated/studio/booths': {
+      id: '/_authenticated/studio/booths'
+      path: '/booths'
+      fullPath: '/studio/booths'
+      preLoaderRoute: typeof AuthenticatedStudioBoothsRouteImport
+      parentRoute: typeof AuthenticatedStudioRoute
+    }
+    '/_authenticated/studio/applications': {
+      id: '/_authenticated/studio/applications'
+      path: '/applications'
+      fullPath: '/studio/applications'
+      preLoaderRoute: typeof AuthenticatedStudioApplicationsRouteImport
+      parentRoute: typeof AuthenticatedStudioRoute
+    }
+    '/_authenticated/portal/profile': {
+      id: '/_authenticated/portal/profile'
+      path: '/profile'
+      fullPath: '/portal/profile'
+      preLoaderRoute: typeof AuthenticatedPortalProfileRouteImport
+      parentRoute: typeof AuthenticatedPortalRoute
+    }
+    '/_authenticated/portal/payments': {
+      id: '/_authenticated/portal/payments'
+      path: '/payments'
+      fullPath: '/portal/payments'
+      preLoaderRoute: typeof AuthenticatedPortalPaymentsRouteImport
+      parentRoute: typeof AuthenticatedPortalRoute
+    }
+    '/_authenticated/portal/messages': {
+      id: '/_authenticated/portal/messages'
+      path: '/messages'
+      fullPath: '/portal/messages'
+      preLoaderRoute: typeof AuthenticatedPortalMessagesRouteImport
+      parentRoute: typeof AuthenticatedPortalRoute
+    }
+    '/_authenticated/portal/help': {
+      id: '/_authenticated/portal/help'
+      path: '/help'
+      fullPath: '/portal/help'
+      preLoaderRoute: typeof AuthenticatedPortalHelpRouteImport
+      parentRoute: typeof AuthenticatedPortalRoute
+    }
+    '/_authenticated/portal/events': {
+      id: '/_authenticated/portal/events'
+      path: '/events'
+      fullPath: '/portal/events'
+      preLoaderRoute: typeof AuthenticatedPortalEventsRouteImport
+      parentRoute: typeof AuthenticatedPortalRoute
+    }
+    '/_authenticated/portal/documents': {
+      id: '/_authenticated/portal/documents'
+      path: '/documents'
+      fullPath: '/portal/documents'
+      preLoaderRoute: typeof AuthenticatedPortalDocumentsRouteImport
+      parentRoute: typeof AuthenticatedPortalRoute
+    }
+    '/_authenticated/portal/booth': {
+      id: '/_authenticated/portal/booth'
+      path: '/booth'
+      fullPath: '/portal/booth'
+      preLoaderRoute: typeof AuthenticatedPortalBoothRouteImport
+      parentRoute: typeof AuthenticatedPortalRoute
+    }
+    '/_authenticated/portal/applications': {
+      id: '/_authenticated/portal/applications'
+      path: '/applications'
+      fullPath: '/portal/applications'
+      preLoaderRoute: typeof AuthenticatedPortalApplicationsRouteImport
+      parentRoute: typeof AuthenticatedPortalRoute
+    }
+    '/_authenticated/portal/announcements': {
+      id: '/_authenticated/portal/announcements'
+      path: '/announcements'
+      fullPath: '/portal/announcements'
+      preLoaderRoute: typeof AuthenticatedPortalAnnouncementsRouteImport
+      parentRoute: typeof AuthenticatedPortalRoute
+    }
+    '/_authenticated/admin/support': {
+      id: '/_authenticated/admin/support'
+      path: '/support'
+      fullPath: '/admin/support'
+      preLoaderRoute: typeof AuthenticatedAdminSupportRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/subscriptions': {
+      id: '/_authenticated/admin/subscriptions'
+      path: '/subscriptions'
+      fullPath: '/admin/subscriptions'
+      preLoaderRoute: typeof AuthenticatedAdminSubscriptionsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/settings': {
+      id: '/_authenticated/admin/settings'
+      path: '/settings'
+      fullPath: '/admin/settings'
+      preLoaderRoute: typeof AuthenticatedAdminSettingsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/organizations': {
+      id: '/_authenticated/admin/organizations'
+      path: '/organizations'
+      fullPath: '/admin/organizations'
+      preLoaderRoute: typeof AuthenticatedAdminOrganizationsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/logs': {
+      id: '/_authenticated/admin/logs'
+      path: '/logs'
+      fullPath: '/admin/logs'
+      preLoaderRoute: typeof AuthenticatedAdminLogsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/analytics': {
+      id: '/_authenticated/admin/analytics'
+      path: '/analytics'
+      fullPath: '/admin/analytics'
+      preLoaderRoute: typeof AuthenticatedAdminAnalyticsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
     }
   }
 }
 
+interface AuthenticatedAdminRouteChildren {
+  AuthenticatedAdminAnalyticsRoute: typeof AuthenticatedAdminAnalyticsRoute
+  AuthenticatedAdminLogsRoute: typeof AuthenticatedAdminLogsRoute
+  AuthenticatedAdminOrganizationsRoute: typeof AuthenticatedAdminOrganizationsRoute
+  AuthenticatedAdminSettingsRoute: typeof AuthenticatedAdminSettingsRoute
+  AuthenticatedAdminSubscriptionsRoute: typeof AuthenticatedAdminSubscriptionsRoute
+  AuthenticatedAdminSupportRoute: typeof AuthenticatedAdminSupportRoute
+  AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
+}
+
+const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
+  AuthenticatedAdminAnalyticsRoute: AuthenticatedAdminAnalyticsRoute,
+  AuthenticatedAdminLogsRoute: AuthenticatedAdminLogsRoute,
+  AuthenticatedAdminOrganizationsRoute: AuthenticatedAdminOrganizationsRoute,
+  AuthenticatedAdminSettingsRoute: AuthenticatedAdminSettingsRoute,
+  AuthenticatedAdminSubscriptionsRoute: AuthenticatedAdminSubscriptionsRoute,
+  AuthenticatedAdminSupportRoute: AuthenticatedAdminSupportRoute,
+  AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
+}
+
+const AuthenticatedAdminRouteWithChildren =
+  AuthenticatedAdminRoute._addFileChildren(AuthenticatedAdminRouteChildren)
+
+interface AuthenticatedPortalRouteChildren {
+  AuthenticatedPortalAnnouncementsRoute: typeof AuthenticatedPortalAnnouncementsRoute
+  AuthenticatedPortalApplicationsRoute: typeof AuthenticatedPortalApplicationsRoute
+  AuthenticatedPortalBoothRoute: typeof AuthenticatedPortalBoothRoute
+  AuthenticatedPortalDocumentsRoute: typeof AuthenticatedPortalDocumentsRoute
+  AuthenticatedPortalEventsRoute: typeof AuthenticatedPortalEventsRoute
+  AuthenticatedPortalHelpRoute: typeof AuthenticatedPortalHelpRoute
+  AuthenticatedPortalMessagesRoute: typeof AuthenticatedPortalMessagesRoute
+  AuthenticatedPortalPaymentsRoute: typeof AuthenticatedPortalPaymentsRoute
+  AuthenticatedPortalProfileRoute: typeof AuthenticatedPortalProfileRoute
+  AuthenticatedPortalIndexRoute: typeof AuthenticatedPortalIndexRoute
+}
+
+const AuthenticatedPortalRouteChildren: AuthenticatedPortalRouteChildren = {
+  AuthenticatedPortalAnnouncementsRoute: AuthenticatedPortalAnnouncementsRoute,
+  AuthenticatedPortalApplicationsRoute: AuthenticatedPortalApplicationsRoute,
+  AuthenticatedPortalBoothRoute: AuthenticatedPortalBoothRoute,
+  AuthenticatedPortalDocumentsRoute: AuthenticatedPortalDocumentsRoute,
+  AuthenticatedPortalEventsRoute: AuthenticatedPortalEventsRoute,
+  AuthenticatedPortalHelpRoute: AuthenticatedPortalHelpRoute,
+  AuthenticatedPortalMessagesRoute: AuthenticatedPortalMessagesRoute,
+  AuthenticatedPortalPaymentsRoute: AuthenticatedPortalPaymentsRoute,
+  AuthenticatedPortalProfileRoute: AuthenticatedPortalProfileRoute,
+  AuthenticatedPortalIndexRoute: AuthenticatedPortalIndexRoute,
+}
+
+const AuthenticatedPortalRouteWithChildren =
+  AuthenticatedPortalRoute._addFileChildren(AuthenticatedPortalRouteChildren)
+
+interface AuthenticatedStudioRouteChildren {
+  AuthenticatedStudioApplicationsRoute: typeof AuthenticatedStudioApplicationsRoute
+  AuthenticatedStudioBoothsRoute: typeof AuthenticatedStudioBoothsRoute
+  AuthenticatedStudioEventsRoute: typeof AuthenticatedStudioEventsRoute
+  AuthenticatedStudioMessagingRoute: typeof AuthenticatedStudioMessagingRoute
+  AuthenticatedStudioPaymentsRoute: typeof AuthenticatedStudioPaymentsRoute
+  AuthenticatedStudioReportsRoute: typeof AuthenticatedStudioReportsRoute
+  AuthenticatedStudioSettingsRoute: typeof AuthenticatedStudioSettingsRoute
+  AuthenticatedStudioSponsorsRoute: typeof AuthenticatedStudioSponsorsRoute
+  AuthenticatedStudioStaffRoute: typeof AuthenticatedStudioStaffRoute
+  AuthenticatedStudioVendorsRoute: typeof AuthenticatedStudioVendorsRoute
+  AuthenticatedStudioVenuesRoute: typeof AuthenticatedStudioVenuesRoute
+  AuthenticatedStudioIndexRoute: typeof AuthenticatedStudioIndexRoute
+}
+
+const AuthenticatedStudioRouteChildren: AuthenticatedStudioRouteChildren = {
+  AuthenticatedStudioApplicationsRoute: AuthenticatedStudioApplicationsRoute,
+  AuthenticatedStudioBoothsRoute: AuthenticatedStudioBoothsRoute,
+  AuthenticatedStudioEventsRoute: AuthenticatedStudioEventsRoute,
+  AuthenticatedStudioMessagingRoute: AuthenticatedStudioMessagingRoute,
+  AuthenticatedStudioPaymentsRoute: AuthenticatedStudioPaymentsRoute,
+  AuthenticatedStudioReportsRoute: AuthenticatedStudioReportsRoute,
+  AuthenticatedStudioSettingsRoute: AuthenticatedStudioSettingsRoute,
+  AuthenticatedStudioSponsorsRoute: AuthenticatedStudioSponsorsRoute,
+  AuthenticatedStudioStaffRoute: AuthenticatedStudioStaffRoute,
+  AuthenticatedStudioVendorsRoute: AuthenticatedStudioVendorsRoute,
+  AuthenticatedStudioVenuesRoute: AuthenticatedStudioVenuesRoute,
+  AuthenticatedStudioIndexRoute: AuthenticatedStudioIndexRoute,
+}
+
+const AuthenticatedStudioRouteWithChildren =
+  AuthenticatedStudioRoute._addFileChildren(AuthenticatedStudioRouteChildren)
+
 interface AuthenticatedRouteRouteChildren {
-  AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
-  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
-  AuthenticatedEventsRoute: typeof AuthenticatedEventsRoute
-  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
-  AuthenticatedStaffRoute: typeof AuthenticatedStaffRoute
-  AuthenticatedVendorsRoute: typeof AuthenticatedVendorsRoute
-  AuthenticatedVendorDashboardRoute: typeof AuthenticatedVendorDashboardRoute
+  AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
+  AuthenticatedAppRoute: typeof AuthenticatedAppRoute
+  AuthenticatedPortalRoute: typeof AuthenticatedPortalRouteWithChildren
+  AuthenticatedStudioRoute: typeof AuthenticatedStudioRouteWithChildren
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedAdminRoute: AuthenticatedAdminRoute,
-  AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
-  AuthenticatedEventsRoute: AuthenticatedEventsRoute,
-  AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
-  AuthenticatedStaffRoute: AuthenticatedStaffRoute,
-  AuthenticatedVendorsRoute: AuthenticatedVendorsRoute,
-  AuthenticatedVendorDashboardRoute: AuthenticatedVendorDashboardRoute,
+  AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
+  AuthenticatedAppRoute: AuthenticatedAppRoute,
+  AuthenticatedPortalRoute: AuthenticatedPortalRouteWithChildren,
+  AuthenticatedStudioRoute: AuthenticatedStudioRouteWithChildren,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -250,7 +922,11 @@ const AuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AboutRoute: AboutRoute,
   AuthRoute: AuthRoute,
+  ContactRoute: ContactRoute,
+  FeaturesRoute: FeaturesRoute,
+  PricingRoute: PricingRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

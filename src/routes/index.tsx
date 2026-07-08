@@ -21,6 +21,12 @@ function Landing() {
     <div className="min-h-screen bg-background">
       <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
         <Brand size="sm" />
+        <nav className="hidden items-center gap-6 text-sm text-muted-foreground md:flex">
+          <Link to="/features" className="hover:text-foreground">Features</Link>
+          <Link to="/pricing" className="hover:text-foreground">Pricing</Link>
+          <Link to="/about" className="hover:text-foreground">About</Link>
+          <Link to="/contact" className="hover:text-foreground">Contact</Link>
+        </nav>
         <div className="flex items-center gap-2">
           <Link to="/auth"><Button variant="ghost" size="sm">Sign in</Button></Link>
           <Link to="/auth"><Button size="sm">Get started</Button></Link>

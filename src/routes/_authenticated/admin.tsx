@@ -1,17 +1,31 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { PageHeader } from "@/components/shared/page-header";
-import { EmptyState } from "@/components/shared/empty-state";
-import { ShieldCheck } from "lucide-react";
+import { createFileRoute, Outlet } from "@tanstack/react-router";
+import { AppShell, type NavSection } from "@/components/shared/app-shell";
+import { ShieldCheck, Building2, CreditCard, BarChart3, LifeBuoy, Settings, ScrollText } from "lucide-react";
+
+const SECTIONS: NavSection[] = [
+  { items: [{ label: "Overview", to: "/admin", icon: ShieldCheck }] },
+  {
+    label: "Platform",
+    items: [
+      { label: "Organizations", to: "/admin/organizations", icon: Building2 },
+      { label: "Subscriptions", to: "/admin/subscriptions", icon: CreditCard },
+      { label: "Analytics", to: "/admin/analytics", icon: BarChart3 },
+    ],
+  },
+  {
+    label: "System",
+    items: [
+      { label: "Support", to: "/admin/support", icon: LifeBuoy },
+      { label: "Global Settings", to: "/admin/settings", icon: Settings },
+      { label: "System Logs", to: "/admin/logs", icon: ScrollText },
+    ],
+  },
+];
 
 export const Route = createFileRoute("/_authenticated/admin")({
-  component: AdminHome,
+  component: () => (
+    <AppShell variant="admin" title="Platform Admin" sections={SECTIONS}>
+      <Outlet />
+    </AppShell>
+  ),
 });
-
-function AdminHome() {
-  return (
-    <div className="space-y-8">
-      <PageHeader eyebrow="Platform" title="Super Admin" description="Manage organizations, subscriptions, and support requests across EventScape Studio." />
-      <EmptyState icon={ShieldCheck} title="Platform overview" description="Detailed analytics, organization management, and support tools appear here." />
-    </div>
-  );
-}
