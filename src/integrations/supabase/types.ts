@@ -1483,10 +1483,16 @@ export type Database = {
       venue_map_references: {
         Row: {
           created_at: string
+          crop_h: number | null
+          crop_w: number | null
+          crop_x: number | null
+          crop_y: number | null
           id: string
           image_url: string
           layout_template_id: string
           locked: boolean
+          natural_height: number | null
+          natural_width: number | null
           offset_x: number
           offset_y: number
           opacity: number
@@ -1494,15 +1500,24 @@ export type Database = {
           rotation: number
           scale: number
           sort_order: number
+          source_file_url: string | null
+          source_mime_type: string | null
+          source_page: number | null
           updated_at: string
           visible: boolean
         }
         Insert: {
           created_at?: string
+          crop_h?: number | null
+          crop_w?: number | null
+          crop_x?: number | null
+          crop_y?: number | null
           id?: string
           image_url: string
           layout_template_id: string
           locked?: boolean
+          natural_height?: number | null
+          natural_width?: number | null
           offset_x?: number
           offset_y?: number
           opacity?: number
@@ -1510,15 +1525,24 @@ export type Database = {
           rotation?: number
           scale?: number
           sort_order?: number
+          source_file_url?: string | null
+          source_mime_type?: string | null
+          source_page?: number | null
           updated_at?: string
           visible?: boolean
         }
         Update: {
           created_at?: string
+          crop_h?: number | null
+          crop_w?: number | null
+          crop_x?: number | null
+          crop_y?: number | null
           id?: string
           image_url?: string
           layout_template_id?: string
           locked?: boolean
+          natural_height?: number | null
+          natural_width?: number | null
           offset_x?: number
           offset_y?: number
           opacity?: number
@@ -1526,6 +1550,9 @@ export type Database = {
           rotation?: number
           scale?: number
           sort_order?: number
+          source_file_url?: string | null
+          source_mime_type?: string | null
+          source_page?: number | null
           updated_at?: string
           visible?: boolean
         }
