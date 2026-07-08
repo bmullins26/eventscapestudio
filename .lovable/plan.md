@@ -1,113 +1,118 @@
-## Rebrand + Event Library — Phase 2 architecture pass
 
-Consolidates two directives:
-1. Rename **EventScape Studio** internally to **Studio**; treat EventScape as the umbrella platform with four sibling apps.
-2. Introduce **Event Library** as a permanent Organization-level object that holds active events, drafts, archived events, and reusable templates.
+# Sprint 2 — Make Studio Fully Functional
 
-No route path renames, no auth/RLS surgery, no design-system rework — the Studio/Portal/Admin split, tables, and design tokens stay as-is.
+Goal: replace stubs on existing Studio pages with real CRUD backed by the database. No redesign, no new top-level routes beyond the single public application page. Vendor accounts are optional throughout — Applications are the center of the workflow and never depend on them.
 
----
+## Already done (verified)
 
-## Part A · Brand hierarchy
+- Schema: `organizations`, `venues`, `layout_templates`, `layout_template_booths`, `events`, `event_booths`, `venue_documents`, `documents`, `sponsors`, `organization_vendors`, `applications`, `payments`, RLS + permission helpers.
+- Event Library UI (list, tabs, clone, archive/template) — keep.
+- Studio dashboard reads some real data — extend.
+- Venues, Booths pages are `SectionStub` — replace.
 
-**Model**
+## Schema migration
 
-```text
-EventScape (platform)
-├── Public Website        → all top-level routes
-├── EventScape Studio     → /studio/*
-├── EventScape Vendor Portal → /portal/*
-└── EventScape Admin Console → /admin/*
-```
+1. `venues.archived_at timestamptz` — archive/restore.
+2. New table `venue_maps` — reusable site maps per venue: `venue_id`, `name`, `description`, `image_url`, `sort_order`, timestamps.
+3. New table `venue_map_references` — imported drawings used as reference layer under a layout template: `layout_template_id`, `image_url`, `original_filename`, `scale`, `rotation`, `opacity`, `offset_x`, `offset_y`, `locked`, `visible`, `sort_order`.
+4. New table `user_org_prefs` (`user_id`, `organization_id`, `active_event_id`) — per-user Active Event.
+5. `organization_vendors.account_status` enum `no_account | invited | registered | disabled` (default `no_account`).
+6. `applications.entry_method` enum `manual | ai_scan | public_form | vendor_portal | imported` (default `manual`).
+7. Extend `applications.status` to full lifecycle: `draft | pending | approved | waitlisted | rejected | awaiting_payment | booth_assigned | checked_in | completed | archived`. Migrate existing rows.
+8. `applications.ai_extraction jsonb` — raw AI extraction from scans.
+9. `applications.internal_notes text` — organizer-only notes (separate from applicant-facing notes).
+10. New table `application_activity` — activity log: `application_id`, `actor_user_id`, `event_type` (status_change / booth_assigned / note / message / payment / invite / edit), `from_value`, `to_value`, `payload jsonb`, `created_at`. Written by triggers on `applications` status changes and by server functions for other actions.
+11. New table `vendor_invitations` (if not present): `organization_vendor_id`, `email`, `code`, `token`, `expires_at`, `accepted_at`, `revoked_at`. Grants + RLS.
+12. Storage buckets (private, RLS by org): `venue-assets`, `application-uploads`.
 
-**Changes**
+All new tables ship with GRANTs + RLS scoped through `is_org_member` / template → venue → org.
 
-1. `src/components/shared/brand.tsx` — the wordmark always renders "EventScape". Add an optional `app` prop (`"studio" | "portal" | "admin"`) that drives the small sub-label under the mark:
-   - `undefined` → no sub-label (or "The Event Platform" when `showTagline`)
-   - `"studio"` → "Studio"
-   - `"portal"` → "Vendor Portal"
-   - `"admin"` → "Admin Console"
+## Server functions (all `requireSupabaseAuth` unless noted)
 
-2. Wire the label per shell:
-   - `studio.tsx` → `<Brand app="studio" />`
-   - `portal.tsx` → `<Brand app="portal" />`
-   - `admin.tsx` → `<Brand app="admin" />`
-   - Public routes + `auth.tsx` → plain `<Brand />`
+- **Venues**: `list/get/create/update/archive/restore/deleteVenue`, `list/create/update/delete/reorderVenueMaps`, `list/add/deleteVenueDocument`.
+- **Layout Templates**: `list/get/create/update/delete/cloneLayoutTemplate`, `saveTemplateBooths(templateId, booths[])` (bulk upsert+delete), `list/upload/update/deleteVenueMapReference`.
+- **Events**: `createEventFromTemplate` (copies template booths → event booths), `archive/restore/deleteEvent`, `setActiveEvent`, plus existing `cloneEvent`.
+- **Vendors (directory)**: `list/get/create/update/deleteOrganizationVendor`, `matchVendor({ email, phone, businessName })` returns fuzzy matches from org directory, `inviteVendor(vendorId, method)` (email/link/code) → flips `account_status` → `invited`, `revokeInvitation`, `disableVendor`, `enableVendor`. Acceptance flow in Portal links `vendor_profiles.id` and sets `registered`. Account status changes never touch applications.
+- **Applications** (all entry methods produce identical rows differing only by `entry_method`):
+  - `createManualApplication({ eventId, vendorFields, linkVendorId? })`.
+  - `createApplicationFromScan({ eventId, uploadPath })` — Lovable AI (`google/gemini-2.5-pro`) parses the file to a Zod-validated draft; returns extraction + suggested vendor matches; does not insert.
+  - `saveApplicationFromScanReview({ eventId, fields, linkVendorId?, ai_extraction })` — inserts with `entry_method="ai_scan"`.
+  - `updateApplication`, `duplicateApplication`, `archiveApplication`, `deleteApplication`.
+  - Status transitions: `approveApplication`, `rejectApplication`, `waitlistApplication`, `requestMoreInfo`, `markAwaitingPayment`, `markPaid`, `checkInApplication`, `completeApplication`. Each writes to `application_activity`.
+  - `assignBooth({ applicationId, boothId })` / `unassignBooth` — atomically updates `event_booths.status` + `assigned_application_id`, flips application status to `booth_assigned` if approved, logs activity. Approval never forces assignment.
+  - `linkApplicationToVendor(applicationId, vendorId)` / `createVendorFromApplication(applicationId)`.
+  - `sendPortalInvitationFromApplication(applicationId)` — pulls vendor row (creating a directory record if none), calls `inviteVendor`.
+  - `getApplicationWorkspace(applicationId)` — returns application + linked vendor + vendor's prior applications, booth history, and payments across the org, plus activity log. Powers the review screen with no navigation away.
+- **Public application submission**: server route `src/routes/api/public/applications.ts` — validates event is public + open, inserts with `entry_method="public_form"`, status `pending`.
+- **Dashboard / Inbox**: `getStudioDashboard(orgId, activeEventId)` returns all card counts, recent events, activity, plus **Organizer Inbox** counts: pending review, approved-needs-booth, waitlisted, awaiting payment, missing-info requests, checked-in, completed, unread messages, booth conflicts (booths with `assigned_application_id` not matching a live approved application), vendors awaiting invitation.
 
-3. Copy sweep across `__root.tsx`, `index.tsx`, `features.tsx`, `pricing.tsx`, `about.tsx`, `contact.tsx`, `auth.tsx`, `studio.tsx`, `admin.index.tsx`:
-   - Platform-level references: "EventScape Studio" → "EventScape".
-   - App-specific references keep the full name ("EventScape Studio", "EventScape Vendor Portal", "EventScape Admin Console").
-   - Meta titles: root default becomes "EventScape — The Event Platform"; leaves become "<Page> · EventScape"; auth becomes "Sign in · EventScape"; admin index heading becomes "Admin Console".
+## Public route
 
-4. Guarantee separation:
-   - Vendor Portal navigation must not reference Studio. Sidebar labels in `portal.tsx` are audited; anything named after an organizer surface is removed or reworded to vendor language.
-   - Admin sidebar reads "Admin Console" in the header.
+- `src/routes/apply.$eventSlug.tsx` — public form. Reads event via server-publishable client with narrow `TO anon` policy on `events` where `applications_open AND is_public`. Posts to the public server route above. Only new user-facing route.
 
----
+## Pages to replace (existing files only)
 
-## Part B · Event Library (Organization-level object)
+- **`studio.venues.tsx`** — table with search / sort / filter / pagination / empty / loading. Row → in-page tabs: Info, Maps, Layout Templates, Documents, Photos, Notes, Utilities, Parking. Archive/Restore/Delete.
+- **`studio.booths.tsx`** — **Booth Layout Builder** (SVG canvas, no new deps). Layers, bottom→top:
+  1. Grid
+  2. Imported venue map reference (scale/rotate/opacity/lock/show-hide via per-layer controls)
+  3. Roads / walkways / utilities annotations
+  4. Editable booth layout
+  5. Event booth assignments (only when opened from an event)
+  
+  Tools: create, drag-move, resize handles, rotate handle, duplicate (Cmd/Ctrl-D), delete, multi-select, snap-to-grid, zoom (wheel + buttons), pan (space-drag), undo/redo. Right panel: booth # / size / price / category / electric / premium / reserved / status. `analyzeVenueMap` scaffolded as a "Generate draft layout" button marked future.
+- **`studio.events.tsx`** — keep Event Library; wire "New Event" to 3-step dialog (Venue → Layout Template → Details) → `createEventFromTemplate`.
+- **`studio.vendors.tsx`** — Vendor Directory. Columns include `account_status` badge and last-application info. Row actions: Edit, Invite to Portal (email/link/code), Revoke Invite, Disable/Enable, Delete. Account status changes never touch applications.
+- **`studio.applications.tsx`** — Applications, scoped to active event.
+  - Toolbar: search, sort, filter by status / `entry_method` / has-booth, "Enable public applications" toggle, "Copy public link".
+  - "+ Add Application" menu:
+    1. Manual entry (form dialog with returning-vendor match panel).
+    2. Scan with AI (upload → extract → review-and-edit prefilled form with match suggestions → Save).
+    3. Invite vendor (pick or create directory row, send invitation).
+  - Row shows entry_method badge, status, vendor, requested size, booth assignment, payment.
+  - Row click opens **Application Workspace** as a full-height side sheet — no navigation:
+    - Header: applicant/business, status, entry_method, quick action bar (Approve, Reject, Waitlist, Assign Booth, Mark Paid, Request Info, Send Portal Invite, Print, Duplicate, Archive).
+    - Body tabs: Details (applicant/business/products/booth/electric/special requests), Payment, Notes (applicant vs internal), History (prior applications, booth assignments, payments across the org), Activity Log.
+    - "Assign Booth" opens a booth picker over the event's booth map; approval is not required first and does not require assignment.
+    - "Print" uses browser print CSS on a print-friendly template inside the sheet.
+- **`studio.index.tsx`** — active-event switcher; live stat cards scoped to active event where meaningful; **Organizer Inbox** section listing the counts above, each linking to a pre-filtered Applications / Messages / Vendors view.
 
-**Mental model per organization**
+Every list gets the standard toolbar (search, sort, filter, page size, pagination, skeleton loading, empty state, validation).
 
-```text
-Organization
-├── Venue Directory     (existing /studio/venues)
-├── Vendor Directory    (existing /studio/vendors)
-├── Event Library       (renamed /studio/events)
-├── Staff               (existing /studio/staff)
-└── Settings            (existing /studio/settings)
-```
+## Active Event
 
-The existing `events` table already has a `status` enum with `draft / published / in_progress / completed / cancelled / archived`. Event Library reuses this + one new flag for templates.
+Extend `auth-context` with `activeEventId` + `setActiveEvent`, persisted to `user_org_prefs`. All event-scoped queries include it in the query key.
 
-**Schema migration** (`supabase/migrations/<new>.sql`)
+## Event Completion
 
-- `ALTER TABLE public.events ADD COLUMN is_template boolean NOT NULL DEFAULT false`.
-- `ALTER TABLE public.events ADD COLUMN template_source_id uuid REFERENCES public.events(id) ON DELETE SET NULL` — tracks which template/prior event a row was cloned from (nullable, informational).
-- Partial index: `CREATE INDEX events_org_status_idx ON public.events (organization_id, status) WHERE is_template = false;` and `events_org_templates_idx ON public.events (organization_id) WHERE is_template = true;`
-- No new tables, no RLS changes (`events` policies are already org-scoped).
+`completeApplication` and `completeEvent` (via existing status enum) flip applications to `completed`; the workspace switches to read-only mode (all mutation actions disabled, activity log still visible, search still works). Historical joins into vendor "Previous Event History" already work through `application_activity` + `applications` reads.
 
-**Server function** (`src/lib/events.functions.ts`, new) — `cloneEvent`:
+## AI
 
-- `.middleware([requireSupabaseAuth])`, `inputValidator` = `{ sourceEventId: uuid, newName: string, newStartDate?: string, asTemplate?: boolean }`.
-- Verifies the caller has `events:write` on the source event's org (`has_permission`).
-- Copies the `events` row (new id, new name/date, `status='draft'`, `template_source_id = sourceEventId`, `is_template = asTemplate ?? false`).
-- Copies related child rows the organizer would expect: `event_booths` (with new event_id, blank vendor assignments), event-scoped `documents`, `announcements` templates if any. Applications, payments, and messages are **not** copied.
-- Returns the new event id.
+- Model: `google/gemini-2.5-pro` (multimodal) via Lovable AI Gateway inside a `createServerFn`.
+- Returns strict JSON validated by Zod; UI shows the extraction inline in the review form with field-level "edited" indicators.
+- Venue map → booth-layout AI generator scaffolded but marked future.
 
-**Studio → Event Library UI** (`studio.events.tsx`)
+## Non-goals
 
-- Rename page header to "Event Library" (subtitle: "All events, drafts, archives, and templates for {organization}").
-- Tabs (using existing shadcn Tabs):
-  - **Active** — `status IN ('published','in_progress')` AND `is_template = false`
-  - **Drafts** — `status = 'draft'` AND `is_template = false`
-  - **Archived** — `status IN ('completed','cancelled','archived')` AND `is_template = false`
-  - **Templates** — `is_template = true`
-- Each row: name, date range, venue, status badge, and a row action menu with: **Open**, **Clone**, **Save as Template**, **Archive**, **Restore**.
-- Primary actions: "New Event", "New from Template".
+- Stripe/Paddle payments, sponsorship management, QR check-in, advanced reporting.
+- Portal / Admin / public marketing pages — untouched.
+- Actual portal-side acceptance UI beyond the callback that flips `account_status` to `registered`.
+- No redesign.
 
-**Auth-context / navigation**
+## Delivery order
 
-- Studio sidebar item "Events" renamed to "Event Library". Icon unchanged.
-- Route path stays `/studio/events` — no file rename.
+1. Migration + storage buckets + regenerate types.
+2. Server functions (studio, events, vendors, applications, AI scan, activity log triggers).
+3. `auth-context` active-event extension.
+4. Venues (list + detail + maps + docs).
+5. Layout Templates + reference-layer import + Booth Layout Builder.
+6. Event creation workflow dialog.
+7. Vendor Directory + invitations.
+8. Applications page + Application Workspace side sheet + public form route.
+9. Studio Dashboard live stats + Organizer Inbox + active-event switcher.
+10. Empty / loading / validation polish + typecheck.
 
----
+## Success check
 
-## Part C · Non-goals for this pass
-
-- No changes to Portal / Admin data models or nav beyond Part A copy.
-- No cloning of applications, payments, or messages (deliberate).
-- No new recurring-event scheduler (recurring events are supported later via "New from Template" + manual date entry; a scheduler can be added without schema changes to this pass).
-- No design-token or logo redesign.
-
----
-
-## Files touched
-
-- `src/components/shared/brand.tsx` — add `app` prop
-- `src/routes/__root.tsx`, `index.tsx`, `features.tsx`, `pricing.tsx`, `about.tsx`, `contact.tsx`, `auth.tsx` — copy + head
-- `src/routes/_authenticated/studio.tsx`, `portal.tsx`, `admin.tsx` — Brand `app` prop, audit sidebar labels
-- `src/routes/_authenticated/admin.index.tsx` — "Admin Console" heading
-- `src/routes/_authenticated/studio.events.tsx` — Event Library UI (tabs, row actions, clone dialog)
-- `supabase/migrations/<new>.sql` — `is_template`, `template_source_id`, partial indexes
-- `src/lib/events.functions.ts` — new `cloneEvent` server function
+An organizer can: add a venue → import a sketch as reference → design booths tracing over it → save a Layout Template → create an event → add applications by manual entry, AI scan, public form, or vendor-portal invitation (each row displays its entry method) → run every status transition and booth assignment from the Application Workspace without leaving it → resolve duplicate vendors via the returning-vendor match panel → send optional portal invitations (account status flows `no_account → invited → registered`) → switch active event → see live counts and a live Organizer Inbox on the dashboard. No `SectionStub` remains on touched pages; no workflow requires a vendor to have an account.
