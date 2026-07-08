@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
-import { zodValidator } from "@tanstack/zod-adapter";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Save, Grid3x3, Undo2, Redo2, Copy, Trash2, ZoomIn, ZoomOut, Map, LayoutTemplate } from "lucide-react";
 import { toast } from "sonner";
