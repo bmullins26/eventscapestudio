@@ -23,7 +23,7 @@ const SearchSchema = z.object({
 });
 
 export const Route = createFileRoute("/_authenticated/studio/booths")({
-  validateSearch: zodValidator(SearchSchema),
+  validateSearch: (search: Record<string, unknown>) => SearchSchema.parse(search),
   head: () => ({ meta: [{ title: "Booth Layout Builder · EventScape Studio" }] }),
   component: BoothsPage,
 });
