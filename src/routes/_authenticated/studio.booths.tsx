@@ -431,8 +431,13 @@ function BoothsPage() {
               <span className="text-xs">Snap</span>
             </div>
             <label className="ml-auto text-xs">
-              <input type="file" accept="image/*,application/pdf" className="hidden" onChange={(e) => e.target.files?.[0] && uploadReference(e.target.files[0])} id="ref-upload" />
-              <Button size="sm" variant="outline" asChild><label htmlFor="ref-upload"><Map className="mr-1 h-4 w-4" /> Import venue map</label></Button>
+              <input type="file" accept="image/png,image/jpeg,image/jpg,image/webp,application/pdf" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadReference(f); e.target.value = ""; }} id="ref-upload" disabled={uploadingRef} />
+              <Button size="sm" variant="outline" asChild disabled={uploadingRef}>
+                <label htmlFor="ref-upload" className="cursor-pointer">
+                  {uploadingRef ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Map className="mr-1 h-4 w-4" />}
+                  Import venue map
+                </label>
+              </Button>
             </label>
           </div>
 
