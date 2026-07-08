@@ -46,12 +46,14 @@ export function AppShell({ variant, title, sections, children }: AppShellProps) 
   return (
     <div className="flex min-h-screen bg-background">
       <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-border/70 bg-sidebar px-4 py-6 lg:flex">
-        <Brand size="sm" />
-        <div className="mt-1 flex items-center gap-2">
-          <span className={cn("text-[10px] font-semibold uppercase tracking-[0.24em]", VARIANT_ACCENT[variant])}>
-            {title}
-          </span>
-        </div>
+        <Brand size="sm" app={variant} />
+        {title && title.toLowerCase() !== (variant === "portal" ? "vendor portal" : variant) && (
+          <div className="mt-1 flex items-center gap-2">
+            <span className={cn("text-[10px] font-semibold uppercase tracking-[0.24em]", VARIANT_ACCENT[variant])}>
+              {title}
+            </span>
+          </div>
+        )}
         {activeOrg && variant === "studio" && (
           <div className="mt-3 rounded-lg bg-secondary/60 px-3 py-2 text-xs">
             <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Organization</p>
