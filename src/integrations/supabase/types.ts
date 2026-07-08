@@ -528,6 +528,8 @@ export type Database = {
       }
       layout_template_booths: {
         Row: {
+          ai_confidence: string | null
+          ai_status: string | null
           category: string | null
           code: string
           created_at: string
@@ -537,15 +539,19 @@ export type Database = {
           is_premium: boolean
           is_reserved: boolean
           layout_template_id: string
+          metadata: Json
           notes: string | null
           price: number | null
           rotation: number
           size_label: string | null
+          source: string
           width: number
           x: number
           y: number
         }
         Insert: {
+          ai_confidence?: string | null
+          ai_status?: string | null
           category?: string | null
           code: string
           created_at?: string
@@ -555,15 +561,19 @@ export type Database = {
           is_premium?: boolean
           is_reserved?: boolean
           layout_template_id: string
+          metadata?: Json
           notes?: string | null
           price?: number | null
           rotation?: number
           size_label?: string | null
+          source?: string
           width?: number
           x?: number
           y?: number
         }
         Update: {
+          ai_confidence?: string | null
+          ai_status?: string | null
           category?: string | null
           code?: string
           created_at?: string
@@ -573,10 +583,12 @@ export type Database = {
           is_premium?: boolean
           is_reserved?: boolean
           layout_template_id?: string
+          metadata?: Json
           notes?: string | null
           price?: number | null
           rotation?: number
           size_label?: string | null
+          source?: string
           width?: number
           x?: number
           y?: number
@@ -584,6 +596,71 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "layout_template_booths_layout_template_id_fkey"
+            columns: ["layout_template_id"]
+            isOneToOne: false
+            referencedRelation: "layout_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      layout_template_objects: {
+        Row: {
+          ai_confidence: string | null
+          ai_status: string | null
+          created_at: string
+          geometry: Json
+          id: string
+          kind: string
+          label: string | null
+          layer_index: number
+          layout_template_id: string
+          locked: boolean
+          metadata: Json
+          source: string
+          style: Json
+          updated_at: string
+          visible: boolean
+          z_order: number
+        }
+        Insert: {
+          ai_confidence?: string | null
+          ai_status?: string | null
+          created_at?: string
+          geometry?: Json
+          id?: string
+          kind: string
+          label?: string | null
+          layer_index?: number
+          layout_template_id: string
+          locked?: boolean
+          metadata?: Json
+          source?: string
+          style?: Json
+          updated_at?: string
+          visible?: boolean
+          z_order?: number
+        }
+        Update: {
+          ai_confidence?: string | null
+          ai_status?: string | null
+          created_at?: string
+          geometry?: Json
+          id?: string
+          kind?: string
+          label?: string | null
+          layer_index?: number
+          layout_template_id?: string
+          locked?: boolean
+          metadata?: Json
+          source?: string
+          style?: Json
+          updated_at?: string
+          visible?: boolean
+          z_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "layout_template_objects_layout_template_id_fkey"
             columns: ["layout_template_id"]
             isOneToOne: false
             referencedRelation: "layout_templates"
@@ -1483,10 +1560,16 @@ export type Database = {
       venue_map_references: {
         Row: {
           created_at: string
+          crop_h: number | null
+          crop_w: number | null
+          crop_x: number | null
+          crop_y: number | null
           id: string
           image_url: string
           layout_template_id: string
           locked: boolean
+          natural_height: number | null
+          natural_width: number | null
           offset_x: number
           offset_y: number
           opacity: number
@@ -1494,15 +1577,24 @@ export type Database = {
           rotation: number
           scale: number
           sort_order: number
+          source_file_url: string | null
+          source_mime_type: string | null
+          source_page: number | null
           updated_at: string
           visible: boolean
         }
         Insert: {
           created_at?: string
+          crop_h?: number | null
+          crop_w?: number | null
+          crop_x?: number | null
+          crop_y?: number | null
           id?: string
           image_url: string
           layout_template_id: string
           locked?: boolean
+          natural_height?: number | null
+          natural_width?: number | null
           offset_x?: number
           offset_y?: number
           opacity?: number
@@ -1510,15 +1602,24 @@ export type Database = {
           rotation?: number
           scale?: number
           sort_order?: number
+          source_file_url?: string | null
+          source_mime_type?: string | null
+          source_page?: number | null
           updated_at?: string
           visible?: boolean
         }
         Update: {
           created_at?: string
+          crop_h?: number | null
+          crop_w?: number | null
+          crop_x?: number | null
+          crop_y?: number | null
           id?: string
           image_url?: string
           layout_template_id?: string
           locked?: boolean
+          natural_height?: number | null
+          natural_width?: number | null
           offset_x?: number
           offset_y?: number
           opacity?: number
@@ -1526,6 +1627,9 @@ export type Database = {
           rotation?: number
           scale?: number
           sort_order?: number
+          source_file_url?: string | null
+          source_mime_type?: string | null
+          source_page?: number | null
           updated_at?: string
           visible?: boolean
         }

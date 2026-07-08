@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Save, Grid3x3, Undo2, Redo2, Copy, Trash2, ZoomIn, ZoomOut, Map, LayoutTemplate } from "lucide-react";
+import { Plus, Save, Grid3x3, Undo2, Redo2, Copy, Trash2, ZoomIn, ZoomOut, Map, LayoutTemplate, Download, FileText, Image as ImageIcon, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
@@ -16,6 +16,9 @@ import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
+import { loadPdf, renderPdfPageToBlob, loadImageNaturalSize } from "@/lib/pdf-render";
+import { PdfPagePicker } from "@/components/booth-builder/pdf-page-picker";
 
 const SearchSchema = z.object({
   template: z.string().uuid().optional(),
@@ -241,20 +244,100 @@ function BoothsPage() {
     qc.invalidateQueries({ queryKey: ["template-booths", templateId] });
   };
 
-  const uploadReference = async (file: File) => {
-    if (!templateId || !orgId) return;
-    const key = `${orgId}/refs/${crypto.randomUUID()}-${file.name}`;
-    const { error: upErr } = await supabase.storage.from("venue-assets").upload(key, file);
-    if (upErr) { toast.error(upErr.message); return; }
-    const { data: signed } = await supabase.storage.from("venue-assets").createSignedUrl(key, 60 * 60 * 24 * 365);
-    if (!signed) { toast.error("Failed to sign URL"); return; }
+  // PDF upload state — driven by the file picker in the toolbar.
+  const [pendingPdf, setPendingPdf] = useState<File | null>(null);
+  const [uploadingRef, setUploadingRef] = useState(false);
+
+  const insertReferenceRow = async (row: {
+    image_url: string;
+    original_filename: string;
+    source_file_url: string | null;
+    source_mime_type: string;
+    source_page: number | null;
+    natural_width: number;
+    natural_height: number;
+  }) => {
+    if (!templateId) return;
     const { error } = await supabase.from("venue_map_references").insert({
       layout_template_id: templateId,
-      image_url: signed.signedUrl,
-      original_filename: file.name,
+      ...row,
     });
     if (error) toast.error(error.message);
-    else { toast.success("Reference imported"); qc.invalidateQueries({ queryKey: ["template-refs", templateId] }); }
+    else {
+      toast.success("Reference imported");
+      qc.invalidateQueries({ queryKey: ["template-refs", templateId] });
+    }
+  };
+
+  const uploadReference = async (file: File) => {
+    if (!templateId || !orgId) return;
+    const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+    if (isPdf) {
+      // Open the page-picker dialog; actual upload happens after page is chosen.
+      setPendingPdf(file);
+      return;
+    }
+    // Image path
+    setUploadingRef(true);
+    try {
+      const size = await loadImageNaturalSize(file).catch(() => ({ width: 1200, height: 900 }));
+      const key = `${orgId}/refs/${crypto.randomUUID()}-${file.name}`;
+      const { error: upErr } = await supabase.storage.from("venue-assets").upload(key, file);
+      if (upErr) { toast.error(upErr.message); return; }
+      const { data: signed } = await supabase.storage.from("venue-assets").createSignedUrl(key, 60 * 60 * 24 * 365);
+      if (!signed) { toast.error("Failed to sign URL"); return; }
+      await insertReferenceRow({
+        image_url: signed.signedUrl,
+        original_filename: file.name,
+        source_file_url: signed.signedUrl,
+        source_mime_type: file.type || "image/*",
+        source_page: null,
+        natural_width: size.width,
+        natural_height: size.height,
+      });
+    } finally {
+      setUploadingRef(false);
+    }
+  };
+
+  const handlePdfPageChosen = async (pageNumber: number) => {
+    if (!pendingPdf || !templateId || !orgId) return;
+    const file = pendingPdf;
+    setPendingPdf(null);
+    setUploadingRef(true);
+    const toastId = toast.loading("Rendering PDF page…");
+    try {
+      const pdf = await loadPdf(file);
+      const { blob, width, height } = await renderPdfPageToBlob(pdf, pageNumber, 2);
+      const uid = crypto.randomUUID();
+      const baseName = file.name.replace(/\.pdf$/i, "");
+      const pngKey = `${orgId}/refs/${uid}-${baseName}-p${pageNumber}.png`;
+      const pdfKey = `${orgId}/refs/${uid}-${file.name}`;
+      const [{ error: pngErr }, { error: pdfErr }] = await Promise.all([
+        supabase.storage.from("venue-assets").upload(pngKey, blob, { contentType: "image/png" }),
+        supabase.storage.from("venue-assets").upload(pdfKey, file, { contentType: "application/pdf" }),
+      ]);
+      if (pngErr || pdfErr) { toast.error((pngErr ?? pdfErr)!.message, { id: toastId }); return; }
+      const [pngSigned, pdfSigned] = await Promise.all([
+        supabase.storage.from("venue-assets").createSignedUrl(pngKey, 60 * 60 * 24 * 365),
+        supabase.storage.from("venue-assets").createSignedUrl(pdfKey, 60 * 60 * 24 * 365),
+      ]);
+      if (!pngSigned.data || !pdfSigned.data) { toast.error("Failed to sign URLs", { id: toastId }); return; }
+      await insertReferenceRow({
+        image_url: pngSigned.data.signedUrl,
+        original_filename: file.name,
+        source_file_url: pdfSigned.data.signedUrl,
+        source_mime_type: "application/pdf",
+        source_page: pageNumber,
+        natural_width: width,
+        natural_height: height,
+      });
+      toast.dismiss(toastId);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "PDF render failed", { id: toastId });
+    } finally {
+      setUploadingRef(false);
+    }
   };
 
   const updateRef = async (id: string, patch: Partial<{ visible: boolean; locked: boolean; opacity: number; scale: number; rotation: number; offset_x: number; offset_y: number; sort_order: number }>) => {
@@ -348,8 +431,13 @@ function BoothsPage() {
               <span className="text-xs">Snap</span>
             </div>
             <label className="ml-auto text-xs">
-              <input type="file" accept="image/*,application/pdf" className="hidden" onChange={(e) => e.target.files?.[0] && uploadReference(e.target.files[0])} id="ref-upload" />
-              <Button size="sm" variant="outline" asChild><label htmlFor="ref-upload"><Map className="mr-1 h-4 w-4" /> Import venue map</label></Button>
+              <input type="file" accept="image/png,image/jpeg,image/jpg,image/webp,application/pdf" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadReference(f); e.target.value = ""; }} id="ref-upload" disabled={uploadingRef} />
+              <Button size="sm" variant="outline" asChild disabled={uploadingRef}>
+                <label htmlFor="ref-upload" className="cursor-pointer">
+                  {uploadingRef ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Map className="mr-1 h-4 w-4" />}
+                  Import venue map
+                </label>
+              </Button>
             </label>
           </div>
 
@@ -373,12 +461,16 @@ function BoothsPage() {
               </defs>
               <rect width={canvasW} height={canvasH} fill="url(#grid)" />
 
-              {/* Layer 2: reference images */}
-              {refLayers.filter((r) => r.visible).map((r) => (
-                <g key={r.id} transform={`translate(${r.offset_x} ${r.offset_y}) rotate(${r.rotation}) scale(${r.scale})`} opacity={r.opacity}>
-                  <image href={r.image_url} x={0} y={0} width={800} height={600} preserveAspectRatio="xMidYMid meet" />
-                </g>
-              ))}
+              {/* Layer 2: reference images (rendered at their natural pixel size, then transformed) */}
+              {refLayers.filter((r) => r.visible).map((r) => {
+                const w = Number(r.natural_width) || 800;
+                const h = Number(r.natural_height) || 600;
+                return (
+                  <g key={r.id} transform={`translate(${r.offset_x} ${r.offset_y}) rotate(${r.rotation}) scale(${r.scale})`} opacity={r.opacity} pointerEvents="none">
+                    <image href={r.image_url} x={0} y={0} width={w} height={h} preserveAspectRatio="xMidYMid meet" />
+                  </g>
+                );
+              })}
 
               {/* Layer 4: booths */}
               {activeBooths.map((b) => {
@@ -433,24 +525,48 @@ function BoothsPage() {
             <p className="font-display text-sm font-semibold">Reference layer</p>
             {refLayers.length === 0 ? (
               <p className="text-xs text-muted-foreground">Import a sketch, PDF, or blueprint above to trace over.</p>
-            ) : refLayers.map((r) => (
-              <div key={r.id} className="rounded-md border border-border/60 p-2 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="truncate text-xs font-medium">{r.original_filename ?? "Reference"}</span>
-                  <Button size="icon" variant="ghost" onClick={() => deleteRef(r.id)}><Trash2 className="h-3 w-3" /></Button>
+            ) : refLayers.map((r) => {
+              const isPdf = r.source_mime_type === "application/pdf";
+              return (
+                <div key={r.id} className="rounded-md border border-border/60 p-2 space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex min-w-0 items-center gap-2">
+                      {isPdf ? <FileText className="h-3.5 w-3.5 shrink-0 text-muted-foreground" /> : <ImageIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />}
+                      <span className="truncate text-xs font-medium">{r.original_filename ?? "Reference"}</span>
+                      {isPdf && r.source_page && <Badge variant="outline" className="shrink-0 text-[10px]">p{r.source_page}</Badge>}
+                    </div>
+                    <div className="flex shrink-0 items-center">
+                      {r.source_file_url && (
+                        <Button size="icon" variant="ghost" asChild title="Download original">
+                          <a href={r.source_file_url} target="_blank" rel="noreferrer"><Download className="h-3 w-3" /></a>
+                        </Button>
+                      )}
+                      <Button size="icon" variant="ghost" onClick={() => deleteRef(r.id)} title="Delete layer"><Trash2 className="h-3 w-3" /></Button>
+                    </div>
+                  </div>
+                  {r.natural_width && r.natural_height && (
+                    <p className="text-[10px] text-muted-foreground">{r.natural_width} × {r.natural_height}px</p>
+                  )}
+                  <label className="flex items-center justify-between text-xs">Visible <Switch checked={r.visible} onCheckedChange={(v) => updateRef(r.id, { visible: v })} /></label>
+                  <label className="flex items-center justify-between text-xs">Locked <Switch checked={r.locked} onCheckedChange={(v) => updateRef(r.id, { locked: v })} /></label>
+                  <div><Label className="text-xs">Opacity</Label><Slider value={[Number(r.opacity) * 100]} max={100} step={5} onValueChange={([v]) => updateRef(r.id, { opacity: v / 100 })} /></div>
+                  <div><Label className="text-xs">Scale</Label><Slider value={[Number(r.scale) * 100]} min={10} max={300} step={5} onValueChange={([v]) => updateRef(r.id, { scale: v / 100 })} /></div>
+                  <div><Label className="text-xs">Rotation</Label><Slider value={[Number(r.rotation)]} min={-180} max={180} step={5} onValueChange={([v]) => updateRef(r.id, { rotation: v })} /></div>
                 </div>
-                <label className="flex items-center justify-between text-xs">Visible <Switch checked={r.visible} onCheckedChange={(v) => updateRef(r.id, { visible: v })} /></label>
-                <label className="flex items-center justify-between text-xs">Locked <Switch checked={r.locked} onCheckedChange={(v) => updateRef(r.id, { locked: v })} /></label>
-                <div><Label className="text-xs">Opacity</Label><Slider value={[Number(r.opacity) * 100]} max={100} step={5} onValueChange={([v]) => updateRef(r.id, { opacity: v / 100 })} /></div>
-                <div><Label className="text-xs">Scale</Label><Slider value={[Number(r.scale) * 100]} min={20} max={300} step={5} onValueChange={([v]) => updateRef(r.id, { scale: v / 100 })} /></div>
-                <div><Label className="text-xs">Rotation</Label><Slider value={[Number(r.rotation)]} min={-180} max={180} step={5} onValueChange={([v]) => updateRef(r.id, { rotation: v })} /></div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
 
       {isLoading && <p className="text-sm text-muted-foreground">Loading layout…</p>}
+
+      <PdfPagePicker
+        file={pendingPdf}
+        open={!!pendingPdf}
+        onClose={() => setPendingPdf(null)}
+        onPick={handlePdfPageChosen}
+      />
     </div>
   );
 }
