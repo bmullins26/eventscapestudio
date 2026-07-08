@@ -348,3 +348,178 @@ function EventList({
     </div>
   );
 }
+
+function EditEventSheet({ target, venues, onClose, onSaved }: {
+  target: EventRow | null;
+  venues: { id: string; name: string }[];
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const updateFn = useServerFn(updateEvent);
+  const deleteFn = useServerFn(deleteEvent);
+  const [form, setForm] = useState<{
+    name: string; description: string; status: string;
+    starts_at: string; ends_at: string; venue_id: string;
+    applications_open: boolean; is_public: boolean; slug: string;
+  } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  useEffect(() => {
+    if (!target) { setForm(null); return; }
+    let cancelled = false;
+    void supabase.from("events").select("name, description, status, starts_at, ends_at, venue_id, applications_open, is_public, slug").eq("id", target.id).maybeSingle().then(({ data }) => {
+      if (cancelled || !data) return;
+      setForm({
+        name: data.name ?? "",
+        description: data.description ?? "",
+        status: data.status ?? "draft",
+        starts_at: data.starts_at ? data.starts_at.slice(0, 10) : "",
+        ends_at: data.ends_at ? data.ends_at.slice(0, 10) : "",
+        venue_id: data.venue_id ?? "",
+        applications_open: !!data.applications_open,
+        is_public: !!data.is_public,
+        slug: data.slug ?? "",
+      });
+    });
+    return () => { cancelled = true; };
+  }, [target]);
+
+  const open = !!target;
+  const save = async () => {
+    if (!target || !form) return;
+    if (!form.name.trim()) { toast.error("Name is required"); return; }
+    if (form.is_public && !/^[a-z0-9-]+$/.test(form.slug)) { toast.error("Slug must be lowercase letters, numbers, or dashes"); return; }
+    setBusy(true);
+    try {
+      await updateFn({ data: {
+        eventId: target.id,
+        patch: {
+          name: form.name.trim(),
+          description: form.description || null,
+          status: form.status as "draft" | "published" | "in_progress" | "completed" | "cancelled" | "archived",
+          starts_at: form.starts_at || null,
+          ends_at: form.ends_at || null,
+          venue_id: form.venue_id || null,
+          applications_open: form.applications_open,
+          is_public: form.is_public,
+          slug: form.slug || undefined,
+        },
+      }});
+      toast.success("Event updated");
+      onSaved();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to update");
+    } finally { setBusy(false); }
+  };
+
+  const remove = async () => {
+    if (!target) return;
+    setBusy(true);
+    try {
+      await deleteFn({ data: { eventId: target.id } });
+      toast.success("Event deleted");
+      setConfirmDelete(false);
+      onSaved();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Cannot delete");
+    } finally { setBusy(false); }
+  };
+
+  return (
+    <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
+      <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+        <SheetHeader>
+          <SheetTitle>Edit event</SheetTitle>
+          <SheetDescription>Update details, dates, venue, and public application settings.</SheetDescription>
+        </SheetHeader>
+        {!form ? (
+          <p className="mt-8 text-sm text-muted-foreground">Loading…</p>
+        ) : (
+          <div className="mt-6 space-y-4">
+            <div className="space-y-1">
+              <Label>Name</Label>
+              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+            </div>
+            <div className="space-y-1">
+              <Label>Description</Label>
+              <Textarea rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1"><Label>Starts</Label><Input type="date" value={form.starts_at} onChange={(e) => setForm({ ...form, starts_at: e.target.value })} /></div>
+              <div className="space-y-1"><Label>Ends</Label><Input type="date" value={form.ends_at} onChange={(e) => setForm({ ...form, ends_at: e.target.value })} /></div>
+            </div>
+            <div className="space-y-1">
+              <Label>Status</Label>
+              <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="draft">Draft</SelectItem>
+                  <SelectItem value="published">Published</SelectItem>
+                  <SelectItem value="in_progress">In progress</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                  <SelectItem value="archived">Archived</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label>Venue</Label>
+              <Select value={form.venue_id || "__none"} onValueChange={(v) => setForm({ ...form, venue_id: v === "__none" ? "" : v })}>
+                <SelectTrigger><SelectValue placeholder="No venue" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none">No venue</SelectItem>
+                  {venues.map((v) => <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center justify-between rounded-lg border border-border/60 px-3 py-2">
+              <div>
+                <p className="text-sm font-medium">Accept applications</p>
+                <p className="text-xs text-muted-foreground">Vendors can submit applications for this event.</p>
+              </div>
+              <Switch checked={form.applications_open} onCheckedChange={(v) => setForm({ ...form, applications_open: v })} />
+            </div>
+            <div className="flex items-center justify-between rounded-lg border border-border/60 px-3 py-2">
+              <div>
+                <p className="text-sm font-medium">Public application page</p>
+                <p className="text-xs text-muted-foreground">Share <code className="text-[11px]">/apply/{form.slug || "…"}</code> with vendors.</p>
+              </div>
+              <Switch checked={form.is_public} onCheckedChange={(v) => setForm({ ...form, is_public: v })} />
+            </div>
+            {form.is_public && (
+              <div className="space-y-1">
+                <Label>Public URL slug</Label>
+                <Input value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-") })} placeholder="spring-market-2026" />
+              </div>
+            )}
+          </div>
+        )}
+        <SheetFooter className="mt-6 flex-col gap-2 sm:flex-row sm:justify-between">
+          <Button variant="ghost" className="text-destructive" onClick={() => setConfirmDelete(true)} disabled={busy || !form}>
+            <Trash2 className="mr-2 h-4 w-4" /> Delete
+          </Button>
+          <div className="flex gap-2">
+            <Button variant="ghost" onClick={onClose} disabled={busy}>Cancel</Button>
+            <Button onClick={save} disabled={busy || !form}>Save changes</Button>
+          </div>
+        </SheetFooter>
+      </SheetContent>
+
+      <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this event?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes the event and its booth layout. Events with applications or payments cannot be deleted — archive them instead.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={remove} disabled={busy} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </Sheet>
+  );
+}
