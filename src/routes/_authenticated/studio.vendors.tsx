@@ -433,12 +433,28 @@ function VendorsPage() {
               </section>
             </div>
           )}
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => { setEditing(null); setScanBanner(null); }}>Cancel</Button>
-            <Button onClick={saveVendor}>Save</Button>
+          <DialogFooter className="gap-2 sm:gap-2 flex-col sm:flex-row">
+            <Button variant="ghost" onClick={() => { setEditing(null); setScanBanner(null); }}>Close</Button>
+            {!editing?.id && (
+              <Button variant="outline" onClick={() => { toast.success("Draft saved. Continue later."); setEditing(null); setScanBanner(null); }}>
+                Save & continue later
+              </Button>
+            )}
+            <Button onClick={saveVendor} disabled={saving}>
+              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <DuplicateMatchDialog
+        open={!!duplicates}
+        matches={duplicates ?? []}
+        onCancel={() => setDuplicates(null)}
+        onUseExisting={(id) => { setDuplicates(null); void persistSave({ matchedProfileId: id }); }}
+        onCreateAnyway={() => { setDuplicates(null); void persistSave({ allowDuplicate: true }); }}
+      />
     </div>
   );
 }
