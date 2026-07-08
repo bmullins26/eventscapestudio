@@ -151,7 +151,7 @@ function EventLibraryPage() {
             <Button variant="outline" onClick={() => setTab("templates")}>
               <LayoutTemplate className="mr-2 h-4 w-4" /> From template
             </Button>
-            <Button>
+            <Button onClick={() => setCreating(true)}>
               <Plus className="mr-2 h-4 w-4" /> New event
             </Button>
           </div>
