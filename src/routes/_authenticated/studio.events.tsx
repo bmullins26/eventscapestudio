@@ -58,6 +58,27 @@ function EventLibraryPage() {
   const [cloneAsTemplate, setCloneAsTemplate] = useState(false);
   const [cloneName, setCloneName] = useState("");
   const [busy, setBusy] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [newEvent, setNewEvent] = useState<{ venueId: string; templateId: string; name: string; startsAt: string; endsAt: string }>({ venueId: "", templateId: "", name: "", startsAt: "", endsAt: "" });
+  const createFromTpl = useServerFn(createEventFromTemplate);
+
+  const { data: venues = [] } = useQuery({
+    queryKey: ["events-venues-select", activeOrg?.organizationId],
+    enabled: !!activeOrg?.organizationId,
+    queryFn: async () => {
+      const { data } = await supabase.from("venues").select("id, name").eq("organization_id", activeOrg!.organizationId).is("archived_at", null).order("name");
+      return data ?? [];
+    },
+  });
+
+  const { data: templatesForVenue = [] } = useQuery({
+    queryKey: ["events-templates-select", newEvent.venueId],
+    enabled: !!newEvent.venueId,
+    queryFn: async () => {
+      const { data } = await supabase.from("layout_templates").select("id, name").eq("venue_id", newEvent.venueId).order("name");
+      return data ?? [];
+    },
+  });
 
   const { data: events = [], isLoading } = useQuery({
     queryKey: ["studio-events", activeOrg?.organizationId],
