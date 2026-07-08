@@ -19,6 +19,7 @@ export interface AuthState {
   roles: AppRole[];
   organizations: OrgMembership[];
   activeOrg: OrgMembership | null;
+  activeEventId: string | null;
   isAuthenticated: boolean;
   hasRole: (role: AppRole) => boolean;
   hasAnyRole: (roles: AppRole[]) => boolean;
@@ -26,6 +27,7 @@ export interface AuthState {
   primaryRole: AppRole | null;
   primarySurface: AppSurface | null;
   setActiveOrgId: (id: string) => void;
+  setActiveEventId: (id: string | null) => Promise<void>;
   refresh: () => Promise<void>;
   signOut: () => Promise<void>;
 }
