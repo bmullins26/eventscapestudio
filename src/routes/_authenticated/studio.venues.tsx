@@ -311,7 +311,7 @@ function VenueDetailSheet({ venueId, onClose }: { venueId: string | null; onClos
                   docs.map((d) => (
                     <div key={d.id} className="card-soft flex items-center gap-3 px-4 py-3">
                       <FileText className="h-5 w-5 text-muted-foreground" />
-                      <div className="flex-1"><p className="font-medium">{d.title}</p></div>
+                      <div className="flex-1"><p className="font-medium">{d.name}</p></div>
                     </div>
                   ))}
               </TabsContent>
