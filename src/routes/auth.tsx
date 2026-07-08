@@ -19,23 +19,24 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
+function slugify(name: string) {
+  const base = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "").slice(0, 40) || "studio";
+  return `${base}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
 function AuthPage() {
   const navigate = useNavigate();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
-  const [role, setRole] = useState<"organizer" | "vendor">("organizer");
+  const [orgName, setOrgName] = useState("");
   const [loading, setLoading] = useState(false);
 
-  async function assignRoleAndOrg(userId: string, wantRole: "organizer" | "vendor", name: string) {
-    await supabase.from("user_roles").upsert({ user_id: userId, role: wantRole }, { onConflict: "user_id,role" });
-    if (wantRole === "organizer") {
-      const orgName = name ? `${name.split(" ")[0]}'s Studio` : "My Studio";
-      await supabase.from("organizations").insert({ name: orgName, owner_id: userId });
-    } else {
-      await supabase.from("vendors").insert({ business_name: name || "New Vendor", user_id: userId, email });
-    }
+  async function bootstrapOrganizer(userId: string, name: string, orgLabel: string) {
+    await supabase.from("user_roles").upsert({ user_id: userId, role: "organizer" }, { onConflict: "user_id,role" });
+    const label = orgLabel.trim() || (name ? `${name.split(" ")[0]}'s Studio` : "My Studio");
+    await supabase.from("organizations").insert({ name: label, slug: slugify(label), owner_id: userId });
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -49,7 +50,7 @@ function AuthPage() {
         });
         if (error) throw error;
         if (data.user) {
-          await assignRoleAndOrg(data.user.id, role, fullName);
+          await bootstrapOrganizer(data.user.id, fullName, orgName);
         }
         toast.success("Welcome to EventScape Studio!");
         navigate({ to: "/dashboard" });
