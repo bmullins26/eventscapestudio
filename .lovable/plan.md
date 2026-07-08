@@ -1,123 +1,80 @@
-## Phase 6 — Touch-first Venue Designer (Desktop / Tablet / Phone)
+## Vendor architecture fix + org CRM foundation
 
-Make the Booth Layout Builder work on all three form factors with a shared canvas, pointer-based input, responsive chrome, and gesture support. Same data model everywhere — no sync/convert steps. Split into small, verifiable steps.
+### Root cause of the RLS failure
 
-### 6.1 Canvas input rewrite (pointer + gestures)
+Current `vendor_profiles` INSERT policy passes only when either:
+- `user_id = auth.uid()` (fails — organizer-created vendors have `user_id = null`), **or**
+- the caller owns *any* organization (fails for staff members and even for org owners on some paths since the vendor row's org isn't referenced).
 
-- Replace ad-hoc mouse handling in `studio.booths.tsx` with a single `useCanvasInput` hook using **Pointer Events** (unifies mouse / touch / pen).
-- Add gesture engine (`@use-gesture/react`) handling:
-  - Pinch → zoom around focal point
-  - Two-finger drag → pan
-  - Two-finger rotate → rotate selection (tablet)
-  - Single tap → select
-  - Double tap → edit / zoom-to-object
-  - Long press (500 ms) → context menu
-  - Three-finger tap → undo, three-finger swipe → redo
-- Wheel + trackpad pinch preserved on desktop; Ctrl/Shift/Alt modifiers preserved.
-- `touch-action: none` on canvas; passive-listener safe.
+Staff/permission-based creation is not covered, and duplicate/link creation happens as two independent client inserts, so a partial failure leaves an orphan `vendor_profiles` row.
 
-### 6.2 Selection model
+### Fix (server-side, single transaction)
 
-- New `useSelection` Zustand store: `ids: Set<string>`, `mode: 'single' | 'multi' | 'lasso'`.
-- Desktop: Click / Ctrl+Click / Shift+Click / drag-rectangle.
-- Touch: Tap / Long-press enters multi-select / Lasso tool.
-- Larger hit-slop on touch (`pointerType !== 'mouse'` → +12 px).
+1. **New server function `createVendor`** (`src/lib/vendors.functions.ts`) with `requireSupabaseAuth`:
+   - Input: `{ organizationId, profile: {...}, link: {...}, allowDuplicate?: boolean, matchedProfileId?: string }`.
+   - Verify caller is an org member with `has_permission(user, org, 'vendor.create')` (fallback to `is_org_member` when the perm key isn't seeded).
+   - **Dedupe scan** by exact `business_name`, `email`, `phone`, `website` (case-insensitive, normalized) via the auth'd client scoped to `organization_vendors → vendor_profiles`. Returns `{ status: 'duplicates', matches: [...] }` on hits unless `allowDuplicate` is true or `matchedProfileId` is passed.
+   - `matchedProfileId` path: reuse existing profile, just create the `organization_vendors` link (no new profile row).
+   - Otherwise: load `supabaseAdmin` inside the handler and run **profile insert + link insert** as one transaction via a new SQL function `public.create_vendor_with_link(...)` (SECURITY DEFINER, transactional). Rolls back both rows if either fails.
+   - Returns `{ status: 'created' | 'linked', vendorId, organizationVendorId }`.
 
-### 6.3 Handles & touch targets
+2. **New RPC** `public.create_vendor_with_link(_org_id uuid, _profile jsonb, _link jsonb, _existing_profile_id uuid default null)`:
+   - SECURITY DEFINER, `SET search_path=public`.
+   - Re-checks `is_org_member(auth.uid(), _org_id)` inside the function body (defense in depth) — server fn already verified, but the function is safe against misuse.
+   - Inserts vendor_profiles when `_existing_profile_id IS NULL`; otherwise uses that id.
+   - Inserts `organization_vendors` row.
+   - Wrapped in `BEGIN … EXCEPTION WHEN OTHERS THEN RAISE` so a failure rolls back the whole call.
 
-- Resize / rotate handles: 12 px mouse, 28 px touch; rotation handle offset +16 px on touch.
-- All toolbar buttons ≥ 44×44 (`min-h-11 min-w-11`), ≥ 48 on `pointer:coarse`.
-- Aria-labels on every icon-only button.
+3. **Tighten RLS on `vendor_profiles`**:
+   - Drop the loose "org members insert" policy (unbounded org-owner check).
+   - Keep owner self-service (`user_id = auth.uid()`) and org-member read/update via existing helper.
+   - Add narrow INSERT policy `TO authenticated` with `WITH CHECK (user_id = auth.uid())` for the self-signup case only; **all organizer-created rows go through the SECURITY DEFINER RPC**, so no permissive org-side INSERT policy is needed anymore.
+   - Audit `is_org_member`, `has_role`, `has_permission`, `vendor_profile_belongs_to_org_member`, `vendor_profile_owned_by` — already `SECURITY DEFINER STABLE SET search_path=public`, no recursion. No changes.
 
-### 6.4 Responsive chrome
+4. **Client rewrite (`src/routes/_authenticated/studio.vendors.tsx`)**:
+   - Replace the two direct `supabase.from("vendor_profiles").insert(...)` + `organization_vendors.insert(...)` calls with a single `useServerFn(createVendor)` call.
+   - On `status === 'duplicates'`: open a shadcn `AlertDialog` listing matches with three actions: **Use existing vendor** (calls `createVendor` again with `matchedProfileId`), **Create new vendor anyway** (`allowDuplicate: true`), **Cancel**.
+   - Existing update path (`.update(...).eq("id", row.vendor_profile_id)`) stays — organizers can update linked profiles via existing RLS.
+   - Success toast + `qc.invalidateQueries({ queryKey: ["org-vendors", orgId] })`.
 
-`useDeviceClass()` hook (media queries + `pointer:coarse`):
+5. **Draft vendor profiles**:
+   - Client-side localStorage draft keyed `eventscape.vendor-draft.<orgId>` for the intake form; auto-save on every change; **Save & Close** and **Continue Later** buttons; **Discard draft** in overflow menu.
+   - No server-side draft table (matches "permanent profile" rule — drafts are only in the browser until Save creates the real row).
 
-- **Desktop (≥1024 px, fine pointer):** top toolbar, right docked property sidebar, left layers panel.
-- **Tablet:** floating collapsible toolbar (draggable, edge-dockable); property panel = shadcn `Sheet` slide-over; layers in second sheet.
-- **Phone (<768 px):** FAB with expandable tool menu; property panel = `Drawer` (Vaul) bottom sheet with peek/half/full snap points.
-- Safe-area insets; chrome never overlaps working area.
+6. **Permission seed**:
+   - Migration inserts `('vendor.create')` into `public.permissions` if the table is used; safe upsert. Existing `has_permission` returns true for owners and super_admin regardless.
 
-### 6.5 Phone-optimized workflows
+### Part 2 — Vendor CRM (foundation only, UI in a later pass)
 
-- Booth search sheet → cameras to booth.
-- Tap booth → bottom sheet: status cycler, lock/unlock, assign vendor, notes.
-- AI Assist reachable from FAB.
-- Complex creation tools live behind a "More tools" FAB submenu.
+Only structural pieces here so the intake work already writes CRM-ready data. Full UI (timeline pages, per-vendor documents view, portal linkage) is a separate ticket.
 
-### 6.6 Snapping & drag feel
+1. **`vendor_timeline_events` table** (`vendor_profile_id`, `organization_id`, `event_type` enum: `note | application | invitation | payment | status_change | document | assignment`, `payload jsonb`, `actor_user_id`, `occurred_at`), RLS scoped to `is_org_member(auth.uid(), organization_id)`, GRANTs to `authenticated` + `service_role`.
+2. **Backfill triggers**:
+   - On `applications` insert/update → timeline row (`application`, `status_change`).
+   - On `payments` insert → timeline row (`payment`).
+   - On `vendor_invitations` insert → timeline row (`invitation`).
+   - On `organization_vendors` insert → timeline row (`assignment`).
+3. **`vendor_profile_documents` table** already effectively lives as columns on `vendor_profiles` (insurance, food license, tax, resale, photos) — leave as-is for now; add a follow-up ticket for a normalized doc table if requested. Events reference the profile-level docs by joining through `organization_vendors → vendor_profiles`, so returning vendors don't re-upload.
 
-- Reuse existing grid/booth snap logic; rAF-driven drag; commit on `pointerup`.
-- Snap guides only while dragging.
-- Haptic (`navigator.vibrate(10)`) on snap + long-press open (touch only).
+### Files touched / added
 
-### 6.7 Performance
-
-- Virtualized SVG rendering with viewport culling — target 500+ booths at 60 fps on iPad.
-- Debounce reference re-renders; `React.memo` per object.
-- Rendered-PDF PNG capped at 4096 px, downsample above.
-- Batch pointermove through single rAF (`useLatestPointer`).
-
-### 6.8 Undo / redo
-
-- Command stack in Zustand (add/move/resize/rotate/delete/property-edit).
-- Cmd/Ctrl+Z, Shift+Cmd/Ctrl+Z on desktop; three-finger tap/swipe on touch; toolbar buttons everywhere.
-
-### 6.9 Touch context menu
-
-- Right-click (desktop) and long-press (touch) both open the **same** shadcn `ContextMenu` — one action list shared across input modes.
-- Menu items sized for touch (≥44 px rows).
-
-### 6.10 Touch-first interaction principles
-
-**Stylus:**
-- Detect `pointerType === 'pen'`; treat as high-precision pointer.
-- Palm rejection: ignore concurrent `touch` pointers while a `pen` pointer is active for ~200 ms after last pen event.
-- Snapping threshold tightened for pen (2 px vs 8 px on finger).
-- Pressure captured in state (unused today, wired for future draw tools).
-
-**Drag vs pan disambiguation (critical UX rule):**
-- If one-finger pointerdown hits a **selected** object → drag object.
-- If one-finger pointerdown hits **empty canvas** → pan.
-- If pointerdown hits **unselected** object → select on down, drag on move (>4 px threshold), tap-to-select if no movement.
-- Two fingers → **always** pan/zoom, regardless of what's underneath. Cancels any in-progress single-finger drag.
-
-**Field Mode vs Edit Mode toggle (top-level app mode, persisted per-user in `user_org_prefs`):**
-
-- **Field Mode** — read-mostly, phone/tablet in the field:
-  - Booth search, assign vendor, check-in vendor, payment status, booth notes, booth photos, directions.
-  - Advanced tools (create/delete/trace/AI import/layers/relationships/template editing) hidden.
-  - Default mode on phone.
-- **Edit Mode** — full designer:
-  - All Phase 1–5 tools available.
-  - Default mode on tablet + desktop.
-- Toggle in top-right; mode persists across devices via existing prefs table.
-
-**Device continuity:**
-- Single canonical data model already lives in Supabase (`layout_templates`, `layout_template_booths`, `layout_template_objects`, `venue_map_references`, `layout_template_relationships`).
-- No local-only state that would break cross-device editing; all edits go through server functions on save.
-- Autosave debounce (2 s) and explicit Save button both write the same payload — desktop → tablet → phone flow "just works" on reload.
-
-### 6.11 Files touched / added
-
-- `src/routes/_authenticated/studio.booths.tsx` — swap input layer, wire chrome + mode gate.
-- `src/components/booth-builder/canvas/` — new: `CanvasStage.tsx`, `useCanvasInput.ts`, `useSelection.ts`, `useHistory.ts`, `useDeviceClass.ts`, `useAppMode.ts`, `hitTest.ts`, `snapping.ts`, `palmRejection.ts`.
-- `src/components/booth-builder/chrome/` — new: `Toolbar.desktop.tsx`, `Toolbar.floating.tsx`, `Toolbar.fab.tsx`, `PropertyPanel.docked.tsx`, `PropertyPanel.sheet.tsx`, `PropertyPanel.drawer.tsx`, `LayersPanel.tsx`, `ModeSwitch.tsx`, `CanvasContextMenu.tsx`.
-- `src/components/booth-builder/field/` — new: `FieldModeShell.tsx`, `BoothSearchSheet.tsx`, `AssignVendorSheet.tsx`, `CheckInSheet.tsx`, `PaymentStatusSheet.tsx`, `BoothPhotosSheet.tsx`, `DirectionsSheet.tsx`.
-- `package.json` — add `@use-gesture/react`, `zustand`, `vaul`.
+- `supabase/migrations/*` — new SQL: RPC `create_vendor_with_link`, RLS tightening on `vendor_profiles`, `vendor_timeline_events` table + trigger functions + GRANTs, optional `permissions` seed.
+- `src/lib/vendors.functions.ts` — new `createVendor` server function (uses `requireSupabaseAuth` + admin import inside handler for the transactional RPC).
+- `src/routes/_authenticated/studio.vendors.tsx` — replace inline inserts with server fn; wire duplicate dialog; add draft persistence.
+- `src/components/vendors/DuplicateMatchDialog.tsx` — new.
+- `src/components/vendors/useVendorDraft.ts` — new (localStorage draft hook).
 
 ### Non-goals
 
-- No offline / PWA / local sync (future).
-- No native app.
-- No schema, server function, RLS, or vendor-table changes.
-- No new AI features beyond exposing existing Assist through FAB.
+- No full CRM UI (timeline page, aggregated views) in this pass — only the schema + triggers so data starts collecting.
+- No vendor portal account creation flow changes.
+- No document upload UX rework.
+- No changes to booth builder, applications page, or events.
 
-### Rollout
+### Rollout order
 
-1. 6.1 pointer input + 6.3 targets + 6.4 chrome + 6.9 shared context menu — usable on tablet/phone.
-2. 6.2 selection + 6.10 stylus/palm/drag-vs-pan + Field/Edit mode toggle.
-3. 6.5 phone flows / Field Mode sheets.
-4. 6.6 snap polish, 6.7 perf, 6.8 undo-redo.
-
-Each sub-step ships independently and typechecks clean.
+1. Migration: RPC + RLS tightening.
+2. `createVendor` server fn + client rewrite + duplicate dialog.
+3. Draft persistence.
+4. `vendor_timeline_events` table + triggers.
+5. Verify by creating a vendor as a non-owner staff member and as an owner; assert no `vendor_profiles` orphan on forced failure.
