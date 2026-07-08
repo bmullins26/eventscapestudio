@@ -142,6 +142,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       roles,
       organizations,
       activeOrg,
+      activeEventId,
       isAuthenticated: !!session,
       hasRole,
       hasAnyRole: (list) => list.some((r) => roles.includes(r)),
@@ -149,10 +150,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       primaryRole,
       primarySurface: roleToSurface(primaryRole),
       setActiveOrgId,
+      setActiveEventId,
       refresh,
       signOut,
     };
-  }, [session, roles, organizations, activeOrgId, loading, refresh, signOut]);
+  }, [session, roles, organizations, activeOrgId, activeEventId, loading, refresh, signOut, setActiveEventId]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
