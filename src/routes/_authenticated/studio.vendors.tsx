@@ -9,6 +9,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -42,7 +43,28 @@ function VendorsPage() {
   const qc = useQueryClient();
   const orgId = activeOrg?.organizationId;
   const [search, setSearch] = useState("");
-  const [editing, setEditing] = useState<{ id?: string; business_name: string; contact_name: string; email: string; phone: string } | null>(null);
+  const [editing, setEditing] = useState<{
+    id?: string;
+    business_name: string;
+    contact_name: string;
+    email: string;
+    phone: string;
+    website: string;
+    business_description: string;
+    product_categories: string;
+    emergency_contact_name: string;
+    emergency_contact_phone: string;
+    insurance_doc_url: string;
+    tax_doc_url: string;
+    food_license_url: string;
+    resale_cert_url: string;
+  } | null>(null);
+  const emptyEditing = {
+    business_name: "", contact_name: "", email: "", phone: "",
+    website: "", business_description: "", product_categories: "",
+    emergency_contact_name: "", emergency_contact_phone: "",
+    insurance_doc_url: "", tax_doc_url: "", food_license_url: "", resale_cert_url: "",
+  };
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["vendor-directory", orgId],
@@ -50,7 +72,7 @@ function VendorsPage() {
     queryFn: async (): Promise<VendorRow[]> => {
       const { data, error } = await supabase
         .from("organization_vendors")
-        .select("id, vendor_profile_id, account_status, is_favorite, years_participated, total_paid, vendor_profiles(business_name, contact_name, email, phone)")
+        .select("id, vendor_profile_id, account_status, is_favorite, years_participated, total_paid, vendor_profiles(business_name, contact_name, email, phone, website, business_description, product_categories, emergency_contact_name, emergency_contact_phone, insurance_doc_url, tax_doc_url, food_license_url, resale_cert_url)")
         .eq("organization_id", orgId!)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -70,23 +92,31 @@ function VendorsPage() {
   const saveVendor = async () => {
     if (!editing || !orgId) return;
     if (!editing.business_name.trim()) { toast.error("Business name required"); return; }
+    const categories = editing.product_categories.split(",").map((s) => s.trim()).filter(Boolean);
+    const profilePayload = {
+      business_name: editing.business_name.trim(),
+      contact_name: editing.contact_name || null,
+      email: editing.email || null,
+      phone: editing.phone || null,
+      website: editing.website || null,
+      business_description: editing.business_description || null,
+      product_categories: categories,
+      emergency_contact_name: editing.emergency_contact_name || null,
+      emergency_contact_phone: editing.emergency_contact_phone || null,
+      insurance_doc_url: editing.insurance_doc_url || null,
+      tax_doc_url: editing.tax_doc_url || null,
+      food_license_url: editing.food_license_url || null,
+      resale_cert_url: editing.resale_cert_url || null,
+    };
     if (editing.id) {
-      // Update via vendor_profiles
       const row = rows.find((r) => r.id === editing.id);
       if (!row) return;
-      const { error } = await supabase.from("vendor_profiles").update({
-        business_name: editing.business_name.trim(),
-        contact_name: editing.contact_name || null,
-        email: editing.email || null,
-        phone: editing.phone || null,
-      }).eq("id", row.vendor_profile_id);
+      const { error } = await supabase.from("vendor_profiles").update(profilePayload).eq("id", row.vendor_profile_id);
       if (error) { toast.error(error.message); return; }
     } else {
       const { data: vp, error: vpErr } = await supabase.from("vendor_profiles").insert({
-        business_name: editing.business_name.trim(),
-        contact_name: editing.contact_name || null,
-        email: editing.email || null,
-        phone: editing.phone || null,
+        ...profilePayload,
+        intake_completed_at: new Date().toISOString(),
       }).select("id").single();
       if (vpErr) { toast.error(vpErr.message); return; }
       const { error: ovErr } = await supabase.from("organization_vendors").insert({
@@ -141,7 +171,7 @@ function VendorsPage() {
         eyebrow="Organization"
         title="Vendor Directory"
         description="Your complete roster of vendors. Portal accounts are optional — you can run applications for every vendor from here."
-        actions={<Button onClick={() => setEditing({ business_name: "", contact_name: "", email: "", phone: "" })}><Plus className="mr-2 h-4 w-4" /> Add vendor</Button>}
+        actions={<Button onClick={() => setEditing({ ...emptyEditing })}><Plus className="mr-2 h-4 w-4" /> Add vendor</Button>}
       />
 
       <div className="flex items-center gap-3">
@@ -158,7 +188,7 @@ function VendorsPage() {
           icon={Store}
           title={search ? "No matches" : "No vendors yet"}
           description={search ? "Try another search." : "Add vendors manually, invite them to the portal, or let them submit applications through the public form."}
-          action={!search ? <Button onClick={() => setEditing({ business_name: "", contact_name: "", email: "", phone: "" })}><Plus className="mr-2 h-4 w-4" /> Add vendor</Button> : undefined}
+          action={!search ? <Button onClick={() => setEditing({ ...emptyEditing })}><Plus className="mr-2 h-4 w-4" /> Add vendor</Button> : undefined}
         />
       ) : (
         <div className="card-soft divide-y divide-border/60">
@@ -179,7 +209,25 @@ function VendorsPage() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => setEditing({ id: r.id, business_name: r.vendor_profiles?.business_name ?? "", contact_name: r.vendor_profiles?.contact_name ?? "", email: r.vendor_profiles?.email ?? "", phone: r.vendor_profiles?.phone ?? "" })}><Pencil className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => {
+                    const p: any = r.vendor_profiles ?? {};
+                    setEditing({
+                      id: r.id,
+                      business_name: p.business_name ?? "",
+                      contact_name: p.contact_name ?? "",
+                      email: p.email ?? "",
+                      phone: p.phone ?? "",
+                      website: p.website ?? "",
+                      business_description: p.business_description ?? "",
+                      product_categories: Array.isArray(p.product_categories) ? p.product_categories.join(", ") : "",
+                      emergency_contact_name: p.emergency_contact_name ?? "",
+                      emergency_contact_phone: p.emergency_contact_phone ?? "",
+                      insurance_doc_url: p.insurance_doc_url ?? "",
+                      tax_doc_url: p.tax_doc_url ?? "",
+                      food_license_url: p.food_license_url ?? "",
+                      resale_cert_url: p.resale_cert_url ?? "",
+                    });
+                  }}><Pencil className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem>
                   {r.account_status === "no_account" && <DropdownMenuItem onClick={() => invite(r)}><Mail className="mr-2 h-4 w-4" /> Invite to Portal</DropdownMenuItem>}
                   {r.account_status === "invited" && <DropdownMenuItem onClick={() => setStatus(r, "no_account")}><UserX className="mr-2 h-4 w-4" /> Revoke invite</DropdownMenuItem>}
                   {r.account_status !== "disabled" ? <DropdownMenuItem onClick={() => setStatus(r, "disabled")}><UserX className="mr-2 h-4 w-4" /> Disable</DropdownMenuItem>
@@ -193,16 +241,45 @@ function VendorsPage() {
       )}
 
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>{editing?.id ? "Edit vendor" : "New vendor"}</DialogTitle></DialogHeader>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editing?.id ? "Edit vendor" : "New vendor"}</DialogTitle>
+            <p className="text-xs text-muted-foreground">Organization Vendor Intake — permanent profile shared across every event.</p>
+          </DialogHeader>
           {editing && (
-            <div className="space-y-3">
-              <div className="space-y-1"><Label>Business name *</Label><Input value={editing.business_name} onChange={(e) => setEditing({ ...editing, business_name: e.target.value })} autoFocus /></div>
-              <div className="space-y-1"><Label>Contact name</Label><Input value={editing.contact_name} onChange={(e) => setEditing({ ...editing, contact_name: e.target.value })} /></div>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-1"><Label>Email</Label><Input type="email" value={editing.email} onChange={(e) => setEditing({ ...editing, email: e.target.value })} /></div>
-                <div className="space-y-1"><Label>Phone</Label><Input value={editing.phone} onChange={(e) => setEditing({ ...editing, phone: e.target.value })} /></div>
-              </div>
+            <div className="space-y-5 py-2">
+              <section className="space-y-3">
+                <h3 className="text-xs uppercase tracking-wide text-muted-foreground">Business</h3>
+                <div className="space-y-1"><Label>Business name *</Label><Input value={editing.business_name} onChange={(e) => setEditing({ ...editing, business_name: e.target.value })} autoFocus /></div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1"><Label>Contact name</Label><Input value={editing.contact_name} onChange={(e) => setEditing({ ...editing, contact_name: e.target.value })} /></div>
+                  <div className="space-y-1"><Label>Website</Label><Input placeholder="https://" value={editing.website} onChange={(e) => setEditing({ ...editing, website: e.target.value })} /></div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1"><Label>Email</Label><Input type="email" value={editing.email} onChange={(e) => setEditing({ ...editing, email: e.target.value })} /></div>
+                  <div className="space-y-1"><Label>Phone</Label><Input value={editing.phone} onChange={(e) => setEditing({ ...editing, phone: e.target.value })} /></div>
+                </div>
+                <div className="space-y-1"><Label>Business description</Label><Textarea rows={3} value={editing.business_description} onChange={(e) => setEditing({ ...editing, business_description: e.target.value })} /></div>
+                <div className="space-y-1"><Label>Product categories (comma separated)</Label><Input placeholder="Handmade, Food, Art" value={editing.product_categories} onChange={(e) => setEditing({ ...editing, product_categories: e.target.value })} /></div>
+              </section>
+
+              <section className="space-y-3 border-t border-border/60 pt-4">
+                <h3 className="text-xs uppercase tracking-wide text-muted-foreground">Documents (URLs)</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1"><Label>Insurance</Label><Input value={editing.insurance_doc_url} onChange={(e) => setEditing({ ...editing, insurance_doc_url: e.target.value })} /></div>
+                  <div className="space-y-1"><Label>Tax document</Label><Input value={editing.tax_doc_url} onChange={(e) => setEditing({ ...editing, tax_doc_url: e.target.value })} /></div>
+                  <div className="space-y-1"><Label>Food license</Label><Input value={editing.food_license_url} onChange={(e) => setEditing({ ...editing, food_license_url: e.target.value })} /></div>
+                  <div className="space-y-1"><Label>Resale certificate</Label><Input value={editing.resale_cert_url} onChange={(e) => setEditing({ ...editing, resale_cert_url: e.target.value })} /></div>
+                </div>
+              </section>
+
+              <section className="space-y-3 border-t border-border/60 pt-4">
+                <h3 className="text-xs uppercase tracking-wide text-muted-foreground">Emergency contact</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1"><Label>Name</Label><Input value={editing.emergency_contact_name} onChange={(e) => setEditing({ ...editing, emergency_contact_name: e.target.value })} /></div>
+                  <div className="space-y-1"><Label>Phone</Label><Input value={editing.emergency_contact_phone} onChange={(e) => setEditing({ ...editing, emergency_contact_phone: e.target.value })} /></div>
+                </div>
+              </section>
             </div>
           )}
           <DialogFooter>

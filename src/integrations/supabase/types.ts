@@ -145,6 +145,8 @@ export type Database = {
           applicant_phone: string | null
           applied_at: string
           assigned_booth_id: string | null
+          booth_size: string | null
+          bringing_products: string | null
           business_name: string | null
           category: string | null
           contact_name: string | null
@@ -163,9 +165,11 @@ export type Database = {
           requested_location: string | null
           size_requested: string | null
           special_requests: string | null
+          sponsor_interest: boolean
           status: Database["public"]["Enums"]["application_status"]
           updated_at: string
           vendor_profile_id: string
+          volunteer_interest: boolean
         }
         Insert: {
           ai_extraction?: Json | null
@@ -173,6 +177,8 @@ export type Database = {
           applicant_phone?: string | null
           applied_at?: string
           assigned_booth_id?: string | null
+          booth_size?: string | null
+          bringing_products?: string | null
           business_name?: string | null
           category?: string | null
           contact_name?: string | null
@@ -191,9 +197,11 @@ export type Database = {
           requested_location?: string | null
           size_requested?: string | null
           special_requests?: string | null
+          sponsor_interest?: boolean
           status?: Database["public"]["Enums"]["application_status"]
           updated_at?: string
           vendor_profile_id: string
+          volunteer_interest?: boolean
         }
         Update: {
           ai_extraction?: Json | null
@@ -201,6 +209,8 @@ export type Database = {
           applicant_phone?: string | null
           applied_at?: string
           assigned_booth_id?: string | null
+          booth_size?: string | null
+          bringing_products?: string | null
           business_name?: string | null
           category?: string | null
           contact_name?: string | null
@@ -219,9 +229,11 @@ export type Database = {
           requested_location?: string | null
           size_requested?: string | null
           special_requests?: string | null
+          sponsor_interest?: boolean
           status?: Database["public"]["Enums"]["application_status"]
           updated_at?: string
           vendor_profile_id?: string
+          volunteer_interest?: boolean
         }
         Relationships: [
           {
@@ -1355,45 +1367,78 @@ export type Database = {
       vendor_profiles: {
         Row: {
           bio: string | null
+          business_description: string | null
           business_name: string
+          business_photos: string[]
           categories: string[]
           claimed: boolean
           contact_name: string | null
           created_at: string
           email: string | null
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          food_license_url: string | null
           id: string
+          insurance_doc_url: string | null
+          intake_completed_at: string | null
           logo_url: string | null
           phone: string | null
+          product_categories: string[]
+          resale_cert_url: string | null
+          social_links: Json
+          tax_doc_url: string | null
           updated_at: string
           user_id: string | null
           website: string | null
         }
         Insert: {
           bio?: string | null
+          business_description?: string | null
           business_name: string
+          business_photos?: string[]
           categories?: string[]
           claimed?: boolean
           contact_name?: string | null
           created_at?: string
           email?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          food_license_url?: string | null
           id?: string
+          insurance_doc_url?: string | null
+          intake_completed_at?: string | null
           logo_url?: string | null
           phone?: string | null
+          product_categories?: string[]
+          resale_cert_url?: string | null
+          social_links?: Json
+          tax_doc_url?: string | null
           updated_at?: string
           user_id?: string | null
           website?: string | null
         }
         Update: {
           bio?: string | null
+          business_description?: string | null
           business_name?: string
+          business_photos?: string[]
           categories?: string[]
           claimed?: boolean
           contact_name?: string | null
           created_at?: string
           email?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          food_license_url?: string | null
           id?: string
+          insurance_doc_url?: string | null
+          intake_completed_at?: string | null
           logo_url?: string | null
           phone?: string | null
+          product_categories?: string[]
+          resale_cert_url?: string | null
+          social_links?: Json
+          tax_doc_url?: string | null
           updated_at?: string
           user_id?: string | null
           website?: string | null
