@@ -53,12 +53,12 @@ function AuthPage() {
           await bootstrapOrganizer(data.user.id, fullName, orgName);
         }
         toast.success("Welcome to EventScape Studio!");
-        navigate({ to: "/dashboard" });
+        navigate({ to: "/app" });
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         toast.success("Signed in");
-        navigate({ to: "/dashboard" });
+        navigate({ to: "/app" });
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Something went wrong");
