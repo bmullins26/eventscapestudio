@@ -91,23 +91,31 @@ function VendorsPage() {
   const saveVendor = async () => {
     if (!editing || !orgId) return;
     if (!editing.business_name.trim()) { toast.error("Business name required"); return; }
+    const categories = editing.product_categories.split(",").map((s) => s.trim()).filter(Boolean);
+    const profilePayload = {
+      business_name: editing.business_name.trim(),
+      contact_name: editing.contact_name || null,
+      email: editing.email || null,
+      phone: editing.phone || null,
+      website: editing.website || null,
+      business_description: editing.business_description || null,
+      product_categories: categories,
+      emergency_contact_name: editing.emergency_contact_name || null,
+      emergency_contact_phone: editing.emergency_contact_phone || null,
+      insurance_doc_url: editing.insurance_doc_url || null,
+      tax_doc_url: editing.tax_doc_url || null,
+      food_license_url: editing.food_license_url || null,
+      resale_cert_url: editing.resale_cert_url || null,
+    };
     if (editing.id) {
-      // Update via vendor_profiles
       const row = rows.find((r) => r.id === editing.id);
       if (!row) return;
-      const { error } = await supabase.from("vendor_profiles").update({
-        business_name: editing.business_name.trim(),
-        contact_name: editing.contact_name || null,
-        email: editing.email || null,
-        phone: editing.phone || null,
-      }).eq("id", row.vendor_profile_id);
+      const { error } = await supabase.from("vendor_profiles").update(profilePayload).eq("id", row.vendor_profile_id);
       if (error) { toast.error(error.message); return; }
     } else {
       const { data: vp, error: vpErr } = await supabase.from("vendor_profiles").insert({
-        business_name: editing.business_name.trim(),
-        contact_name: editing.contact_name || null,
-        email: editing.email || null,
-        phone: editing.phone || null,
+        ...profilePayload,
+        intake_completed_at: new Date().toISOString(),
       }).select("id").single();
       if (vpErr) { toast.error(vpErr.message); return; }
       const { error: ovErr } = await supabase.from("organization_vendors").insert({
