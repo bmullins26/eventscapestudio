@@ -162,7 +162,7 @@ function VendorsPage() {
         eyebrow="Organization"
         title="Vendor Directory"
         description="Your complete roster of vendors. Portal accounts are optional — you can run applications for every vendor from here."
-        actions={<Button onClick={() => setEditing({ business_name: "", contact_name: "", email: "", phone: "" })}><Plus className="mr-2 h-4 w-4" /> Add vendor</Button>}
+        actions={<Button onClick={() => setEditing({ ...emptyEditing })}><Plus className="mr-2 h-4 w-4" /> Add vendor</Button>}
       />
 
       <div className="flex items-center gap-3">
