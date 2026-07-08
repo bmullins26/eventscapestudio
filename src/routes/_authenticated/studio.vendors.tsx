@@ -115,6 +115,8 @@ function VendorsPage() {
   const createVendorFn = useServerFn(createVendor);
   const updateVendorFn = useServerFn(updateVendor);
   const draft = useVendorDraft<EditState>(orgId, editing, setEditing);
+
+  const { data: rows = [], isLoading } = useQuery({
     queryKey: ["vendor-directory", orgId],
     enabled: !!orgId,
     queryFn: async (): Promise<VendorRow[]> => {
