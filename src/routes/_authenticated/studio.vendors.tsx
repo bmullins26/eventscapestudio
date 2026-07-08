@@ -6,8 +6,10 @@ import { Store, Plus, Search, MoreHorizontal, Mail, UserX, UserCheck, Trash2, Pe
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { scanVendorIntake } from "@/lib/studio.functions";
+import { createVendor, updateVendor } from "@/lib/vendors.functions";
 import { useAuth } from "@/lib/auth-context";
-import { PageHeader } from "@/components/shared/page-header";
+import { DuplicateMatchDialog, type DuplicateMatch } from "@/components/vendors/DuplicateMatchDialog";
+import { useVendorDraft } from "@/components/vendors/useVendorDraft";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
