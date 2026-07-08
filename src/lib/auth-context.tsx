@@ -48,6 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [organizations, setOrganizations] = useState<OrgMembership[]>([]);
   const [activeOrgId, setActiveOrgId] = useState<string | null>(null);
+  const [activeEventId, setActiveEventIdState] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const loadContext = useCallback(async (userId: string | undefined) => {
