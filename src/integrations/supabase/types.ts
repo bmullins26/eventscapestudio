@@ -62,6 +62,47 @@ export type Database = {
           },
         ]
       }
+      application_activity: {
+        Row: {
+          actor_user_id: string | null
+          application_id: string
+          created_at: string
+          event_type: string
+          from_value: string | null
+          id: string
+          payload: Json | null
+          to_value: string | null
+        }
+        Insert: {
+          actor_user_id?: string | null
+          application_id: string
+          created_at?: string
+          event_type: string
+          from_value?: string | null
+          id?: string
+          payload?: Json | null
+          to_value?: string | null
+        }
+        Update: {
+          actor_user_id?: string | null
+          application_id?: string
+          created_at?: string
+          event_type?: string
+          from_value?: string | null
+          id?: string
+          payload?: Json | null
+          to_value?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "application_activity_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       application_documents: {
         Row: {
           application_id: string
@@ -99,52 +140,85 @@ export type Database = {
       }
       applications: {
         Row: {
+          ai_extraction: Json | null
+          applicant_email: string | null
+          applicant_phone: string | null
           applied_at: string
           assigned_booth_id: string | null
+          business_name: string | null
           category: string | null
+          contact_name: string | null
           created_at: string
           decided_at: string | null
           decided_by: string | null
+          entry_method: Database["public"]["Enums"]["application_entry_method"]
           event_id: string
           id: string
+          internal_notes: string | null
           needs_electricity: boolean
           notes: string | null
           organization_id: string
+          payment_amount: number | null
+          products_sold: string | null
+          requested_location: string | null
           size_requested: string | null
+          special_requests: string | null
           status: Database["public"]["Enums"]["application_status"]
           updated_at: string
           vendor_profile_id: string
         }
         Insert: {
+          ai_extraction?: Json | null
+          applicant_email?: string | null
+          applicant_phone?: string | null
           applied_at?: string
           assigned_booth_id?: string | null
+          business_name?: string | null
           category?: string | null
+          contact_name?: string | null
           created_at?: string
           decided_at?: string | null
           decided_by?: string | null
+          entry_method?: Database["public"]["Enums"]["application_entry_method"]
           event_id: string
           id?: string
+          internal_notes?: string | null
           needs_electricity?: boolean
           notes?: string | null
           organization_id: string
+          payment_amount?: number | null
+          products_sold?: string | null
+          requested_location?: string | null
           size_requested?: string | null
+          special_requests?: string | null
           status?: Database["public"]["Enums"]["application_status"]
           updated_at?: string
           vendor_profile_id: string
         }
         Update: {
+          ai_extraction?: Json | null
+          applicant_email?: string | null
+          applicant_phone?: string | null
           applied_at?: string
           assigned_booth_id?: string | null
+          business_name?: string | null
           category?: string | null
+          contact_name?: string | null
           created_at?: string
           decided_at?: string | null
           decided_by?: string | null
+          entry_method?: Database["public"]["Enums"]["application_entry_method"]
           event_id?: string
           id?: string
+          internal_notes?: string | null
           needs_electricity?: boolean
           notes?: string | null
           organization_id?: string
+          payment_amount?: number | null
+          products_sold?: string | null
+          requested_location?: string | null
           size_requested?: string | null
+          special_requests?: string | null
           status?: Database["public"]["Enums"]["application_status"]
           updated_at?: string
           vendor_profile_id?: string
@@ -665,6 +739,7 @@ export type Database = {
       }
       organization_vendors: {
         Row: {
+          account_status: Database["public"]["Enums"]["vendor_account_status"]
           created_at: string
           id: string
           internal_notes: string | null
@@ -683,6 +758,7 @@ export type Database = {
           years_participated: number
         }
         Insert: {
+          account_status?: Database["public"]["Enums"]["vendor_account_status"]
           created_at?: string
           id?: string
           internal_notes?: string | null
@@ -701,6 +777,7 @@ export type Database = {
           years_participated?: number
         }
         Update: {
+          account_status?: Database["public"]["Enums"]["vendor_account_status"]
           created_at?: string
           id?: string
           internal_notes?: string | null
@@ -1124,6 +1201,42 @@ export type Database = {
           },
         ]
       }
+      user_org_prefs: {
+        Row: {
+          active_event_id: string | null
+          organization_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active_event_id?: string | null
+          organization_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active_event_id?: string | null
+          organization_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_org_prefs_active_event_id_fkey"
+            columns: ["active_event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_org_prefs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -1226,7 +1339,7 @@ export type Database = {
           claimed: boolean
           contact_name: string | null
           created_at: string
-          email: string
+          email: string | null
           id: string
           logo_url: string | null
           phone: string | null
@@ -1241,7 +1354,7 @@ export type Database = {
           claimed?: boolean
           contact_name?: string | null
           created_at?: string
-          email: string
+          email?: string | null
           id?: string
           logo_url?: string | null
           phone?: string | null
@@ -1256,7 +1369,7 @@ export type Database = {
           claimed?: boolean
           contact_name?: string | null
           created_at?: string
-          email?: string
+          email?: string | null
           id?: string
           logo_url?: string | null
           phone?: string | null
@@ -1301,10 +1414,111 @@ export type Database = {
           },
         ]
       }
+      venue_map_references: {
+        Row: {
+          created_at: string
+          id: string
+          image_url: string
+          layout_template_id: string
+          locked: boolean
+          offset_x: number
+          offset_y: number
+          opacity: number
+          original_filename: string | null
+          rotation: number
+          scale: number
+          sort_order: number
+          updated_at: string
+          visible: boolean
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_url: string
+          layout_template_id: string
+          locked?: boolean
+          offset_x?: number
+          offset_y?: number
+          opacity?: number
+          original_filename?: string | null
+          rotation?: number
+          scale?: number
+          sort_order?: number
+          updated_at?: string
+          visible?: boolean
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_url?: string
+          layout_template_id?: string
+          locked?: boolean
+          offset_x?: number
+          offset_y?: number
+          opacity?: number
+          original_filename?: string | null
+          rotation?: number
+          scale?: number
+          sort_order?: number
+          updated_at?: string
+          visible?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_map_references_layout_template_id_fkey"
+            columns: ["layout_template_id"]
+            isOneToOne: false
+            referencedRelation: "layout_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      venue_maps: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          name: string
+          sort_order: number
+          updated_at: string
+          venue_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          name: string
+          sort_order?: number
+          updated_at?: string
+          venue_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          name?: string
+          sort_order?: number
+          updated_at?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_maps_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       venues: {
         Row: {
           address_line1: string | null
           address_line2: string | null
+          archived_at: string | null
           city: string | null
           country: string | null
           cover_image_url: string | null
@@ -1325,6 +1539,7 @@ export type Database = {
         Insert: {
           address_line1?: string | null
           address_line2?: string | null
+          archived_at?: string | null
           city?: string | null
           country?: string | null
           cover_image_url?: string | null
@@ -1345,6 +1560,7 @@ export type Database = {
         Update: {
           address_line1?: string | null
           address_line2?: string | null
+          archived_at?: string | null
           city?: string | null
           country?: string | null
           cover_image_url?: string | null
@@ -1405,12 +1621,24 @@ export type Database = {
     }
     Enums: {
       app_role: "super_admin" | "organizer" | "staff" | "vendor"
+      application_entry_method:
+        | "manual"
+        | "ai_scan"
+        | "public_form"
+        | "vendor_portal"
+        | "imported"
       application_status:
         | "pending"
         | "approved"
         | "waitlisted"
         | "rejected"
         | "withdrawn"
+        | "draft"
+        | "awaiting_payment"
+        | "booth_assigned"
+        | "checked_in"
+        | "completed"
+        | "archived"
       booth_status: "available" | "held" | "assigned" | "occupied" | "blocked"
       event_status:
         | "draft"
@@ -1430,6 +1658,11 @@ export type Database = {
       payment_status: "unpaid" | "partial" | "paid" | "refunded"
       subscription_tier: "trial" | "starter" | "pro" | "enterprise"
       task_status: "open" | "in_progress" | "done" | "cancelled"
+      vendor_account_status:
+        | "no_account"
+        | "invited"
+        | "registered"
+        | "disabled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1558,12 +1791,25 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["super_admin", "organizer", "staff", "vendor"],
+      application_entry_method: [
+        "manual",
+        "ai_scan",
+        "public_form",
+        "vendor_portal",
+        "imported",
+      ],
       application_status: [
         "pending",
         "approved",
         "waitlisted",
         "rejected",
         "withdrawn",
+        "draft",
+        "awaiting_payment",
+        "booth_assigned",
+        "checked_in",
+        "completed",
+        "archived",
       ],
       booth_status: ["available", "held", "assigned", "occupied", "blocked"],
       event_status: [
@@ -1586,6 +1832,12 @@ export const Constants = {
       payment_status: ["unpaid", "partial", "paid", "refunded"],
       subscription_tier: ["trial", "starter", "pro", "enterprise"],
       task_status: ["open", "in_progress", "done", "cancelled"],
+      vendor_account_status: [
+        "no_account",
+        "invited",
+        "registered",
+        "disabled",
+      ],
     },
   },
 } as const
