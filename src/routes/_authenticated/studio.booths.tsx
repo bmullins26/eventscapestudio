@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Save, Grid3x3, Undo2, Redo2, Copy, Trash2, ZoomIn, ZoomOut, Map, LayoutTemplate } from "lucide-react";
+import { Plus, Save, Grid3x3, Undo2, Redo2, Copy, Trash2, ZoomIn, ZoomOut, Map, LayoutTemplate, Download, FileText, Image as ImageIcon, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
@@ -16,6 +16,9 @@ import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
+import { loadPdf, renderPdfPageToBlob, loadImageNaturalSize } from "@/lib/pdf-render";
+import { PdfPagePicker } from "@/components/booth-builder/pdf-page-picker";
 
 const SearchSchema = z.object({
   template: z.string().uuid().optional(),
