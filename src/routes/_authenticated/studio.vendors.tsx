@@ -108,10 +108,13 @@ function VendorsPage() {
   const [editing, setEditing] = useState<EditState | null>(null);
   const [scanning, setScanning] = useState(false);
   const [scanBanner, setScanBanner] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [duplicates, setDuplicates] = useState<DuplicateMatch[] | null>(null);
   const scanInputRef = useRef<HTMLInputElement>(null);
   const scan = useServerFn(scanVendorIntake);
-
-  const { data: rows = [], isLoading } = useQuery({
+  const createVendorFn = useServerFn(createVendor);
+  const updateVendorFn = useServerFn(updateVendor);
+  const draft = useVendorDraft<EditState>(orgId, editing, setEditing);
     queryKey: ["vendor-directory", orgId],
     enabled: !!orgId,
     queryFn: async (): Promise<VendorRow[]> => {
