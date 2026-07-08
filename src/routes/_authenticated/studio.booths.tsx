@@ -244,20 +244,100 @@ function BoothsPage() {
     qc.invalidateQueries({ queryKey: ["template-booths", templateId] });
   };
 
-  const uploadReference = async (file: File) => {
-    if (!templateId || !orgId) return;
-    const key = `${orgId}/refs/${crypto.randomUUID()}-${file.name}`;
-    const { error: upErr } = await supabase.storage.from("venue-assets").upload(key, file);
-    if (upErr) { toast.error(upErr.message); return; }
-    const { data: signed } = await supabase.storage.from("venue-assets").createSignedUrl(key, 60 * 60 * 24 * 365);
-    if (!signed) { toast.error("Failed to sign URL"); return; }
+  // PDF upload state — driven by the file picker in the toolbar.
+  const [pendingPdf, setPendingPdf] = useState<File | null>(null);
+  const [uploadingRef, setUploadingRef] = useState(false);
+
+  const insertReferenceRow = async (row: {
+    image_url: string;
+    original_filename: string;
+    source_file_url: string | null;
+    source_mime_type: string;
+    source_page: number | null;
+    natural_width: number;
+    natural_height: number;
+  }) => {
+    if (!templateId) return;
     const { error } = await supabase.from("venue_map_references").insert({
       layout_template_id: templateId,
-      image_url: signed.signedUrl,
-      original_filename: file.name,
+      ...row,
     });
     if (error) toast.error(error.message);
-    else { toast.success("Reference imported"); qc.invalidateQueries({ queryKey: ["template-refs", templateId] }); }
+    else {
+      toast.success("Reference imported");
+      qc.invalidateQueries({ queryKey: ["template-refs", templateId] });
+    }
+  };
+
+  const uploadReference = async (file: File) => {
+    if (!templateId || !orgId) return;
+    const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+    if (isPdf) {
+      // Open the page-picker dialog; actual upload happens after page is chosen.
+      setPendingPdf(file);
+      return;
+    }
+    // Image path
+    setUploadingRef(true);
+    try {
+      const size = await loadImageNaturalSize(file).catch(() => ({ width: 1200, height: 900 }));
+      const key = `${orgId}/refs/${crypto.randomUUID()}-${file.name}`;
+      const { error: upErr } = await supabase.storage.from("venue-assets").upload(key, file);
+      if (upErr) { toast.error(upErr.message); return; }
+      const { data: signed } = await supabase.storage.from("venue-assets").createSignedUrl(key, 60 * 60 * 24 * 365);
+      if (!signed) { toast.error("Failed to sign URL"); return; }
+      await insertReferenceRow({
+        image_url: signed.signedUrl,
+        original_filename: file.name,
+        source_file_url: signed.signedUrl,
+        source_mime_type: file.type || "image/*",
+        source_page: null,
+        natural_width: size.width,
+        natural_height: size.height,
+      });
+    } finally {
+      setUploadingRef(false);
+    }
+  };
+
+  const handlePdfPageChosen = async (pageNumber: number) => {
+    if (!pendingPdf || !templateId || !orgId) return;
+    const file = pendingPdf;
+    setPendingPdf(null);
+    setUploadingRef(true);
+    const toastId = toast.loading("Rendering PDF page…");
+    try {
+      const pdf = await loadPdf(file);
+      const { blob, width, height } = await renderPdfPageToBlob(pdf, pageNumber, 2);
+      const uid = crypto.randomUUID();
+      const baseName = file.name.replace(/\.pdf$/i, "");
+      const pngKey = `${orgId}/refs/${uid}-${baseName}-p${pageNumber}.png`;
+      const pdfKey = `${orgId}/refs/${uid}-${file.name}`;
+      const [{ error: pngErr }, { error: pdfErr }] = await Promise.all([
+        supabase.storage.from("venue-assets").upload(pngKey, blob, { contentType: "image/png" }),
+        supabase.storage.from("venue-assets").upload(pdfKey, file, { contentType: "application/pdf" }),
+      ]);
+      if (pngErr || pdfErr) { toast.error((pngErr ?? pdfErr)!.message, { id: toastId }); return; }
+      const [pngSigned, pdfSigned] = await Promise.all([
+        supabase.storage.from("venue-assets").createSignedUrl(pngKey, 60 * 60 * 24 * 365),
+        supabase.storage.from("venue-assets").createSignedUrl(pdfKey, 60 * 60 * 24 * 365),
+      ]);
+      if (!pngSigned.data || !pdfSigned.data) { toast.error("Failed to sign URLs", { id: toastId }); return; }
+      await insertReferenceRow({
+        image_url: pngSigned.data.signedUrl,
+        original_filename: file.name,
+        source_file_url: pdfSigned.data.signedUrl,
+        source_mime_type: "application/pdf",
+        source_page: pageNumber,
+        natural_width: width,
+        natural_height: height,
+      });
+      toast.dismiss(toastId);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "PDF render failed", { id: toastId });
+    } finally {
+      setUploadingRef(false);
+    }
   };
 
   const updateRef = async (id: string, patch: Partial<{ visible: boolean; locked: boolean; opacity: number; scale: number; rotation: number; offset_x: number; offset_y: number; sort_order: number }>) => {
