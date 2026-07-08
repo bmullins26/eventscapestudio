@@ -118,7 +118,7 @@ export const createVendor = createServerFn({ method: "POST" })
       _org_id: data.organizationId,
       _profile: profilePayload,
       _link: data.link,
-      _existing_profile_id: data.matchedProfileId ?? null,
+      _existing_profile_id: data.matchedProfileId ?? undefined,
     });
     if (rpcErr) throw rpcErr;
 
