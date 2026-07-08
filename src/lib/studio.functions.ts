@@ -218,3 +218,74 @@ export const deleteEvent = createServerFn({ method: "POST" })
     if (error) throw error;
     return { ok: true };
   });
+
+// ---- Scan Vendor Intake form (paper) with AI ----
+const VendorIntakeExtractionSchema = z.object({
+  business_name: z.string().nullable(),
+  contact_name: z.string().nullable(),
+  email: z.string().nullable(),
+  phone: z.string().nullable(),
+  website: z.string().nullable(),
+  business_description: z.string().nullable(),
+  product_categories: z.array(z.string()).nullable(),
+  emergency_contact_name: z.string().nullable(),
+  emergency_contact_phone: z.string().nullable(),
+  social_links: z.object({
+    facebook: z.string().nullable(),
+    instagram: z.string().nullable(),
+    tiktok: z.string().nullable(),
+  }).nullable(),
+  notes: z.string().nullable(),
+});
+
+export const scanVendorIntake = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => ScanApplicationInput.parse(data))
+  .handler(async ({ data }) => {
+    const apiKey = process.env.LOVABLE_API_KEY;
+    if (!apiKey) throw new Error("LOVABLE_API_KEY not configured");
+
+    const [meta] = data.fileDataUrl.split(",");
+    const mime = meta.match(/data:([^;]+)/)?.[1] ?? "application/octet-stream";
+    const isPdf = mime === "application/pdf";
+    const isImage = mime.startsWith("image/");
+    if (!isPdf && !isImage) throw new Error("Unsupported file type");
+
+    const userContent = [
+      {
+        type: "text",
+        text: `You are extracting information from a vendor intake form (permanent vendor profile). Return ONLY valid JSON matching this exact shape (use null for unknown fields, empty array [] for product_categories if none):
+{"business_name":string|null,"contact_name":string|null,"email":string|null,"phone":string|null,"website":string|null,"business_description":string|null,"product_categories":string[]|null,"emergency_contact_name":string|null,"emergency_contact_phone":string|null,"social_links":{"facebook":string|null,"instagram":string|null,"tiktok":string|null}|null,"notes":string|null}`,
+      },
+      isImage
+        ? { type: "image_url", image_url: { url: data.fileDataUrl } }
+        : { type: "file", file: { filename: "vendor-intake.pdf", file_data: data.fileDataUrl } },
+    ];
+
+    const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Lovable-API-Key": apiKey },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-pro",
+        messages: [{ role: "user", content: userContent }],
+        response_format: { type: "json_object" },
+      }),
+    });
+    if (!resp.ok) {
+      const errText = await resp.text();
+      throw new Error(`AI extraction failed (${resp.status}): ${errText.slice(0, 400)}`);
+    }
+    const body = await resp.json();
+    const text = body?.choices?.[0]?.message?.content ?? "";
+    let parsed: Record<string, unknown>;
+    try {
+      parsed = JSON.parse(typeof text === "string" ? text : JSON.stringify(text));
+    } catch {
+      throw new Error("AI response was not valid JSON");
+    }
+    const result = VendorIntakeExtractionSchema.safeParse(parsed);
+    if (!result.success) {
+      return { business_name: null, contact_name: null, email: null, phone: null, website: null, business_description: null, product_categories: null, emergency_contact_name: null, emergency_contact_phone: null, social_links: null, notes: null };
+    }
+    return result.data;
+  });
