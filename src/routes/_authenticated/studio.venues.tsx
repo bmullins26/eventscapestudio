@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { MapPin, Plus, Search, MoreHorizontal, Archive, ArchiveRestore, Trash2, Pencil, Image as ImageIcon, FileText, LayoutTemplate } from "lucide-react";
 import { toast } from "sonner";
