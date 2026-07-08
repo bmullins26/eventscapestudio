@@ -14,7 +14,7 @@ const SECTIONS: NavSection[] = [
   {
     label: "Plan",
     items: [
-      { label: "Events", to: "/studio/events", icon: CalendarDays, permission: "events.read" },
+      { label: "Event Library", to: "/studio/events", icon: CalendarDays, permission: "events.read" },
       { label: "Venues", to: "/studio/venues", icon: MapPin, permission: "venues.manage" },
       { label: "Vendor Directory", to: "/studio/vendors", icon: Store, permission: "vendors.read" },
       { label: "Sponsors", to: "/studio/sponsors", icon: Heart, permission: "sponsors.manage" },
