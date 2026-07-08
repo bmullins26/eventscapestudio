@@ -461,12 +461,16 @@ function BoothsPage() {
               </defs>
               <rect width={canvasW} height={canvasH} fill="url(#grid)" />
 
-              {/* Layer 2: reference images */}
-              {refLayers.filter((r) => r.visible).map((r) => (
-                <g key={r.id} transform={`translate(${r.offset_x} ${r.offset_y}) rotate(${r.rotation}) scale(${r.scale})`} opacity={r.opacity}>
-                  <image href={r.image_url} x={0} y={0} width={800} height={600} preserveAspectRatio="xMidYMid meet" />
-                </g>
-              ))}
+              {/* Layer 2: reference images (rendered at their natural pixel size, then transformed) */}
+              {refLayers.filter((r) => r.visible).map((r) => {
+                const w = Number(r.natural_width) || 800;
+                const h = Number(r.natural_height) || 600;
+                return (
+                  <g key={r.id} transform={`translate(${r.offset_x} ${r.offset_y}) rotate(${r.rotation}) scale(${r.scale})`} opacity={r.opacity} pointerEvents="none">
+                    <image href={r.image_url} x={0} y={0} width={w} height={h} preserveAspectRatio="xMidYMid meet" />
+                  </g>
+                );
+              })}
 
               {/* Layer 4: booths */}
               {activeBooths.map((b) => {
