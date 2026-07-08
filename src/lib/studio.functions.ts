@@ -159,3 +159,62 @@ export const scanApplicationImage = createServerFn({ method: "POST" })
     }
     return result.data;
   });
+
+// ---- Update event ----
+const UpdateEventInput = z.object({
+  eventId: z.string().uuid(),
+  patch: z.object({
+    name: z.string().min(1).max(200).optional(),
+    description: z.string().nullable().optional(),
+    status: z.enum(["draft", "published", "in_progress", "completed", "cancelled", "archived"]).optional(),
+    starts_at: z.string().nullable().optional(),
+    ends_at: z.string().nullable().optional(),
+    venue_id: z.string().uuid().nullable().optional(),
+    applications_open: z.boolean().optional(),
+    is_public: z.boolean().optional(),
+    slug: z.string().min(1).max(120).regex(/^[a-z0-9-]+$/, "lowercase letters, numbers, dashes").optional(),
+  }),
+});
+
+export const updateEvent = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => UpdateEventInput.parse(data))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: ev, error: evErr } = await supabase.from("events").select("id, organization_id").eq("id", data.eventId).maybeSingle();
+    if (evErr) throw evErr;
+    if (!ev) throw new Error("Event not found");
+    const { data: canWrite } = await supabase.rpc("has_permission", { _user_id: userId, _org_id: ev.organization_id, _permission: "events.write" });
+    if (!canWrite) throw new Error("Not authorized");
+    const patch = { ...data.patch, updated_at: new Date().toISOString() };
+    const { data: updated, error } = await supabase.from("events").update(patch).eq("id", data.eventId).select().single();
+    if (error) throw error;
+    return updated;
+  });
+
+// ---- Delete event ----
+const DeleteEventInput = z.object({ eventId: z.string().uuid() });
+
+export const deleteEvent = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => DeleteEventInput.parse(data))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: ev, error: evErr } = await supabase.from("events").select("id, organization_id").eq("id", data.eventId).maybeSingle();
+    if (evErr) throw evErr;
+    if (!ev) throw new Error("Event not found");
+    const { data: canWrite } = await supabase.rpc("has_permission", { _user_id: userId, _org_id: ev.organization_id, _permission: "events.write" });
+    if (!canWrite) throw new Error("Not authorized");
+
+    const [{ count: appCount }, { count: payCount }] = await Promise.all([
+      supabase.from("applications").select("id", { count: "exact", head: true }).eq("event_id", data.eventId),
+      supabase.from("payments").select("id", { count: "exact", head: true }).eq("event_id", data.eventId),
+    ]);
+    if ((appCount ?? 0) > 0 || (payCount ?? 0) > 0) {
+      throw new Error("This event has applications or payments. Archive it instead to preserve history.");
+    }
+    await supabase.from("event_booths").delete().eq("event_id", data.eventId);
+    const { error } = await supabase.from("events").delete().eq("id", data.eventId);
+    if (error) throw error;
+    return { ok: true };
+  });

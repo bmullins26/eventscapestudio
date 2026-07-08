@@ -1,12 +1,12 @@
-import { useMemo, useState } from "react";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
+import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { CalendarDays, Plus, MoreHorizontal, Copy, BookmarkPlus, Archive, ArchiveRestore, LayoutTemplate } from "lucide-react";
+import { CalendarDays, Plus, MoreHorizontal, Copy, BookmarkPlus, Archive, ArchiveRestore, LayoutTemplate, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { cloneEvent } from "@/lib/events.functions";
-import { createEventFromTemplate } from "@/lib/studio.functions";
+import { createEventFromTemplate, updateEvent, deleteEvent } from "@/lib/studio.functions";
 import { useAuth } from "@/lib/auth-context";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -14,10 +14,14 @@ import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "@/components/ui/sheet";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 
 export const Route = createFileRoute("/_authenticated/studio/events")({
   head: () => ({
@@ -51,7 +55,7 @@ function fmtRange(start: string | null, end: string | null) {
 
 function EventLibraryPage() {
   const { activeOrg } = useAuth();
-  const navigate = useNavigate();
+  const [editTarget, setEditTarget] = useState<EventRow | null>(null);
   const qc = useQueryClient();
   const [tab, setTab] = useState<"active" | "drafts" | "archived" | "templates">("active");
   const [cloneTarget, setCloneTarget] = useState<EventRow | null>(null);
@@ -176,7 +180,7 @@ function EventLibraryPage() {
               onSaveTemplate={(r) => openClone(r, true)}
               onArchive={(r) => setStatus(r, "archived")}
               onRestore={(r) => setStatus(r, "draft")}
-              onOpen={(r) => navigate({ to: "/studio/events" })}
+              onOpen={(r) => setEditTarget(r)}
             />
           </TabsContent>
         ))}
@@ -258,6 +262,13 @@ function EventLibraryPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <EditEventSheet
+        target={editTarget}
+        venues={venues}
+        onClose={() => setEditTarget(null)}
+        onSaved={() => { qc.invalidateQueries({ queryKey: ["studio-events", activeOrg?.organizationId] }); setEditTarget(null); }}
+      />
     </div>
   );
 }
@@ -289,7 +300,7 @@ function EventList({
   return (
     <div className="card-soft divide-y divide-border/60">
       {rows.map((r) => (
-        <div key={r.id} className="flex items-center gap-4 px-5 py-4">
+        <div key={r.id} className="flex items-center gap-4 px-5 py-4 hover:bg-muted/40 cursor-pointer transition-colors" onClick={() => onOpen(r)}>
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary-soft text-primary-deep">
             {r.is_template ? <LayoutTemplate className="h-5 w-5" /> : <CalendarDays className="h-5 w-5" />}
           </div>
@@ -301,6 +312,7 @@ function EventList({
             </div>
             <p className="text-xs text-muted-foreground">{r.is_template ? "Reusable template" : fmtRange(r.starts_at, r.ends_at)}</p>
           </div>
+          <div onClick={(e) => e.stopPropagation()}>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" aria-label="Row actions">
@@ -308,7 +320,8 @@ function EventList({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => onOpen(r)}>Open</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onOpen(r)}><Pencil className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => onClone(r)}>
                 <Copy className="mr-2 h-4 w-4" /> Clone
               </DropdownMenuItem>
@@ -329,8 +342,184 @@ function EventList({
               )}
             </DropdownMenuContent>
           </DropdownMenu>
+          </div>
         </div>
       ))}
     </div>
+  );
+}
+
+function EditEventSheet({ target, venues, onClose, onSaved }: {
+  target: EventRow | null;
+  venues: { id: string; name: string }[];
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const updateFn = useServerFn(updateEvent);
+  const deleteFn = useServerFn(deleteEvent);
+  const [form, setForm] = useState<{
+    name: string; description: string; status: string;
+    starts_at: string; ends_at: string; venue_id: string;
+    applications_open: boolean; is_public: boolean; slug: string;
+  } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  useEffect(() => {
+    if (!target) { setForm(null); return; }
+    let cancelled = false;
+    void supabase.from("events").select("name, description, status, starts_at, ends_at, venue_id, applications_open, is_public, slug").eq("id", target.id).maybeSingle().then(({ data }) => {
+      if (cancelled || !data) return;
+      setForm({
+        name: data.name ?? "",
+        description: data.description ?? "",
+        status: data.status ?? "draft",
+        starts_at: data.starts_at ? data.starts_at.slice(0, 10) : "",
+        ends_at: data.ends_at ? data.ends_at.slice(0, 10) : "",
+        venue_id: data.venue_id ?? "",
+        applications_open: !!data.applications_open,
+        is_public: !!data.is_public,
+        slug: data.slug ?? "",
+      });
+    });
+    return () => { cancelled = true; };
+  }, [target]);
+
+  const open = !!target;
+  const save = async () => {
+    if (!target || !form) return;
+    if (!form.name.trim()) { toast.error("Name is required"); return; }
+    if (form.is_public && !/^[a-z0-9-]+$/.test(form.slug)) { toast.error("Slug must be lowercase letters, numbers, or dashes"); return; }
+    setBusy(true);
+    try {
+      await updateFn({ data: {
+        eventId: target.id,
+        patch: {
+          name: form.name.trim(),
+          description: form.description || null,
+          status: form.status as "draft" | "published" | "in_progress" | "completed" | "cancelled" | "archived",
+          starts_at: form.starts_at || null,
+          ends_at: form.ends_at || null,
+          venue_id: form.venue_id || null,
+          applications_open: form.applications_open,
+          is_public: form.is_public,
+          slug: form.slug || undefined,
+        },
+      }});
+      toast.success("Event updated");
+      onSaved();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to update");
+    } finally { setBusy(false); }
+  };
+
+  const remove = async () => {
+    if (!target) return;
+    setBusy(true);
+    try {
+      await deleteFn({ data: { eventId: target.id } });
+      toast.success("Event deleted");
+      setConfirmDelete(false);
+      onSaved();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Cannot delete");
+    } finally { setBusy(false); }
+  };
+
+  return (
+    <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
+      <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+        <SheetHeader>
+          <SheetTitle>Edit event</SheetTitle>
+          <SheetDescription>Update details, dates, venue, and public application settings.</SheetDescription>
+        </SheetHeader>
+        {!form ? (
+          <p className="mt-8 text-sm text-muted-foreground">Loading…</p>
+        ) : (
+          <div className="mt-6 space-y-4">
+            <div className="space-y-1">
+              <Label>Name</Label>
+              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+            </div>
+            <div className="space-y-1">
+              <Label>Description</Label>
+              <Textarea rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1"><Label>Starts</Label><Input type="date" value={form.starts_at} onChange={(e) => setForm({ ...form, starts_at: e.target.value })} /></div>
+              <div className="space-y-1"><Label>Ends</Label><Input type="date" value={form.ends_at} onChange={(e) => setForm({ ...form, ends_at: e.target.value })} /></div>
+            </div>
+            <div className="space-y-1">
+              <Label>Status</Label>
+              <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="draft">Draft</SelectItem>
+                  <SelectItem value="published">Published</SelectItem>
+                  <SelectItem value="in_progress">In progress</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                  <SelectItem value="archived">Archived</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label>Venue</Label>
+              <Select value={form.venue_id || "__none"} onValueChange={(v) => setForm({ ...form, venue_id: v === "__none" ? "" : v })}>
+                <SelectTrigger><SelectValue placeholder="No venue" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none">No venue</SelectItem>
+                  {venues.map((v) => <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center justify-between rounded-lg border border-border/60 px-3 py-2">
+              <div>
+                <p className="text-sm font-medium">Accept applications</p>
+                <p className="text-xs text-muted-foreground">Vendors can submit applications for this event.</p>
+              </div>
+              <Switch checked={form.applications_open} onCheckedChange={(v) => setForm({ ...form, applications_open: v })} />
+            </div>
+            <div className="flex items-center justify-between rounded-lg border border-border/60 px-3 py-2">
+              <div>
+                <p className="text-sm font-medium">Public application page</p>
+                <p className="text-xs text-muted-foreground">Share <code className="text-[11px]">/apply/{form.slug || "…"}</code> with vendors.</p>
+              </div>
+              <Switch checked={form.is_public} onCheckedChange={(v) => setForm({ ...form, is_public: v })} />
+            </div>
+            {form.is_public && (
+              <div className="space-y-1">
+                <Label>Public URL slug</Label>
+                <Input value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-") })} placeholder="spring-market-2026" />
+              </div>
+            )}
+          </div>
+        )}
+        <SheetFooter className="mt-6 flex-col gap-2 sm:flex-row sm:justify-between">
+          <Button variant="ghost" className="text-destructive" onClick={() => setConfirmDelete(true)} disabled={busy || !form}>
+            <Trash2 className="mr-2 h-4 w-4" /> Delete
+          </Button>
+          <div className="flex gap-2">
+            <Button variant="ghost" onClick={onClose} disabled={busy}>Cancel</Button>
+            <Button onClick={save} disabled={busy || !form}>Save changes</Button>
+          </div>
+        </SheetFooter>
+      </SheetContent>
+
+      <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this event?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes the event and its booth layout. Events with applications or payments cannot be deleted — archive them instead.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={remove} disabled={busy} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </Sheet>
   );
 }
