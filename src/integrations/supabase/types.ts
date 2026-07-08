@@ -1522,6 +1522,54 @@ export type Database = {
         }
         Relationships: []
       }
+      vendor_timeline_events: {
+        Row: {
+          actor_user_id: string | null
+          created_at: string
+          event_type: Database["public"]["Enums"]["vendor_timeline_event_type"]
+          id: string
+          occurred_at: string
+          organization_id: string
+          payload: Json
+          vendor_profile_id: string
+        }
+        Insert: {
+          actor_user_id?: string | null
+          created_at?: string
+          event_type: Database["public"]["Enums"]["vendor_timeline_event_type"]
+          id?: string
+          occurred_at?: string
+          organization_id: string
+          payload?: Json
+          vendor_profile_id: string
+        }
+        Update: {
+          actor_user_id?: string | null
+          created_at?: string
+          event_type?: Database["public"]["Enums"]["vendor_timeline_event_type"]
+          id?: string
+          occurred_at?: string
+          organization_id?: string
+          payload?: Json
+          vendor_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_timeline_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_timeline_events_vendor_profile_id_fkey"
+            columns: ["vendor_profile_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       venue_documents: {
         Row: {
           created_at: string
@@ -1763,6 +1811,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_vendor_with_link: {
+        Args: {
+          _existing_profile_id?: string
+          _link: Json
+          _org_id: string
+          _profile: Json
+        }
+        Returns: Json
+      }
       event_org_id: { Args: { _event_id: string }; Returns: string }
       has_permission: {
         Args: { _org_id: string; _permission: string; _user_id: string }
@@ -1841,6 +1898,14 @@ export type Database = {
         | "invited"
         | "registered"
         | "disabled"
+      vendor_timeline_event_type:
+        | "note"
+        | "application"
+        | "invitation"
+        | "payment"
+        | "status_change"
+        | "document"
+        | "assignment"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2015,6 +2080,15 @@ export const Constants = {
         "invited",
         "registered",
         "disabled",
+      ],
+      vendor_timeline_event_type: [
+        "note",
+        "application",
+        "invitation",
+        "payment",
+        "status_change",
+        "document",
+        "assignment",
       ],
     },
   },
