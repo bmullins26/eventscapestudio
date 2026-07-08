@@ -560,6 +560,13 @@ function BoothsPage() {
       </div>
 
       {isLoading && <p className="text-sm text-muted-foreground">Loading layout…</p>}
+
+      <PdfPagePicker
+        file={pendingPdf}
+        open={!!pendingPdf}
+        onClose={() => setPendingPdf(null)}
+        onPick={handlePdfPageChosen}
+      />
     </div>
   );
 }
