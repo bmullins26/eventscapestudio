@@ -334,6 +334,9 @@ export type Database = {
           event_id: string
           height: number
           id: string
+          is_electric: boolean
+          is_premium: boolean
+          is_reserved: boolean
           notes: string | null
           price: number | null
           rotation: number
@@ -353,6 +356,9 @@ export type Database = {
           event_id: string
           height?: number
           id?: string
+          is_electric?: boolean
+          is_premium?: boolean
+          is_reserved?: boolean
           notes?: string | null
           price?: number | null
           rotation?: number
@@ -372,6 +378,9 @@ export type Database = {
           event_id?: string
           height?: number
           id?: string
+          is_electric?: boolean
+          is_premium?: boolean
+          is_reserved?: boolean
           notes?: string | null
           price?: number | null
           rotation?: number
@@ -512,8 +521,12 @@ export type Database = {
           created_at: string
           height: number
           id: string
+          is_electric: boolean
+          is_premium: boolean
+          is_reserved: boolean
           layout_template_id: string
           notes: string | null
+          price: number | null
           rotation: number
           size_label: string | null
           width: number
@@ -526,8 +539,12 @@ export type Database = {
           created_at?: string
           height?: number
           id?: string
+          is_electric?: boolean
+          is_premium?: boolean
+          is_reserved?: boolean
           layout_template_id: string
           notes?: string | null
+          price?: number | null
           rotation?: number
           size_label?: string | null
           width?: number
@@ -540,8 +557,12 @@ export type Database = {
           created_at?: string
           height?: number
           id?: string
+          is_electric?: boolean
+          is_premium?: boolean
+          is_reserved?: boolean
           layout_template_id?: string
           notes?: string | null
+          price?: number | null
           rotation?: number
           size_label?: string | null
           width?: number
