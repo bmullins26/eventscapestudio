@@ -262,6 +262,13 @@ function EventLibraryPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <EditEventSheet
+        target={editTarget}
+        venues={venues}
+        onClose={() => setEditTarget(null)}
+        onSaved={() => { qc.invalidateQueries({ queryKey: ["studio-events", activeOrg?.organizationId] }); setEditTarget(null); }}
+      />
     </div>
   );
 }
