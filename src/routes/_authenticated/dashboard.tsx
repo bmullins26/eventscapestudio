@@ -32,13 +32,6 @@ function useDashboardData(userId: string | undefined) {
     },
   });
 }
-      return {
-        org, events: events ?? [], applications: apps ?? [],
-        payments: pays ?? [], booths: booths ?? [], sponsors: sponsors ?? [],
-      };
-    },
-  });
-}
 
 function Dashboard() {
   const { user, primaryRole, loading } = useAuth();
