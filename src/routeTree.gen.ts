@@ -50,6 +50,7 @@ import { Route as AuthenticatedAdminSettingsRouteImport } from './routes/_authen
 import { Route as AuthenticatedAdminOrganizationsRouteImport } from './routes/_authenticated/admin.organizations'
 import { Route as AuthenticatedAdminLogsRouteImport } from './routes/_authenticated/admin.logs'
 import { Route as AuthenticatedAdminAnalyticsRouteImport } from './routes/_authenticated/admin.analytics'
+import { Route as AuthenticatedStudioVenuesVenueIdDesignerRouteImport } from './routes/_authenticated/studio.venues.$venueId.designer'
 
 const PricingRoute = PricingRouteImport.update({
   id: '/pricing',
@@ -281,6 +282,12 @@ const AuthenticatedAdminAnalyticsRoute =
     path: '/analytics',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedStudioVenuesVenueIdDesignerRoute =
+  AuthenticatedStudioVenuesVenueIdDesignerRouteImport.update({
+    id: '/$venueId/designer',
+    path: '/$venueId/designer',
+    getParentRoute: () => AuthenticatedStudioVenuesRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -319,10 +326,11 @@ export interface FileRoutesByFullPath {
   '/studio/sponsors': typeof AuthenticatedStudioSponsorsRoute
   '/studio/staff': typeof AuthenticatedStudioStaffRoute
   '/studio/vendors': typeof AuthenticatedStudioVendorsRoute
-  '/studio/venues': typeof AuthenticatedStudioVenuesRoute
+  '/studio/venues': typeof AuthenticatedStudioVenuesRouteWithChildren
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/portal/': typeof AuthenticatedPortalIndexRoute
   '/studio/': typeof AuthenticatedStudioIndexRoute
+  '/studio/venues/$venueId/designer': typeof AuthenticatedStudioVenuesVenueIdDesignerRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -358,10 +366,11 @@ export interface FileRoutesByTo {
   '/studio/sponsors': typeof AuthenticatedStudioSponsorsRoute
   '/studio/staff': typeof AuthenticatedStudioStaffRoute
   '/studio/vendors': typeof AuthenticatedStudioVendorsRoute
-  '/studio/venues': typeof AuthenticatedStudioVenuesRoute
+  '/studio/venues': typeof AuthenticatedStudioVenuesRouteWithChildren
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/portal': typeof AuthenticatedPortalIndexRoute
   '/studio': typeof AuthenticatedStudioIndexRoute
+  '/studio/venues/$venueId/designer': typeof AuthenticatedStudioVenuesVenueIdDesignerRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -402,10 +411,11 @@ export interface FileRoutesById {
   '/_authenticated/studio/sponsors': typeof AuthenticatedStudioSponsorsRoute
   '/_authenticated/studio/staff': typeof AuthenticatedStudioStaffRoute
   '/_authenticated/studio/vendors': typeof AuthenticatedStudioVendorsRoute
-  '/_authenticated/studio/venues': typeof AuthenticatedStudioVenuesRoute
+  '/_authenticated/studio/venues': typeof AuthenticatedStudioVenuesRouteWithChildren
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/portal/': typeof AuthenticatedPortalIndexRoute
   '/_authenticated/studio/': typeof AuthenticatedStudioIndexRoute
+  '/_authenticated/studio/venues/$venueId/designer': typeof AuthenticatedStudioVenuesVenueIdDesignerRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -450,6 +460,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/portal/'
     | '/studio/'
+    | '/studio/venues/$venueId/designer'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -489,6 +500,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/portal'
     | '/studio'
+    | '/studio/venues/$venueId/designer'
   id:
     | '__root__'
     | '/'
@@ -532,6 +544,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/'
     | '/_authenticated/portal/'
     | '/_authenticated/studio/'
+    | '/_authenticated/studio/venues/$venueId/designer'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -834,6 +847,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminAnalyticsRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/studio/venues/$venueId/designer': {
+      id: '/_authenticated/studio/venues/$venueId/designer'
+      path: '/$venueId/designer'
+      fullPath: '/studio/venues/$venueId/designer'
+      preLoaderRoute: typeof AuthenticatedStudioVenuesVenueIdDesignerRouteImport
+      parentRoute: typeof AuthenticatedStudioVenuesRoute
+    }
   }
 }
 
@@ -889,6 +909,21 @@ const AuthenticatedPortalRouteChildren: AuthenticatedPortalRouteChildren = {
 const AuthenticatedPortalRouteWithChildren =
   AuthenticatedPortalRoute._addFileChildren(AuthenticatedPortalRouteChildren)
 
+interface AuthenticatedStudioVenuesRouteChildren {
+  AuthenticatedStudioVenuesVenueIdDesignerRoute: typeof AuthenticatedStudioVenuesVenueIdDesignerRoute
+}
+
+const AuthenticatedStudioVenuesRouteChildren: AuthenticatedStudioVenuesRouteChildren =
+  {
+    AuthenticatedStudioVenuesVenueIdDesignerRoute:
+      AuthenticatedStudioVenuesVenueIdDesignerRoute,
+  }
+
+const AuthenticatedStudioVenuesRouteWithChildren =
+  AuthenticatedStudioVenuesRoute._addFileChildren(
+    AuthenticatedStudioVenuesRouteChildren,
+  )
+
 interface AuthenticatedStudioRouteChildren {
   AuthenticatedStudioApplicationsRoute: typeof AuthenticatedStudioApplicationsRoute
   AuthenticatedStudioBoothsRoute: typeof AuthenticatedStudioBoothsRoute
@@ -900,7 +935,7 @@ interface AuthenticatedStudioRouteChildren {
   AuthenticatedStudioSponsorsRoute: typeof AuthenticatedStudioSponsorsRoute
   AuthenticatedStudioStaffRoute: typeof AuthenticatedStudioStaffRoute
   AuthenticatedStudioVendorsRoute: typeof AuthenticatedStudioVendorsRoute
-  AuthenticatedStudioVenuesRoute: typeof AuthenticatedStudioVenuesRoute
+  AuthenticatedStudioVenuesRoute: typeof AuthenticatedStudioVenuesRouteWithChildren
   AuthenticatedStudioIndexRoute: typeof AuthenticatedStudioIndexRoute
 }
 
@@ -915,7 +950,7 @@ const AuthenticatedStudioRouteChildren: AuthenticatedStudioRouteChildren = {
   AuthenticatedStudioSponsorsRoute: AuthenticatedStudioSponsorsRoute,
   AuthenticatedStudioStaffRoute: AuthenticatedStudioStaffRoute,
   AuthenticatedStudioVendorsRoute: AuthenticatedStudioVendorsRoute,
-  AuthenticatedStudioVenuesRoute: AuthenticatedStudioVenuesRoute,
+  AuthenticatedStudioVenuesRoute: AuthenticatedStudioVenuesRouteWithChildren,
   AuthenticatedStudioIndexRoute: AuthenticatedStudioIndexRoute,
 }
 
@@ -952,13 +987,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
