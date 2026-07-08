@@ -1,10 +1,12 @@
 import { useMemo, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { CalendarDays, Plus, MoreHorizontal, Copy, BookmarkPlus, Archive, ArchiveRestore, LayoutTemplate } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { cloneEvent } from "@/lib/events.functions";
+import { createEventFromTemplate } from "@/lib/studio.functions";
 import { useAuth } from "@/lib/auth-context";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -14,6 +16,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 export const Route = createFileRoute("/_authenticated/studio/events")({
@@ -55,6 +58,27 @@ function EventLibraryPage() {
   const [cloneAsTemplate, setCloneAsTemplate] = useState(false);
   const [cloneName, setCloneName] = useState("");
   const [busy, setBusy] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [newEvent, setNewEvent] = useState<{ venueId: string; templateId: string; name: string; startsAt: string; endsAt: string }>({ venueId: "", templateId: "", name: "", startsAt: "", endsAt: "" });
+  const createFromTpl = useServerFn(createEventFromTemplate);
+
+  const { data: venues = [] } = useQuery({
+    queryKey: ["events-venues-select", activeOrg?.organizationId],
+    enabled: !!activeOrg?.organizationId,
+    queryFn: async () => {
+      const { data } = await supabase.from("venues").select("id, name").eq("organization_id", activeOrg!.organizationId).is("archived_at", null).order("name");
+      return data ?? [];
+    },
+  });
+
+  const { data: templatesForVenue = [] } = useQuery({
+    queryKey: ["events-templates-select", newEvent.venueId],
+    enabled: !!newEvent.venueId,
+    queryFn: async () => {
+      const { data } = await supabase.from("layout_templates").select("id, name").eq("venue_id", newEvent.venueId).order("name");
+      return data ?? [];
+    },
+  });
 
   const { data: events = [], isLoading } = useQuery({
     queryKey: ["studio-events", activeOrg?.organizationId],
@@ -127,7 +151,7 @@ function EventLibraryPage() {
             <Button variant="outline" onClick={() => setTab("templates")}>
               <LayoutTemplate className="mr-2 h-4 w-4" /> From template
             </Button>
-            <Button>
+            <Button onClick={() => setCreating(true)}>
               <Plus className="mr-2 h-4 w-4" /> New event
             </Button>
           </div>
@@ -177,6 +201,60 @@ function EventLibraryPage() {
             <Button onClick={runClone} disabled={busy}>
               {cloneAsTemplate ? "Save template" : "Clone"}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={creating} onOpenChange={(o) => !o && setCreating(false)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>New event</DialogTitle>
+            <DialogDescription>Select a venue and layout template. The event will start as a draft with its own copy of the booth layout.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label>Venue</Label>
+              <Select value={newEvent.venueId} onValueChange={(v) => setNewEvent({ ...newEvent, venueId: v, templateId: "" })}>
+                <SelectTrigger><SelectValue placeholder="Choose venue" /></SelectTrigger>
+                <SelectContent>{venues.map((v) => <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label>Layout template</Label>
+              <Select value={newEvent.templateId} onValueChange={(v) => setNewEvent({ ...newEvent, templateId: v })} disabled={!newEvent.venueId}>
+                <SelectTrigger><SelectValue placeholder={newEvent.venueId ? "Choose template" : "Pick a venue first"} /></SelectTrigger>
+                <SelectContent>{templatesForVenue.map((t) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}</SelectContent>
+              </Select>
+              {newEvent.venueId && templatesForVenue.length === 0 && <p className="text-xs text-muted-foreground">This venue has no layout templates yet. Create one from Venue detail → Layouts.</p>}
+            </div>
+            <div className="space-y-1"><Label>Event name</Label><Input value={newEvent.name} onChange={(e) => setNewEvent({ ...newEvent, name: e.target.value })} placeholder="Spring Market 2026" /></div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1"><Label>Starts</Label><Input type="date" value={newEvent.startsAt} onChange={(e) => setNewEvent({ ...newEvent, startsAt: e.target.value })} /></div>
+              <div className="space-y-1"><Label>Ends</Label><Input type="date" value={newEvent.endsAt} onChange={(e) => setNewEvent({ ...newEvent, endsAt: e.target.value })} /></div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setCreating(false)} disabled={busy}>Cancel</Button>
+            <Button disabled={busy || !newEvent.venueId || !newEvent.templateId || !newEvent.name.trim()} onClick={async () => {
+              if (!activeOrg) return;
+              setBusy(true);
+              try {
+                await createFromTpl({ data: {
+                  organizationId: activeOrg.organizationId,
+                  venueId: newEvent.venueId,
+                  layoutTemplateId: newEvent.templateId,
+                  name: newEvent.name.trim(),
+                  startsAt: newEvent.startsAt || null,
+                  endsAt: newEvent.endsAt || null,
+                }});
+                toast.success("Event created");
+                setCreating(false);
+                setNewEvent({ venueId: "", templateId: "", name: "", startsAt: "", endsAt: "" });
+                qc.invalidateQueries({ queryKey: ["studio-events", activeOrg.organizationId] });
+              } catch (e) {
+                toast.error(e instanceof Error ? e.message : "Failed to create event");
+              } finally { setBusy(false); }
+            }}>Create event</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

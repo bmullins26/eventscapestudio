@@ -19,6 +19,7 @@ export interface AuthState {
   roles: AppRole[];
   organizations: OrgMembership[];
   activeOrg: OrgMembership | null;
+  activeEventId: string | null;
   isAuthenticated: boolean;
   hasRole: (role: AppRole) => boolean;
   hasAnyRole: (roles: AppRole[]) => boolean;
@@ -26,6 +27,7 @@ export interface AuthState {
   primaryRole: AppRole | null;
   primarySurface: AppSurface | null;
   setActiveOrgId: (id: string) => void;
+  setActiveEventId: (id: string | null) => Promise<void>;
   refresh: () => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -46,6 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [organizations, setOrganizations] = useState<OrgMembership[]>([]);
   const [activeOrgId, setActiveOrgId] = useState<string | null>(null);
+  const [activeEventId, setActiveEventIdState] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const loadContext = useCallback(async (userId: string | undefined) => {
@@ -83,6 +86,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(false);
   }, [loadContext]);
 
+  // Load persisted active event when active org changes
+  useEffect(() => {
+    if (!session?.user?.id || !activeOrgId) { setActiveEventIdState(null); return; }
+    void supabase
+      .from("user_org_prefs")
+      .select("active_event_id")
+      .eq("user_id", session.user.id)
+      .eq("organization_id", activeOrgId)
+      .maybeSingle()
+      .then(({ data }) => setActiveEventIdState(data?.active_event_id ?? null));
+  }, [session?.user?.id, activeOrgId]);
+
+  const setActiveEventId = useCallback(async (id: string | null) => {
+    setActiveEventIdState(id);
+    if (!session?.user?.id || !activeOrgId) return;
+    await supabase.from("user_org_prefs").upsert({
+      user_id: session.user.id,
+      organization_id: activeOrgId,
+      active_event_id: id,
+    }, { onConflict: "user_id,organization_id" });
+  }, [session?.user?.id, activeOrgId]);
+
   useEffect(() => {
     if (typeof window === "undefined") { setLoading(false); return; }
     void refresh();
@@ -97,7 +122,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
-    setSession(null); setRoles([]); setOrganizations([]); setActiveOrgId(null);
+    setSession(null); setRoles([]); setOrganizations([]); setActiveOrgId(null); setActiveEventIdState(null);
   }, []);
 
   const value = useMemo<AuthState>(() => {
@@ -117,6 +142,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       roles,
       organizations,
       activeOrg,
+      activeEventId,
       isAuthenticated: !!session,
       hasRole,
       hasAnyRole: (list) => list.some((r) => roles.includes(r)),
@@ -124,10 +150,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       primaryRole,
       primarySurface: roleToSurface(primaryRole),
       setActiveOrgId,
+      setActiveEventId,
       refresh,
       signOut,
     };
-  }, [session, roles, organizations, activeOrgId, loading, refresh, signOut]);
+  }, [session, roles, organizations, activeOrgId, activeEventId, loading, refresh, signOut, setActiveEventId]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

@@ -16,6 +16,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApplyEventSlugRouteImport } from './routes/apply.$eventSlug'
 import { Route as AuthenticatedStudioRouteImport } from './routes/_authenticated/studio'
 import { Route as AuthenticatedPortalRouteImport } from './routes/_authenticated/portal'
 import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
@@ -82,6 +83,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApplyEventSlugRoute = ApplyEventSlugRouteImport.update({
+  id: '/apply/$eventSlug',
+  path: '/apply/$eventSlug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedStudioRoute = AuthenticatedStudioRouteImport.update({
@@ -287,6 +293,7 @@ export interface FileRoutesByFullPath {
   '/app': typeof AuthenticatedAppRoute
   '/portal': typeof AuthenticatedPortalRouteWithChildren
   '/studio': typeof AuthenticatedStudioRouteWithChildren
+  '/apply/$eventSlug': typeof ApplyEventSlugRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/admin/logs': typeof AuthenticatedAdminLogsRoute
   '/admin/organizations': typeof AuthenticatedAdminOrganizationsRoute
@@ -325,6 +332,7 @@ export interface FileRoutesByTo {
   '/features': typeof FeaturesRoute
   '/pricing': typeof PricingRoute
   '/app': typeof AuthenticatedAppRoute
+  '/apply/$eventSlug': typeof ApplyEventSlugRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/admin/logs': typeof AuthenticatedAdminLogsRoute
   '/admin/organizations': typeof AuthenticatedAdminOrganizationsRoute
@@ -368,6 +376,7 @@ export interface FileRoutesById {
   '/_authenticated/app': typeof AuthenticatedAppRoute
   '/_authenticated/portal': typeof AuthenticatedPortalRouteWithChildren
   '/_authenticated/studio': typeof AuthenticatedStudioRouteWithChildren
+  '/apply/$eventSlug': typeof ApplyEventSlugRoute
   '/_authenticated/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/_authenticated/admin/logs': typeof AuthenticatedAdminLogsRoute
   '/_authenticated/admin/organizations': typeof AuthenticatedAdminOrganizationsRoute
@@ -411,6 +420,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/portal'
     | '/studio'
+    | '/apply/$eventSlug'
     | '/admin/analytics'
     | '/admin/logs'
     | '/admin/organizations'
@@ -449,6 +459,7 @@ export interface FileRouteTypes {
     | '/features'
     | '/pricing'
     | '/app'
+    | '/apply/$eventSlug'
     | '/admin/analytics'
     | '/admin/logs'
     | '/admin/organizations'
@@ -491,6 +502,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app'
     | '/_authenticated/portal'
     | '/_authenticated/studio'
+    | '/apply/$eventSlug'
     | '/_authenticated/admin/analytics'
     | '/_authenticated/admin/logs'
     | '/_authenticated/admin/organizations'
@@ -530,6 +542,7 @@ export interface RootRouteChildren {
   ContactRoute: typeof ContactRoute
   FeaturesRoute: typeof FeaturesRoute
   PricingRoute: typeof PricingRoute
+  ApplyEventSlugRoute: typeof ApplyEventSlugRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -581,6 +594,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/apply/$eventSlug': {
+      id: '/apply/$eventSlug'
+      path: '/apply/$eventSlug'
+      fullPath: '/apply/$eventSlug'
+      preLoaderRoute: typeof ApplyEventSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/studio': {
@@ -927,6 +947,7 @@ const rootRouteChildren: RootRouteChildren = {
   ContactRoute: ContactRoute,
   FeaturesRoute: FeaturesRoute,
   PricingRoute: PricingRoute,
+  ApplyEventSlugRoute: ApplyEventSlugRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
