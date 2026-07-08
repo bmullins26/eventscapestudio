@@ -257,7 +257,7 @@ function BoothsPage() {
     else { toast.success("Reference imported"); qc.invalidateQueries({ queryKey: ["template-refs", templateId] }); }
   };
 
-  const updateRef = async (id: string, patch: Record<string, unknown>) => {
+  const updateRef = async (id: string, patch: Partial<{ visible: boolean; locked: boolean; opacity: number; scale: number; rotation: number; offset_x: number; offset_y: number; sort_order: number }>) => {
     const { error } = await supabase.from("venue_map_references").update(patch).eq("id", id);
     if (error) toast.error(error.message);
     else qc.invalidateQueries({ queryKey: ["template-refs", templateId] });
