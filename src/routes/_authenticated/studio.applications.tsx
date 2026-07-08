@@ -394,7 +394,8 @@ function ApplicationWorkspace({ appId, onClose, events }: { appId: string | null
 
   if (!appId) return <Sheet open={false} onOpenChange={() => {}}><SheetContent /></Sheet>;
 
-  const setStatus = async (status: string) => {
+  type AppStatus = "approved" | "archived" | "awaiting_payment" | "booth_assigned" | "checked_in" | "completed" | "draft" | "pending" | "rejected" | "waitlisted" | "withdrawn";
+  const setStatus = async (status: AppStatus) => {
     if (!app) return;
     const { error } = await supabase.from("applications").update({ status, decided_at: new Date().toISOString() }).eq("id", app.id);
     if (error) toast.error(error.message);
