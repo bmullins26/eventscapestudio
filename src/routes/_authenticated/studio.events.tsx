@@ -204,6 +204,60 @@ function EventLibraryPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={creating} onOpenChange={(o) => !o && setCreating(false)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>New event</DialogTitle>
+            <DialogDescription>Select a venue and layout template. The event will start as a draft with its own copy of the booth layout.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label>Venue</Label>
+              <Select value={newEvent.venueId} onValueChange={(v) => setNewEvent({ ...newEvent, venueId: v, templateId: "" })}>
+                <SelectTrigger><SelectValue placeholder="Choose venue" /></SelectTrigger>
+                <SelectContent>{venues.map((v) => <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label>Layout template</Label>
+              <Select value={newEvent.templateId} onValueChange={(v) => setNewEvent({ ...newEvent, templateId: v })} disabled={!newEvent.venueId}>
+                <SelectTrigger><SelectValue placeholder={newEvent.venueId ? "Choose template" : "Pick a venue first"} /></SelectTrigger>
+                <SelectContent>{templatesForVenue.map((t) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}</SelectContent>
+              </Select>
+              {newEvent.venueId && templatesForVenue.length === 0 && <p className="text-xs text-muted-foreground">This venue has no layout templates yet. Create one from Venue detail → Layouts.</p>}
+            </div>
+            <div className="space-y-1"><Label>Event name</Label><Input value={newEvent.name} onChange={(e) => setNewEvent({ ...newEvent, name: e.target.value })} placeholder="Spring Market 2026" /></div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1"><Label>Starts</Label><Input type="date" value={newEvent.startsAt} onChange={(e) => setNewEvent({ ...newEvent, startsAt: e.target.value })} /></div>
+              <div className="space-y-1"><Label>Ends</Label><Input type="date" value={newEvent.endsAt} onChange={(e) => setNewEvent({ ...newEvent, endsAt: e.target.value })} /></div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setCreating(false)} disabled={busy}>Cancel</Button>
+            <Button disabled={busy || !newEvent.venueId || !newEvent.templateId || !newEvent.name.trim()} onClick={async () => {
+              if (!activeOrg) return;
+              setBusy(true);
+              try {
+                await createFromTpl({ data: {
+                  organizationId: activeOrg.organizationId,
+                  venueId: newEvent.venueId,
+                  layoutTemplateId: newEvent.templateId,
+                  name: newEvent.name.trim(),
+                  startsAt: newEvent.startsAt || null,
+                  endsAt: newEvent.endsAt || null,
+                }});
+                toast.success("Event created");
+                setCreating(false);
+                setNewEvent({ venueId: "", templateId: "", name: "", startsAt: "", endsAt: "" });
+                qc.invalidateQueries({ queryKey: ["studio-events", activeOrg.organizationId] });
+              } catch (e) {
+                toast.error(e instanceof Error ? e.message : "Failed to create event");
+              } finally { setBusy(false); }
+            }}>Create event</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
