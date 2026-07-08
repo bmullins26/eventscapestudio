@@ -1787,6 +1787,14 @@ export type Database = {
         Args: { _template_id: string }
         Returns: string
       }
+      vendor_profile_belongs_to_org_member: {
+        Args: { _user_id: string; _vendor_profile_id: string }
+        Returns: boolean
+      }
+      vendor_profile_owned_by: {
+        Args: { _user_id: string; _vendor_profile_id: string }
+        Returns: boolean
+      }
       venue_org_id: { Args: { _venue_id: string }; Returns: string }
     }
     Enums: {
