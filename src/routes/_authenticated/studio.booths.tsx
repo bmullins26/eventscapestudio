@@ -709,7 +709,7 @@ function BoothsPage() {
 type RefLayer = {
   id: string;
   original_filename: string | null;
-  source_mime_type: string;
+  source_mime_type: string | null;
   source_page: number | null;
   source_file_url: string | null;
   natural_width: number | null;
