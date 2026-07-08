@@ -131,6 +131,10 @@ function AuthPage() {
                   <Input id="name" required value={fullName} onChange={(e) => setFullName(e.target.value)} />
                 </div>
                 <div className="space-y-2">
+                  <Label htmlFor="orgName">Studio / Organization name</Label>
+                  <Input id="orgName" placeholder="e.g. Rose Market Co." value={orgName} onChange={(e) => setOrgName(e.target.value)} />
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="email2">Email</Label>
                   <Input id="email2" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
                 </div>
@@ -138,20 +142,10 @@ function AuthPage() {
                   <Label htmlFor="password2">Password</Label>
                   <Input id="password2" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
                 </div>
-                <div className="space-y-2">
-                  <Label>I am joining as</Label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button type="button" onClick={() => setRole("organizer")} className={`rounded-xl border px-3 py-3 text-sm transition ${role === "organizer" ? "border-primary bg-primary-soft text-primary-deep" : "border-border text-muted-foreground hover:bg-secondary"}`}>
-                      <div className="font-medium">Event Organizer</div>
-                      <div className="text-xs opacity-80">Run events & markets</div>
-                    </button>
-                    <button type="button" onClick={() => setRole("vendor")} className={`rounded-xl border px-3 py-3 text-sm transition ${role === "vendor" ? "border-primary bg-primary-soft text-primary-deep" : "border-border text-muted-foreground hover:bg-secondary"}`}>
-                      <div className="font-medium">Vendor</div>
-                      <div className="text-xs opacity-80">Apply to events</div>
-                    </button>
-                  </div>
-                </div>
-                <Button type="submit" className="w-full" disabled={loading}>Create account</Button>
+                <p className="rounded-lg bg-secondary/50 p-3 text-xs text-muted-foreground">
+                  Vendor accounts are invitation-only. If an organizer invited you, use the link or code in your invitation email instead.
+                </p>
+                <Button type="submit" className="w-full" disabled={loading}>Create organizer account</Button>
               </form>
             </TabsContent>
           </Tabs>
