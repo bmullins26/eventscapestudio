@@ -41,7 +41,7 @@ function Landing() {
             The elegant home <span className="italic text-primary">for every event</span> you run.
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-base text-muted-foreground sm:text-lg">
-            EventScape Studio is the all-in-one workspace for craft shows, vendor markets, festivals, and community events. Manage applications, booths, vendors, and payments — beautifully.
+            EventScape is the all-in-one platform for craft shows, vendor markets, festivals, and community events. Manage applications, booths, vendors, and payments — beautifully.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Link to="/auth"><Button size="lg" className="rounded-full px-8">Start your studio</Button></Link>
@@ -66,7 +66,7 @@ function Landing() {
 
       <footer className="border-t border-border/60 py-8">
         <p className="text-center text-xs text-muted-foreground">
-          © {new Date().getFullYear()} EventScape Studio · Plan · Organize · Create · Celebrate
+          © {new Date().getFullYear()} EventScape · Plan · Organize · Create · Celebrate
         </p>
       </footer>
     </div>

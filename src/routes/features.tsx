@@ -6,9 +6,9 @@ import { ClipboardCheck, Map, Store, DollarSign, Megaphone, Heart } from "lucide
 export const Route = createFileRoute("/features")({
   head: () => ({
     meta: [
-      { title: "Features · EventScape Studio" },
+      { title: "Features · EventScape" },
       { name: "description", content: "Applications, booth maps, vendor CRM, sponsors, payments, and messaging — designed for craft shows, markets, and festivals." },
-      { property: "og:title", content: "Features · EventScape Studio" },
+      { property: "og:title", content: "Features · EventScape" },
       { property: "og:description", content: "Every tool you need to run beautiful events." },
     ],
   }),
@@ -32,7 +32,7 @@ function FeaturesPage() {
         <p className="text-xs font-medium uppercase tracking-[0.32em] text-primary">Features</p>
         <h1 className="mt-5 font-display text-5xl font-semibold sm:text-6xl">Every event, elegantly organized.</h1>
         <p className="mx-auto mt-6 max-w-2xl text-base text-muted-foreground">
-          EventScape Studio unifies applications, booths, vendors, sponsors, payments, and communication into one calm workspace.
+          EventScape unifies applications, booths, vendors, sponsors, payments, and communication into one calm workspace.
         </p>
       </section>
       <section className="mx-auto max-w-6xl px-6 pb-24">
@@ -73,7 +73,7 @@ export function PublicFooter() {
   return (
     <footer className="border-t border-border/60 py-8">
       <p className="text-center text-xs text-muted-foreground">
-        © {new Date().getFullYear()} EventScape Studio · Plan · Organize · Create · Celebrate
+        © {new Date().getFullYear()} EventScape · Plan · Organize · Create · Celebrate
       </p>
     </footer>
   );

@@ -336,6 +336,7 @@ export type Database = {
           ends_at: string | null
           id: string
           is_public: boolean
+          is_template: boolean
           layout_template_id: string | null
           name: string
           organization_id: string
@@ -344,6 +345,7 @@ export type Database = {
           slug: string
           starts_at: string | null
           status: Database["public"]["Enums"]["event_status"]
+          template_source_id: string | null
           updated_at: string
           venue_id: string | null
         }
@@ -356,6 +358,7 @@ export type Database = {
           ends_at?: string | null
           id?: string
           is_public?: boolean
+          is_template?: boolean
           layout_template_id?: string | null
           name: string
           organization_id: string
@@ -364,6 +367,7 @@ export type Database = {
           slug: string
           starts_at?: string | null
           status?: Database["public"]["Enums"]["event_status"]
+          template_source_id?: string | null
           updated_at?: string
           venue_id?: string | null
         }
@@ -376,6 +380,7 @@ export type Database = {
           ends_at?: string | null
           id?: string
           is_public?: boolean
+          is_template?: boolean
           layout_template_id?: string | null
           name?: string
           organization_id?: string
@@ -384,6 +389,7 @@ export type Database = {
           slug?: string
           starts_at?: string | null
           status?: Database["public"]["Enums"]["event_status"]
+          template_source_id?: string | null
           updated_at?: string
           venue_id?: string | null
         }
@@ -407,6 +413,13 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_template_source_id_fkey"
+            columns: ["template_source_id"]
+            isOneToOne: false
+            referencedRelation: "events"
             referencedColumns: ["id"]
           },
           {
