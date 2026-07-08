@@ -24,7 +24,7 @@ const SECTIONS: NavSection[] = [
 
 export const Route = createFileRoute("/_authenticated/admin")({
   component: () => (
-    <AppShell variant="admin" title="Platform Admin" sections={SECTIONS}>
+    <AppShell variant="admin" title="Admin Console" sections={SECTIONS}>
       <Outlet />
     </AppShell>
   ),
