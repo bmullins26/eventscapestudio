@@ -42,7 +42,28 @@ function VendorsPage() {
   const qc = useQueryClient();
   const orgId = activeOrg?.organizationId;
   const [search, setSearch] = useState("");
-  const [editing, setEditing] = useState<{ id?: string; business_name: string; contact_name: string; email: string; phone: string } | null>(null);
+  const [editing, setEditing] = useState<{
+    id?: string;
+    business_name: string;
+    contact_name: string;
+    email: string;
+    phone: string;
+    website: string;
+    business_description: string;
+    product_categories: string;
+    emergency_contact_name: string;
+    emergency_contact_phone: string;
+    insurance_doc_url: string;
+    tax_doc_url: string;
+    food_license_url: string;
+    resale_cert_url: string;
+  } | null>(null);
+  const emptyEditing = {
+    business_name: "", contact_name: "", email: "", phone: "",
+    website: "", business_description: "", product_categories: "",
+    emergency_contact_name: "", emergency_contact_phone: "",
+    insurance_doc_url: "", tax_doc_url: "", food_license_url: "", resale_cert_url: "",
+  };
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["vendor-directory", orgId],
