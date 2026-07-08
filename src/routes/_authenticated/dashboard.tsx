@@ -20,11 +20,18 @@ function useDashboardData(userId: string | undefined) {
       const [{ data: org }, { data: events }, { data: apps }, { data: pays }, { data: booths }, { data: sponsors }] = await Promise.all([
         supabase.from("organizations").select("id, name").limit(1).maybeSingle(),
         supabase.from("events").select("id, name, starts_at, status").order("starts_at", { ascending: true }).limit(5),
-        supabase.from("applications").select("id, status", { count: "exact" }),
+        supabase.from("applications").select("id, status"),
         supabase.from("payments").select("amount, status"),
-        supabase.from("booths").select("id, status"),
+        supabase.from("event_booths").select("id, status"),
         supabase.from("sponsors").select("id"),
       ]);
+      return {
+        org, events: events ?? [], applications: apps ?? [],
+        payments: pays ?? [], booths: booths ?? [], sponsors: sponsors ?? [],
+      };
+    },
+  });
+}
       return {
         org, events: events ?? [], applications: apps ?? [],
         payments: pays ?? [], booths: booths ?? [], sponsors: sponsors ?? [],
