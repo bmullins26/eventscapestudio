@@ -179,7 +179,7 @@ function VendorsPage() {
           icon={Store}
           title={search ? "No matches" : "No vendors yet"}
           description={search ? "Try another search." : "Add vendors manually, invite them to the portal, or let them submit applications through the public form."}
-          action={!search ? <Button onClick={() => setEditing({ business_name: "", contact_name: "", email: "", phone: "" })}><Plus className="mr-2 h-4 w-4" /> Add vendor</Button> : undefined}
+          action={!search ? <Button onClick={() => setEditing({ ...emptyEditing })}><Plus className="mr-2 h-4 w-4" /> Add vendor</Button> : undefined}
         />
       ) : (
         <div className="card-soft divide-y divide-border/60">
