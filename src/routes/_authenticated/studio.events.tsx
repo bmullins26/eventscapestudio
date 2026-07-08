@@ -335,6 +335,7 @@ function EventList({
               )}
             </DropdownMenuContent>
           </DropdownMenu>
+          </div>
         </div>
       ))}
     </div>
