@@ -6,9 +6,9 @@ import { Check } from "lucide-react";
 export const Route = createFileRoute("/pricing")({
   head: () => ({
     meta: [
-      { title: "Pricing · EventScape Studio" },
+      { title: "Pricing · EventScape" },
       { name: "description", content: "Simple pricing built for craft shows, markets, and festivals of every size." },
-      { property: "og:title", content: "Pricing · EventScape Studio" },
+      { property: "og:title", content: "Pricing · EventScape" },
       { property: "og:description", content: "Transparent tiers for organizers of every size." },
     ],
   }),

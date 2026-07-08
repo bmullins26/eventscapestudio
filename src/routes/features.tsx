@@ -6,9 +6,9 @@ import { ClipboardCheck, Map, Store, DollarSign, Megaphone, Heart } from "lucide
 export const Route = createFileRoute("/features")({
   head: () => ({
     meta: [
-      { title: "Features · EventScape Studio" },
+      { title: "Features · EventScape" },
       { name: "description", content: "Applications, booth maps, vendor CRM, sponsors, payments, and messaging — designed for craft shows, markets, and festivals." },
-      { property: "og:title", content: "Features · EventScape Studio" },
+      { property: "og:title", content: "Features · EventScape" },
       { property: "og:description", content: "Every tool you need to run beautiful events." },
     ],
   }),
@@ -73,7 +73,7 @@ export function PublicFooter() {
   return (
     <footer className="border-t border-border/60 py-8">
       <p className="text-center text-xs text-muted-foreground">
-        © {new Date().getFullYear()} EventScape Studio · Plan · Organize · Create · Celebrate
+        © {new Date().getFullYear()} EventScape · Plan · Organize · Create · Celebrate
       </p>
     </footer>
   );

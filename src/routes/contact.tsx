@@ -10,9 +10,9 @@ import { useState } from "react";
 export const Route = createFileRoute("/contact")({
   head: () => ({
     meta: [
-      { title: "Contact · EventScape Studio" },
-      { name: "description", content: "Get in touch with the EventScape Studio team." },
-      { property: "og:title", content: "Contact · EventScape Studio" },
+      { title: "Contact · EventScape" },
+      { name: "description", content: "Get in touch with the EventScape team." },
+      { property: "og:title", content: "Contact · EventScape" },
       { property: "og:description", content: "We'd love to hear from you." },
     ],
   }),

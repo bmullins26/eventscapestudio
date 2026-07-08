@@ -12,8 +12,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "Sign in · EventScape Studio" },
-      { name: "description", content: "Sign in or create your EventScape Studio organizer account." },
+      { title: "Sign in · EventScape" },
+      { name: "description", content: "Sign in or create your EventScape organizer account." },
     ],
   }),
   component: AuthPage,
@@ -50,7 +50,7 @@ function AuthPage() {
           },
         });
         if (error) throw error;
-        toast.success("Welcome to EventScape Studio!");
+        toast.success("Welcome to EventScape!");
         navigate({ to: "/app" });
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -92,7 +92,7 @@ function AuthPage() {
               Applications, booth maps, vendor communication, and payments — organized into one welcoming workspace built for craft shows, markets, and festivals.
             </p>
           </div>
-          <p className="text-xs text-muted-foreground">© EventScape Studio</p>
+          <p className="text-xs text-muted-foreground">© EventScape</p>
         </div>
       </div>
 
