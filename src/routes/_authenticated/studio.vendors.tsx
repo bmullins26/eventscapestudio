@@ -241,16 +241,45 @@ function VendorsPage() {
       )}
 
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>{editing?.id ? "Edit vendor" : "New vendor"}</DialogTitle></DialogHeader>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editing?.id ? "Edit vendor" : "New vendor"}</DialogTitle>
+            <p className="text-xs text-muted-foreground">Organization Vendor Intake — permanent profile shared across every event.</p>
+          </DialogHeader>
           {editing && (
-            <div className="space-y-3">
-              <div className="space-y-1"><Label>Business name *</Label><Input value={editing.business_name} onChange={(e) => setEditing({ ...editing, business_name: e.target.value })} autoFocus /></div>
-              <div className="space-y-1"><Label>Contact name</Label><Input value={editing.contact_name} onChange={(e) => setEditing({ ...editing, contact_name: e.target.value })} /></div>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-1"><Label>Email</Label><Input type="email" value={editing.email} onChange={(e) => setEditing({ ...editing, email: e.target.value })} /></div>
-                <div className="space-y-1"><Label>Phone</Label><Input value={editing.phone} onChange={(e) => setEditing({ ...editing, phone: e.target.value })} /></div>
-              </div>
+            <div className="space-y-5 py-2">
+              <section className="space-y-3">
+                <h3 className="text-xs uppercase tracking-wide text-muted-foreground">Business</h3>
+                <div className="space-y-1"><Label>Business name *</Label><Input value={editing.business_name} onChange={(e) => setEditing({ ...editing, business_name: e.target.value })} autoFocus /></div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1"><Label>Contact name</Label><Input value={editing.contact_name} onChange={(e) => setEditing({ ...editing, contact_name: e.target.value })} /></div>
+                  <div className="space-y-1"><Label>Website</Label><Input placeholder="https://" value={editing.website} onChange={(e) => setEditing({ ...editing, website: e.target.value })} /></div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1"><Label>Email</Label><Input type="email" value={editing.email} onChange={(e) => setEditing({ ...editing, email: e.target.value })} /></div>
+                  <div className="space-y-1"><Label>Phone</Label><Input value={editing.phone} onChange={(e) => setEditing({ ...editing, phone: e.target.value })} /></div>
+                </div>
+                <div className="space-y-1"><Label>Business description</Label><Textarea rows={3} value={editing.business_description} onChange={(e) => setEditing({ ...editing, business_description: e.target.value })} /></div>
+                <div className="space-y-1"><Label>Product categories (comma separated)</Label><Input placeholder="Handmade, Food, Art" value={editing.product_categories} onChange={(e) => setEditing({ ...editing, product_categories: e.target.value })} /></div>
+              </section>
+
+              <section className="space-y-3 border-t border-border/60 pt-4">
+                <h3 className="text-xs uppercase tracking-wide text-muted-foreground">Documents (URLs)</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1"><Label>Insurance</Label><Input value={editing.insurance_doc_url} onChange={(e) => setEditing({ ...editing, insurance_doc_url: e.target.value })} /></div>
+                  <div className="space-y-1"><Label>Tax document</Label><Input value={editing.tax_doc_url} onChange={(e) => setEditing({ ...editing, tax_doc_url: e.target.value })} /></div>
+                  <div className="space-y-1"><Label>Food license</Label><Input value={editing.food_license_url} onChange={(e) => setEditing({ ...editing, food_license_url: e.target.value })} /></div>
+                  <div className="space-y-1"><Label>Resale certificate</Label><Input value={editing.resale_cert_url} onChange={(e) => setEditing({ ...editing, resale_cert_url: e.target.value })} /></div>
+                </div>
+              </section>
+
+              <section className="space-y-3 border-t border-border/60 pt-4">
+                <h3 className="text-xs uppercase tracking-wide text-muted-foreground">Emergency contact</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1"><Label>Name</Label><Input value={editing.emergency_contact_name} onChange={(e) => setEditing({ ...editing, emergency_contact_name: e.target.value })} /></div>
+                  <div className="space-y-1"><Label>Phone</Label><Input value={editing.emergency_contact_phone} onChange={(e) => setEditing({ ...editing, emergency_contact_phone: e.target.value })} /></div>
+                </div>
+              </section>
             </div>
           )}
           <DialogFooter>
