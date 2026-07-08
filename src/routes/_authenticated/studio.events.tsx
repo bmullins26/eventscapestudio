@@ -180,7 +180,7 @@ function EventLibraryPage() {
               onSaveTemplate={(r) => openClone(r, true)}
               onArchive={(r) => setStatus(r, "archived")}
               onRestore={(r) => setStatus(r, "draft")}
-              onOpen={(r) => navigate({ to: "/studio/events" })}
+              onOpen={(r) => setEditTarget(r)}
             />
           </TabsContent>
         ))}
