@@ -109,7 +109,7 @@ function EventLibraryPage() {
     }
   };
 
-  const setStatus = async (row: EventRow, status: string) => {
+  const setStatus = async (row: EventRow, status: "draft" | "archived") => {
     const { error } = await supabase.from("events").update({ status }).eq("id", row.id);
     if (error) { toast.error(error.message); return; }
     toast.success("Updated");
