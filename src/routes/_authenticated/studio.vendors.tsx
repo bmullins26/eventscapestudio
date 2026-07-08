@@ -10,6 +10,7 @@ import { createVendor, updateVendor } from "@/lib/vendors.functions";
 import { useAuth } from "@/lib/auth-context";
 import { DuplicateMatchDialog, type DuplicateMatch } from "@/components/vendors/DuplicateMatchDialog";
 import { useVendorDraft } from "@/components/vendors/useVendorDraft";
+import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
