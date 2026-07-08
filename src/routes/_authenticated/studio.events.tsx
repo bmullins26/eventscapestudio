@@ -293,7 +293,7 @@ function EventList({
   return (
     <div className="card-soft divide-y divide-border/60">
       {rows.map((r) => (
-        <div key={r.id} className="flex items-center gap-4 px-5 py-4">
+        <div key={r.id} className="flex items-center gap-4 px-5 py-4 hover:bg-muted/40 cursor-pointer transition-colors" onClick={() => onOpen(r)}>
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary-soft text-primary-deep">
             {r.is_template ? <LayoutTemplate className="h-5 w-5" /> : <CalendarDays className="h-5 w-5" />}
           </div>
@@ -305,6 +305,7 @@ function EventList({
             </div>
             <p className="text-xs text-muted-foreground">{r.is_template ? "Reusable template" : fmtRange(r.starts_at, r.ends_at)}</p>
           </div>
+          <div onClick={(e) => e.stopPropagation()}>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" aria-label="Row actions">
@@ -312,7 +313,8 @@ function EventList({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => onOpen(r)}>Open</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onOpen(r)}><Pencil className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => onClone(r)}>
                 <Copy className="mr-2 h-4 w-4" /> Clone
               </DropdownMenuItem>
