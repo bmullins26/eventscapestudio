@@ -160,7 +160,7 @@ function ApplicationsPage() {
       special_requests: creating.special_requests || null,
       payment_amount: creating.payment_amount ? Number(creating.payment_amount) : null,
       notes: creating.notes || null,
-      ai_extraction: creating.ai_extraction ?? null,
+      ai_extraction: (creating.ai_extraction ?? null) as never,
     });
     if (error) { toast.error(error.message); return; }
     toast.success("Application saved");
