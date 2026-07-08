@@ -55,7 +55,7 @@ function fmtRange(start: string | null, end: string | null) {
 
 function EventLibraryPage() {
   const { activeOrg } = useAuth();
-  const navigate = useNavigate();
+  const [editTarget, setEditTarget] = useState<EventRow | null>(null);
   const qc = useQueryClient();
   const [tab, setTab] = useState<"active" | "drafts" | "archived" | "templates">("active");
   const [cloneTarget, setCloneTarget] = useState<EventRow | null>(null);
