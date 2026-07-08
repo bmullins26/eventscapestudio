@@ -71,7 +71,7 @@ function VendorsPage() {
     queryFn: async (): Promise<VendorRow[]> => {
       const { data, error } = await supabase
         .from("organization_vendors")
-        .select("id, vendor_profile_id, account_status, is_favorite, years_participated, total_paid, vendor_profiles(business_name, contact_name, email, phone)")
+        .select("id, vendor_profile_id, account_status, is_favorite, years_participated, total_paid, vendor_profiles(business_name, contact_name, email, phone, website, business_description, product_categories, emergency_contact_name, emergency_contact_phone, insurance_doc_url, tax_doc_url, food_license_url, resale_cert_url)")
         .eq("organization_id", orgId!)
         .order("created_at", { ascending: false });
       if (error) throw error;
