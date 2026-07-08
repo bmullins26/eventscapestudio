@@ -1,5 +1,6 @@
 import { useRef, useState, useCallback } from "react";
-import { createFileRoute, Link, useServerFn } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import {
   MousePointer2, Hand, Square, Circle as CircleIcon, Type as TypeIcon,

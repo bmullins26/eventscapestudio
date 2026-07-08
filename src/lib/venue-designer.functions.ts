@@ -38,9 +38,8 @@ export const updateVenueCanvas = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => UpdateVenueCanvasInput.parse(d))
   .handler(async ({ data, context }) => {
     const { venueId, ...patch } = data;
-    const { error } = await context.supabase
-      .from("venues")
-      .update(patch as Record<string, unknown>)
+    const { error } = await (context.supabase.from("venues") as any)
+      .update(patch)
       .eq("id", venueId);
     if (error) throw error;
     return { ok: true };
