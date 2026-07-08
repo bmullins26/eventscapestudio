@@ -139,55 +139,69 @@ function VendorsPage() {
     });
   }, [rows, search]);
 
-  const saveVendor = async () => {
+  const buildProfilePayload = (e: EditState) => ({
+    business_name: e.business_name.trim(),
+    contact_name: e.contact_name || null,
+    email: e.email || null,
+    phone: e.phone || null,
+    website: e.website || null,
+    business_description: e.business_description || null,
+    product_categories: e.product_categories.split(",").map((s) => s.trim()).filter(Boolean),
+    emergency_contact_name: e.emergency_contact_name || null,
+    emergency_contact_phone: e.emergency_contact_phone || null,
+    insurance_doc_url: e.insurance_doc_url || null,
+    tax_doc_url: e.tax_doc_url || null,
+    food_license_url: e.food_license_url || null,
+    resale_cert_url: e.resale_cert_url || null,
+    business_photos: e.business_photos,
+    social_links: {
+      facebook: e.social_facebook || null,
+      instagram: e.social_instagram || null,
+      tiktok: e.social_tiktok || null,
+    },
+  });
+
+  const persistSave = async (opts: { allowDuplicate?: boolean; matchedProfileId?: string } = {}) => {
     if (!editing || !orgId) return;
     if (!editing.business_name.trim()) { toast.error("Business name required"); return; }
-    const categories = editing.product_categories.split(",").map((s) => s.trim()).filter(Boolean);
-    const social_links = {
-      facebook: editing.social_facebook || null,
-      instagram: editing.social_instagram || null,
-      tiktok: editing.social_tiktok || null,
-    };
-    const profilePayload = {
-      business_name: editing.business_name.trim(),
-      contact_name: editing.contact_name || null,
-      email: editing.email || null,
-      phone: editing.phone || null,
-      website: editing.website || null,
-      business_description: editing.business_description || null,
-      product_categories: categories,
-      emergency_contact_name: editing.emergency_contact_name || null,
-      emergency_contact_phone: editing.emergency_contact_phone || null,
-      insurance_doc_url: editing.insurance_doc_url || null,
-      tax_doc_url: editing.tax_doc_url || null,
-      food_license_url: editing.food_license_url || null,
-      resale_cert_url: editing.resale_cert_url || null,
-      business_photos: editing.business_photos,
-      social_links,
-    };
-    if (editing.id) {
-      const row = rows.find((r) => r.id === editing.id);
-      if (!row) return;
-      const { error } = await supabase.from("vendor_profiles").update(profilePayload).eq("id", row.vendor_profile_id);
-      if (error) { toast.error(error.message); return; }
-    } else {
-      const { data: vp, error: vpErr } = await supabase.from("vendor_profiles").insert({
-        ...profilePayload,
-        intake_completed_at: new Date().toISOString(),
-      }).select("id").single();
-      if (vpErr) { toast.error(vpErr.message); return; }
-      const { error: ovErr } = await supabase.from("organization_vendors").insert({
-        organization_id: orgId,
-        vendor_profile_id: vp.id,
-        account_status: "no_account",
-      });
-      if (ovErr) { toast.error(ovErr.message); return; }
+    setSaving(true);
+    try {
+      const profile = buildProfilePayload(editing);
+      if (editing.id) {
+        const row = rows.find((r) => r.id === editing.id);
+        if (!row) return;
+        await updateVendorFn({ data: { organizationId: orgId, vendorProfileId: row.vendor_profile_id, profile } });
+      } else {
+        const result = await createVendorFn({
+          data: {
+            organizationId: orgId,
+            profile,
+            link: { account_status: "no_account", is_favorite: false },
+            allowDuplicate: opts.allowDuplicate ?? false,
+            matchedProfileId: opts.matchedProfileId ?? null,
+          },
+        });
+        if (result.status === "duplicates") {
+          setDuplicates(result.matches);
+          return;
+        }
+        if (result.status === "linked") toast.success("Linked existing vendor to this organization");
+      }
+      toast.success("Saved");
+      setEditing(null);
+      setScanBanner(null);
+      setDuplicates(null);
+      draft.clear();
+      qc.invalidateQueries({ queryKey: ["vendor-directory", orgId] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Save failed");
+    } finally {
+      setSaving(false);
     }
-    toast.success("Saved");
-    setEditing(null);
-    setScanBanner(null);
-    qc.invalidateQueries({ queryKey: ["vendor-directory", orgId] });
   };
+
+  const saveVendor = () => persistSave();
+
 
   const startScan = async (file: File) => {
     if (!orgId) return;
