@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,11 +19,6 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
-function slugify(name: string) {
-  const base = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "").slice(0, 40) || "studio";
-  return `${base}-${Math.random().toString(36).slice(2, 8)}`;
-}
-
 function AuthPage() {
   const navigate = useNavigate();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
@@ -33,25 +28,28 @@ function AuthPage() {
   const [orgName, setOrgName] = useState("");
   const [loading, setLoading] = useState(false);
 
-  async function bootstrapOrganizer(userId: string, name: string, orgLabel: string) {
-    await supabase.from("user_roles").upsert({ user_id: userId, role: "organizer" }, { onConflict: "user_id,role" });
-    const label = orgLabel.trim() || (name ? `${name.split(" ")[0]}'s Studio` : "My Studio");
-    await supabase.from("organizations").insert({ name: label, slug: slugify(label), owner_id: userId });
-  }
+  // If already signed in, skip the auth page.
+  useEffect(() => {
+    let cancelled = false;
+    supabase.auth.getUser().then(({ data }) => {
+      if (!cancelled && data.user) navigate({ to: "/app", replace: true });
+    });
+    return () => { cancelled = true; };
+  }, [navigate]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     try {
       if (mode === "signup") {
-        const { data, error } = await supabase.auth.signUp({
+        const { error } = await supabase.auth.signUp({
           email, password,
-          options: { emailRedirectTo: window.location.origin, data: { full_name: fullName } },
+          options: {
+            emailRedirectTo: window.location.origin,
+            data: { full_name: fullName, org_name: orgName },
+          },
         });
         if (error) throw error;
-        if (data.user) {
-          await bootstrapOrganizer(data.user.id, fullName, orgName);
-        }
         toast.success("Welcome to EventScape Studio!");
         navigate({ to: "/app" });
       } else {
