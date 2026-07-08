@@ -151,7 +151,12 @@ function VenuesPage() {
                   <Button variant="ghost" size="icon" aria-label="Actions"><MoreHorizontal className="h-4 w-4" /></Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => setDetailId(v.id)}>Open</DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/studio/venues/$venueId/designer" params={{ venueId: v.id }}>
+                      <LayoutTemplate className="mr-2 h-4 w-4" /> Open Designer
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setDetailId(v.id)}>Details</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setEditing(v)}><Pencil className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem>
                   {v.archived_at ? (
                     <DropdownMenuItem onClick={() => archive(v, true)}><ArchiveRestore className="mr-2 h-4 w-4" /> Restore</DropdownMenuItem>
