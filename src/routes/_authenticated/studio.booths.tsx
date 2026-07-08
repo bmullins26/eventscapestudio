@@ -525,19 +525,36 @@ function BoothsPage() {
             <p className="font-display text-sm font-semibold">Reference layer</p>
             {refLayers.length === 0 ? (
               <p className="text-xs text-muted-foreground">Import a sketch, PDF, or blueprint above to trace over.</p>
-            ) : refLayers.map((r) => (
-              <div key={r.id} className="rounded-md border border-border/60 p-2 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="truncate text-xs font-medium">{r.original_filename ?? "Reference"}</span>
-                  <Button size="icon" variant="ghost" onClick={() => deleteRef(r.id)}><Trash2 className="h-3 w-3" /></Button>
+            ) : refLayers.map((r) => {
+              const isPdf = r.source_mime_type === "application/pdf";
+              return (
+                <div key={r.id} className="rounded-md border border-border/60 p-2 space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex min-w-0 items-center gap-2">
+                      {isPdf ? <FileText className="h-3.5 w-3.5 shrink-0 text-muted-foreground" /> : <ImageIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />}
+                      <span className="truncate text-xs font-medium">{r.original_filename ?? "Reference"}</span>
+                      {isPdf && r.source_page && <Badge variant="outline" className="shrink-0 text-[10px]">p{r.source_page}</Badge>}
+                    </div>
+                    <div className="flex shrink-0 items-center">
+                      {r.source_file_url && (
+                        <Button size="icon" variant="ghost" asChild title="Download original">
+                          <a href={r.source_file_url} target="_blank" rel="noreferrer"><Download className="h-3 w-3" /></a>
+                        </Button>
+                      )}
+                      <Button size="icon" variant="ghost" onClick={() => deleteRef(r.id)} title="Delete layer"><Trash2 className="h-3 w-3" /></Button>
+                    </div>
+                  </div>
+                  {r.natural_width && r.natural_height && (
+                    <p className="text-[10px] text-muted-foreground">{r.natural_width} × {r.natural_height}px</p>
+                  )}
+                  <label className="flex items-center justify-between text-xs">Visible <Switch checked={r.visible} onCheckedChange={(v) => updateRef(r.id, { visible: v })} /></label>
+                  <label className="flex items-center justify-between text-xs">Locked <Switch checked={r.locked} onCheckedChange={(v) => updateRef(r.id, { locked: v })} /></label>
+                  <div><Label className="text-xs">Opacity</Label><Slider value={[Number(r.opacity) * 100]} max={100} step={5} onValueChange={([v]) => updateRef(r.id, { opacity: v / 100 })} /></div>
+                  <div><Label className="text-xs">Scale</Label><Slider value={[Number(r.scale) * 100]} min={10} max={300} step={5} onValueChange={([v]) => updateRef(r.id, { scale: v / 100 })} /></div>
+                  <div><Label className="text-xs">Rotation</Label><Slider value={[Number(r.rotation)]} min={-180} max={180} step={5} onValueChange={([v]) => updateRef(r.id, { rotation: v })} /></div>
                 </div>
-                <label className="flex items-center justify-between text-xs">Visible <Switch checked={r.visible} onCheckedChange={(v) => updateRef(r.id, { visible: v })} /></label>
-                <label className="flex items-center justify-between text-xs">Locked <Switch checked={r.locked} onCheckedChange={(v) => updateRef(r.id, { locked: v })} /></label>
-                <div><Label className="text-xs">Opacity</Label><Slider value={[Number(r.opacity) * 100]} max={100} step={5} onValueChange={([v]) => updateRef(r.id, { opacity: v / 100 })} /></div>
-                <div><Label className="text-xs">Scale</Label><Slider value={[Number(r.scale) * 100]} min={20} max={300} step={5} onValueChange={([v]) => updateRef(r.id, { scale: v / 100 })} /></div>
-                <div><Label className="text-xs">Rotation</Label><Slider value={[Number(r.rotation)]} min={-180} max={180} step={5} onValueChange={([v]) => updateRef(r.id, { rotation: v })} /></div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
