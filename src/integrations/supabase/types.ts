@@ -809,6 +809,62 @@ export type Database = {
           },
         ]
       }
+      org_object_library: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string | null
+          default_geometry: Json
+          default_metadata: Json
+          default_style: Json
+          icon_url: string | null
+          id: string
+          name: string
+          organization_id: string
+          shape: Database["public"]["Enums"]["venue_object_shape"]
+          type: Database["public"]["Enums"]["venue_object_type"]
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          default_geometry?: Json
+          default_metadata?: Json
+          default_style?: Json
+          icon_url?: string | null
+          id?: string
+          name: string
+          organization_id: string
+          shape?: Database["public"]["Enums"]["venue_object_shape"]
+          type?: Database["public"]["Enums"]["venue_object_type"]
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          default_geometry?: Json
+          default_metadata?: Json
+          default_style?: Json
+          icon_url?: string | null
+          id?: string
+          name?: string
+          organization_id?: string
+          shape?: Database["public"]["Enums"]["venue_object_shape"]
+          type?: Database["public"]["Enums"]["venue_object_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_object_library_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organization_members: {
         Row: {
           created_at: string
@@ -1605,6 +1661,53 @@ export type Database = {
           },
         ]
       }
+      venue_layers: {
+        Row: {
+          created_at: string
+          id: string
+          kind: Database["public"]["Enums"]["venue_layer_kind"]
+          locked: boolean
+          name: string
+          opacity: number
+          order_index: number
+          updated_at: string
+          venue_id: string
+          visible: boolean
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["venue_layer_kind"]
+          locked?: boolean
+          name: string
+          opacity?: number
+          order_index?: number
+          updated_at?: string
+          venue_id: string
+          visible?: boolean
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["venue_layer_kind"]
+          locked?: boolean
+          name?: string
+          opacity?: number
+          order_index?: number
+          updated_at?: string
+          venue_id?: string
+          visible?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_layers_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       venue_map_references: {
         Row: {
           created_at: string
@@ -1732,15 +1835,194 @@ export type Database = {
           },
         ]
       }
+      venue_objects: {
+        Row: {
+          created_at: string
+          geometry: Json
+          group_id: string | null
+          hidden: boolean
+          id: string
+          layer_id: string | null
+          locked: boolean
+          metadata: Json
+          name: string | null
+          shape: Database["public"]["Enums"]["venue_object_shape"]
+          style: Json
+          type: Database["public"]["Enums"]["venue_object_type"]
+          updated_at: string
+          venue_id: string
+          z_index: number
+        }
+        Insert: {
+          created_at?: string
+          geometry?: Json
+          group_id?: string | null
+          hidden?: boolean
+          id?: string
+          layer_id?: string | null
+          locked?: boolean
+          metadata?: Json
+          name?: string | null
+          shape?: Database["public"]["Enums"]["venue_object_shape"]
+          style?: Json
+          type: Database["public"]["Enums"]["venue_object_type"]
+          updated_at?: string
+          venue_id: string
+          z_index?: number
+        }
+        Update: {
+          created_at?: string
+          geometry?: Json
+          group_id?: string | null
+          hidden?: boolean
+          id?: string
+          layer_id?: string | null
+          locked?: boolean
+          metadata?: Json
+          name?: string | null
+          shape?: Database["public"]["Enums"]["venue_object_shape"]
+          style?: Json
+          type?: Database["public"]["Enums"]["venue_object_type"]
+          updated_at?: string
+          venue_id?: string
+          z_index?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_objects_layer_id_fkey"
+            columns: ["layer_id"]
+            isOneToOne: false
+            referencedRelation: "venue_layers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "venue_objects_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      venue_references: {
+        Row: {
+          created_at: string
+          file_url: string
+          id: string
+          label: string | null
+          layer_id: string | null
+          mime_type: string | null
+          opacity: number
+          page: number | null
+          transform: Json
+          updated_at: string
+          venue_id: string
+          visible: boolean
+        }
+        Insert: {
+          created_at?: string
+          file_url: string
+          id?: string
+          label?: string | null
+          layer_id?: string | null
+          mime_type?: string | null
+          opacity?: number
+          page?: number | null
+          transform?: Json
+          updated_at?: string
+          venue_id: string
+          visible?: boolean
+        }
+        Update: {
+          created_at?: string
+          file_url?: string
+          id?: string
+          label?: string | null
+          layer_id?: string | null
+          mime_type?: string | null
+          opacity?: number
+          page?: number | null
+          transform?: Json
+          updated_at?: string
+          venue_id?: string
+          visible?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_references_layer_id_fkey"
+            columns: ["layer_id"]
+            isOneToOne: false
+            referencedRelation: "venue_layers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "venue_references_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      venue_templates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          label: string | null
+          model: Json
+          published_at: string | null
+          updated_at: string
+          venue_id: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          label?: string | null
+          model?: Json
+          published_at?: string | null
+          updated_at?: string
+          venue_id: string
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          label?: string | null
+          model?: Json
+          published_at?: string | null
+          updated_at?: string
+          venue_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_templates_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       venues: {
         Row: {
           address_line1: string | null
           address_line2: string | null
           archived_at: string | null
+          canvas_height: number
+          canvas_width: number
           city: string | null
           country: string | null
           cover_image_url: string | null
           created_at: string
+          default_view: Json
           emergency_info: string | null
           id: string
           latitude: number | null
@@ -1751,6 +2033,7 @@ export type Database = {
           parking_info: string | null
           postal_code: string | null
           state: string | null
+          units: string
           updated_at: string
           utilities_info: string | null
         }
@@ -1758,10 +2041,13 @@ export type Database = {
           address_line1?: string | null
           address_line2?: string | null
           archived_at?: string | null
+          canvas_height?: number
+          canvas_width?: number
           city?: string | null
           country?: string | null
           cover_image_url?: string | null
           created_at?: string
+          default_view?: Json
           emergency_info?: string | null
           id?: string
           latitude?: number | null
@@ -1772,6 +2058,7 @@ export type Database = {
           parking_info?: string | null
           postal_code?: string | null
           state?: string | null
+          units?: string
           updated_at?: string
           utilities_info?: string | null
         }
@@ -1779,10 +2066,13 @@ export type Database = {
           address_line1?: string | null
           address_line2?: string | null
           archived_at?: string | null
+          canvas_height?: number
+          canvas_width?: number
           city?: string | null
           country?: string | null
           cover_image_url?: string | null
           created_at?: string
+          default_view?: Json
           emergency_info?: string | null
           id?: string
           latitude?: number | null
@@ -1793,6 +2083,7 @@ export type Database = {
           parking_info?: string | null
           postal_code?: string | null
           state?: string | null
+          units?: string
           updated_at?: string
           utilities_info?: string | null
         }
@@ -1906,6 +2197,48 @@ export type Database = {
         | "status_change"
         | "document"
         | "assignment"
+      venue_layer_kind:
+        | "reference"
+        | "buildings"
+        | "roads"
+        | "utilities"
+        | "booths"
+        | "labels"
+        | "custom"
+      venue_object_shape:
+        | "rect"
+        | "polygon"
+        | "line"
+        | "circle"
+        | "text"
+        | "path"
+      venue_object_type:
+        | "booth"
+        | "building"
+        | "road"
+        | "walkway"
+        | "parking"
+        | "utility"
+        | "tree"
+        | "fence"
+        | "stage"
+        | "pavilion"
+        | "food_court"
+        | "beer_garden"
+        | "restroom"
+        | "table"
+        | "bench"
+        | "trash"
+        | "sign"
+        | "sponsor_banner"
+        | "registration"
+        | "info"
+        | "ticket"
+        | "first_aid"
+        | "atm"
+        | "kids_area"
+        | "petting_zoo"
+        | "custom"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2089,6 +2422,44 @@ export const Constants = {
         "status_change",
         "document",
         "assignment",
+      ],
+      venue_layer_kind: [
+        "reference",
+        "buildings",
+        "roads",
+        "utilities",
+        "booths",
+        "labels",
+        "custom",
+      ],
+      venue_object_shape: ["rect", "polygon", "line", "circle", "text", "path"],
+      venue_object_type: [
+        "booth",
+        "building",
+        "road",
+        "walkway",
+        "parking",
+        "utility",
+        "tree",
+        "fence",
+        "stage",
+        "pavilion",
+        "food_court",
+        "beer_garden",
+        "restroom",
+        "table",
+        "bench",
+        "trash",
+        "sign",
+        "sponsor_banner",
+        "registration",
+        "info",
+        "ticket",
+        "first_aid",
+        "atm",
+        "kids_area",
+        "petting_zoo",
+        "custom",
       ],
     },
   },
