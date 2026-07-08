@@ -200,7 +200,25 @@ function VendorsPage() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => setEditing({ id: r.id, business_name: r.vendor_profiles?.business_name ?? "", contact_name: r.vendor_profiles?.contact_name ?? "", email: r.vendor_profiles?.email ?? "", phone: r.vendor_profiles?.phone ?? "" })}><Pencil className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => {
+                    const p: any = r.vendor_profiles ?? {};
+                    setEditing({
+                      id: r.id,
+                      business_name: p.business_name ?? "",
+                      contact_name: p.contact_name ?? "",
+                      email: p.email ?? "",
+                      phone: p.phone ?? "",
+                      website: p.website ?? "",
+                      business_description: p.business_description ?? "",
+                      product_categories: Array.isArray(p.product_categories) ? p.product_categories.join(", ") : "",
+                      emergency_contact_name: p.emergency_contact_name ?? "",
+                      emergency_contact_phone: p.emergency_contact_phone ?? "",
+                      insurance_doc_url: p.insurance_doc_url ?? "",
+                      tax_doc_url: p.tax_doc_url ?? "",
+                      food_license_url: p.food_license_url ?? "",
+                      resale_cert_url: p.resale_cert_url ?? "",
+                    });
+                  }}><Pencil className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem>
                   {r.account_status === "no_account" && <DropdownMenuItem onClick={() => invite(r)}><Mail className="mr-2 h-4 w-4" /> Invite to Portal</DropdownMenuItem>}
                   {r.account_status === "invited" && <DropdownMenuItem onClick={() => setStatus(r, "no_account")}><UserX className="mr-2 h-4 w-4" /> Revoke invite</DropdownMenuItem>}
                   {r.account_status !== "disabled" ? <DropdownMenuItem onClick={() => setStatus(r, "disabled")}><UserX className="mr-2 h-4 w-4" /> Disable</DropdownMenuItem>
