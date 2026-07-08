@@ -41,7 +41,7 @@ const SECTIONS: NavSection[] = [
 
 export const Route = createFileRoute("/_authenticated/studio")({
   component: () => (
-    <AppShell variant="studio" title="EventScape Studio" sections={SECTIONS}>
+    <AppShell variant="studio" title="Studio" sections={SECTIONS}>
       <Outlet />
     </AppShell>
   ),
