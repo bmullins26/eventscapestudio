@@ -8,7 +8,7 @@ export const Route = createFileRoute("/_authenticated/app")({
 });
 
 function RoleRouter() {
-  const { loading, primarySurface, roles } = useAuth();
+  const { loading, primarySurface, roles, refresh, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -17,6 +17,13 @@ function RoleRouter() {
     else if (primarySurface === "portal") navigate({ to: "/portal", replace: true });
     else if (primarySurface === "studio") navigate({ to: "/studio", replace: true });
   }, [loading, primarySurface, navigate]);
+
+  // If authenticated but roles haven't landed yet (race after SIGNED_IN), retry a couple of times.
+  useEffect(() => {
+    if (loading || !isAuthenticated || roles.length > 0) return;
+    const t = setTimeout(() => { void refresh(); }, 600);
+    return () => clearTimeout(t);
+  }, [loading, isAuthenticated, roles.length, refresh]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">
