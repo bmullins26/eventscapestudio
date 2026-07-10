@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   MousePointer2, Hand, Square, Circle as CircleIcon, Type as TypeIcon,
   Layers, Library, LayoutTemplate, Search, ChevronLeft, Ruler, Grid3x3, Magnet,
-  Eye, EyeOff, Lock, Unlock, Trash2, Plus, Store,
+  Eye, EyeOff, Lock, Unlock, Trash2, Plus, Store, Image as ImageIcon, Sparkles, Upload, Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,11 +14,14 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Slider } from "@/components/ui/slider";
 import { EmptyState } from "@/components/shared/empty-state";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import {
   getVenueDesign, createVenueObject, updateVenueObject, deleteVenueObject,
   createVenueLayer, updateVenueLayer, deleteVenueLayer,
+  createVenueReference, updateVenueReference, deleteVenueReference, analyzeVenueDrawing,
 } from "@/lib/venue-designer.functions";
 import { useCanvasInput, type CanvasCoords } from "@/components/booth-builder/use-canvas-input";
 import { cn } from "@/lib/utils";
