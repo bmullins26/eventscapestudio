@@ -121,7 +121,7 @@ function StudioDashboard() {
           <QuickActionCard label="Add Venue" description="Register a location" icon={MapPin} to="/studio/venues" />
           <QuickActionCard label="Add Vendor" description="Grow directory" icon={Store} to="/studio/vendors" />
           <QuickActionCard label="Review Apps" description="Approve vendors" icon={ClipboardCheck} to="/studio/applications" />
-          <QuickActionCard label="Booth Map" description="Design floor" icon={Map} to="/studio/booths" />
+          <QuickActionCard label="Venues" description="Design floor" icon={Map} to="/studio/venues" />
           <QuickActionCard label="Announce" description="Broadcast" icon={Megaphone} to="/studio/messaging" />
         </div>
       </section>

@@ -24,7 +24,7 @@ const SECTIONS: NavSection[] = [
     label: "Operate",
     items: [
       { label: "Applications", to: "/studio/applications", icon: ClipboardCheck, permission: "applications.review" },
-      { label: "Booths", to: "/studio/booths", icon: Map, permission: "booths.manage" },
+      
       { label: "Payments", to: "/studio/payments", icon: DollarSign, permission: "payments.manage" },
       { label: "Messaging", to: "/studio/messaging", icon: MessageSquare, permission: "messages.send" },
       { label: "Reports", to: "/studio/reports", icon: BarChart3, permission: "reports.view" },
