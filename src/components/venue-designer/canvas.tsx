@@ -39,12 +39,13 @@ type DragState =
   | { kind: "marquee"; startX: number; startY: number; x1: number; y1: number }
   | null;
 
-export function DesignerCanvas({ elements, selection, actions, tool, toolPayload, onZoomChange, viewportRef }: CanvasProps) {
+export function DesignerCanvas({ elements, selection, actions, tool, toolPayload, onZoomChange, viewportRef, background, onCalibrate }: CanvasProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [vp, setVp] = useState<Viewport>(() => viewportRef.current);
   const [space, setSpace] = useState(false);
   const [drag, setDrag] = useState<DragState>(null);
   const [size, setSize] = useState({ w: 800, h: 600 });
+  const [calibratePt1, setCalibratePt1] = useState<{ x: number; y: number } | null>(null);
 
   useEffect(() => { viewportRef.current = vp; onZoomChange?.(Math.round(vp.scale * 100 / 4)); }, [vp, onZoomChange, viewportRef]);
 
