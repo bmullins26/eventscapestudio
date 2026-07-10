@@ -406,3 +406,224 @@ Prefer high-confidence detections. If unsure of a type, use "building".`;
 
     return { count: rows.length, notes: validated.data.notes ?? null, layerId: aiLayerId };
   });
+
+// ==================== Templates & Snapshots (Phase 4) ====================
+
+async function buildVenueModel(supabase: any, venueId: string) {
+  const [{ data: venue }, { data: layers }, { data: objects }, { data: refs }] = await Promise.all([
+    supabase.from("venues").select("*").eq("id", venueId).maybeSingle(),
+    supabase.from("venue_layers").select("*").eq("venue_id", venueId).order("order_index", { ascending: true }),
+    supabase.from("venue_objects").select("*").eq("venue_id", venueId),
+    supabase.from("venue_references").select("id,label,transform,opacity,layer_id,mime_type,page").eq("venue_id", venueId),
+  ]);
+  if (!venue) throw new Error("Venue not found");
+  return {
+    schema_version: 1,
+    captured_at: new Date().toISOString(),
+    venue: {
+      id: venue.id,
+      name: venue.name,
+      canvas_width: venue.canvas_width,
+      canvas_height: venue.canvas_height,
+      units: (venue as any).units ?? "feet",
+      default_view: (venue as any).default_view ?? { x: 0, y: 0, zoom: 1 },
+    },
+    layers: layers ?? [],
+    objects: objects ?? [],
+    references: refs ?? [],
+  };
+}
+
+export const listVenueTemplates = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => VenueIdInput.parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: rows, error } = await context.supabase
+      .from("venue_templates" as never)
+      .select("id, venue_id, version, label, description, published_at, created_at, created_by")
+      .eq("venue_id", data.venueId)
+      .order("version", { ascending: false });
+    if (error) throw error;
+    return rows ?? [];
+  });
+
+const PublishTemplateInput = z.object({
+  venueId: z.string().uuid(),
+  label: z.string().optional(),
+  description: z.string().optional(),
+});
+
+export const publishVenueTemplate = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => PublishTemplateInput.parse(d))
+  .handler(async ({ data, context }) => {
+    const model = await buildVenueModel(context.supabase, data.venueId);
+    // Determine next version
+    const { data: latest } = await context.supabase
+      .from("venue_templates" as never)
+      .select("version")
+      .eq("venue_id", data.venueId)
+      .order("version", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const nextVersion = ((latest as any)?.version ?? 0) + 1;
+
+    const { data: inserted, error } = await (context.supabase.from("venue_templates" as never) as any)
+      .insert({
+        venue_id: data.venueId,
+        version: nextVersion,
+        label: data.label ?? `v${nextVersion}`,
+        description: data.description ?? null,
+        model,
+        published_at: new Date().toISOString(),
+        created_by: context.userId,
+      })
+      .select()
+      .single();
+    if (error) throw error;
+    return inserted;
+  });
+
+export const deleteVenueTemplate = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { error } = await (context.supabase.from("venue_templates" as never) as any)
+      .delete().eq("id", data.id);
+    if (error) throw error;
+    return { ok: true };
+  });
+
+const RestoreTemplateInput = z.object({
+  venueId: z.string().uuid(),
+  templateId: z.string().uuid(),
+});
+
+export const restoreVenueTemplate = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => RestoreTemplateInput.parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { data: tpl } = await supabase.from("venue_templates" as never)
+      .select("*").eq("id", data.templateId).maybeSingle();
+    if (!tpl) throw new Error("Template not found");
+    const model: any = (tpl as any).model;
+    if (!model?.venue) throw new Error("Template model invalid");
+
+    // Wipe current design (layers cascade objects/refs via FK? we delete explicitly to be safe)
+    await (supabase.from("venue_objects" as never) as any).delete().eq("venue_id", data.venueId);
+    await (supabase.from("venue_references" as never) as any).delete().eq("venue_id", data.venueId);
+    await (supabase.from("venue_layers" as never) as any).delete().eq("venue_id", data.venueId);
+
+    // Update venue canvas
+    await (supabase.from("venues") as any).update({
+      canvas_width: model.venue.canvas_width,
+      canvas_height: model.venue.canvas_height,
+      units: model.venue.units,
+      default_view: model.venue.default_view,
+    }).eq("id", data.venueId);
+
+    // Rebuild layers with id mapping
+    const layerIdMap = new Map<string, string>();
+    if (Array.isArray(model.layers) && model.layers.length > 0) {
+      const layerRows = model.layers.map((l: any) => ({
+        venue_id: data.venueId,
+        name: l.name,
+        kind: l.kind,
+        order_index: l.order_index,
+        visible: l.visible ?? true,
+        locked: l.locked ?? false,
+        opacity: l.opacity ?? 1,
+      }));
+      const { data: newLayers } = await (supabase.from("venue_layers" as never) as any)
+        .insert(layerRows).select();
+      (newLayers ?? []).forEach((nl: any, idx: number) => {
+        const oldId = model.layers[idx]?.id;
+        if (oldId) layerIdMap.set(oldId, nl.id);
+      });
+    }
+
+    // Rebuild objects
+    if (Array.isArray(model.objects) && model.objects.length > 0) {
+      const objRows = model.objects.map((o: any) => ({
+        venue_id: data.venueId,
+        layer_id: o.layer_id ? layerIdMap.get(o.layer_id) ?? null : null,
+        type: o.type,
+        shape: o.shape,
+        name: o.name,
+        geometry: o.geometry,
+        style: o.style,
+        metadata: o.metadata,
+        locked: o.locked ?? false,
+        hidden: o.hidden ?? false,
+        z_index: o.z_index ?? 0,
+      }));
+      await (supabase.from("venue_objects" as never) as any).insert(objRows);
+    }
+    return { ok: true };
+  });
+
+// -------- Event snapshots --------
+
+const CreateSnapshotInput = z.object({
+  eventId: z.string().uuid(),
+  venueId: z.string().uuid(),
+  templateId: z.string().uuid().nullable().optional(),
+  label: z.string().optional(),
+});
+
+export const createEventVenueSnapshot = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => CreateSnapshotInput.parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    let model: any;
+    if (data.templateId) {
+      const { data: tpl } = await supabase.from("venue_templates" as never)
+        .select("model").eq("id", data.templateId).maybeSingle();
+      if (!tpl) throw new Error("Template not found");
+      model = (tpl as any).model;
+    } else {
+      model = await buildVenueModel(supabase, data.venueId);
+    }
+
+    const { data: existing } = await supabase.from("event_venue_snapshots" as never)
+      .select("id").eq("event_id", data.eventId).maybeSingle();
+
+    if (existing) {
+      const { error } = await (supabase.from("event_venue_snapshots" as never) as any)
+        .update({
+          venue_id: data.venueId,
+          venue_template_id: data.templateId ?? null,
+          label: data.label ?? null,
+          model,
+        }).eq("id", (existing as any).id);
+      if (error) throw error;
+      return { id: (existing as any).id, updated: true };
+    }
+
+    const { data: inserted, error } = await (supabase.from("event_venue_snapshots" as never) as any)
+      .insert({
+        event_id: data.eventId,
+        venue_id: data.venueId,
+        venue_template_id: data.templateId ?? null,
+        label: data.label ?? null,
+        model,
+        created_by: context.userId,
+      })
+      .select("id").single();
+    if (error) throw error;
+    return { id: (inserted as any).id, updated: false };
+  });
+
+export const getEventVenueSnapshot = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ eventId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: row, error } = await context.supabase
+      .from("event_venue_snapshots" as never)
+      .select("*").eq("event_id", data.eventId).maybeSingle();
+    if (error) throw error;
+    return row ?? null;
+  });
+
