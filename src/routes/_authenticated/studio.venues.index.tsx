@@ -18,7 +18,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 
-export const Route = createFileRoute("/_authenticated/studio/venues")({
+export const Route = createFileRoute("/_authenticated/studio/venues/")({
   head: () => ({ meta: [{ title: "Venue Directory · EventScape Studio" }] }),
   component: VenuesPage,
 });

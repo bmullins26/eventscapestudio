@@ -50,6 +50,7 @@ import { Route as AuthenticatedAdminSettingsRouteImport } from './routes/_authen
 import { Route as AuthenticatedAdminOrganizationsRouteImport } from './routes/_authenticated/admin.organizations'
 import { Route as AuthenticatedAdminLogsRouteImport } from './routes/_authenticated/admin.logs'
 import { Route as AuthenticatedAdminAnalyticsRouteImport } from './routes/_authenticated/admin.analytics'
+import { Route as AuthenticatedStudioVenuesIndexRouteImport } from './routes/_authenticated/studio.venues.index'
 import { Route as AuthenticatedStudioVenuesVenueIdDesignerRouteImport } from './routes/_authenticated/studio.venues.$venueId.designer'
 import { Route as AuthenticatedStudioEventsEventIdVenueRouteImport } from './routes/_authenticated/studio.events.$eventId.venue'
 
@@ -283,6 +284,12 @@ const AuthenticatedAdminAnalyticsRoute =
     path: '/analytics',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedStudioVenuesIndexRoute =
+  AuthenticatedStudioVenuesIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedStudioVenuesRoute,
+  } as any)
 const AuthenticatedStudioVenuesVenueIdDesignerRoute =
   AuthenticatedStudioVenuesVenueIdDesignerRouteImport.update({
     id: '/$venueId/designer',
@@ -337,6 +344,7 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/portal/': typeof AuthenticatedPortalIndexRoute
   '/studio/': typeof AuthenticatedStudioIndexRoute
+  '/studio/venues/': typeof AuthenticatedStudioVenuesIndexRoute
   '/studio/events/$eventId/venue': typeof AuthenticatedStudioEventsEventIdVenueRoute
   '/studio/venues/$venueId/designer': typeof AuthenticatedStudioVenuesVenueIdDesignerRoute
 }
@@ -374,10 +382,10 @@ export interface FileRoutesByTo {
   '/studio/sponsors': typeof AuthenticatedStudioSponsorsRoute
   '/studio/staff': typeof AuthenticatedStudioStaffRoute
   '/studio/vendors': typeof AuthenticatedStudioVendorsRoute
-  '/studio/venues': typeof AuthenticatedStudioVenuesRouteWithChildren
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/portal': typeof AuthenticatedPortalIndexRoute
   '/studio': typeof AuthenticatedStudioIndexRoute
+  '/studio/venues': typeof AuthenticatedStudioVenuesIndexRoute
   '/studio/events/$eventId/venue': typeof AuthenticatedStudioEventsEventIdVenueRoute
   '/studio/venues/$venueId/designer': typeof AuthenticatedStudioVenuesVenueIdDesignerRoute
 }
@@ -424,6 +432,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/portal/': typeof AuthenticatedPortalIndexRoute
   '/_authenticated/studio/': typeof AuthenticatedStudioIndexRoute
+  '/_authenticated/studio/venues/': typeof AuthenticatedStudioVenuesIndexRoute
   '/_authenticated/studio/events/$eventId/venue': typeof AuthenticatedStudioEventsEventIdVenueRoute
   '/_authenticated/studio/venues/$venueId/designer': typeof AuthenticatedStudioVenuesVenueIdDesignerRoute
 }
@@ -470,6 +479,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/portal/'
     | '/studio/'
+    | '/studio/venues/'
     | '/studio/events/$eventId/venue'
     | '/studio/venues/$venueId/designer'
   fileRoutesByTo: FileRoutesByTo
@@ -507,10 +517,10 @@ export interface FileRouteTypes {
     | '/studio/sponsors'
     | '/studio/staff'
     | '/studio/vendors'
-    | '/studio/venues'
     | '/admin'
     | '/portal'
     | '/studio'
+    | '/studio/venues'
     | '/studio/events/$eventId/venue'
     | '/studio/venues/$venueId/designer'
   id:
@@ -556,6 +566,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/'
     | '/_authenticated/portal/'
     | '/_authenticated/studio/'
+    | '/_authenticated/studio/venues/'
     | '/_authenticated/studio/events/$eventId/venue'
     | '/_authenticated/studio/venues/$venueId/designer'
   fileRoutesById: FileRoutesById
@@ -860,6 +871,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminAnalyticsRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/studio/venues/': {
+      id: '/_authenticated/studio/venues/'
+      path: '/'
+      fullPath: '/studio/venues/'
+      preLoaderRoute: typeof AuthenticatedStudioVenuesIndexRouteImport
+      parentRoute: typeof AuthenticatedStudioVenuesRoute
+    }
     '/_authenticated/studio/venues/$venueId/designer': {
       id: '/_authenticated/studio/venues/$venueId/designer'
       path: '/$venueId/designer'
@@ -945,11 +963,13 @@ const AuthenticatedStudioEventsRouteWithChildren =
   )
 
 interface AuthenticatedStudioVenuesRouteChildren {
+  AuthenticatedStudioVenuesIndexRoute: typeof AuthenticatedStudioVenuesIndexRoute
   AuthenticatedStudioVenuesVenueIdDesignerRoute: typeof AuthenticatedStudioVenuesVenueIdDesignerRoute
 }
 
 const AuthenticatedStudioVenuesRouteChildren: AuthenticatedStudioVenuesRouteChildren =
   {
+    AuthenticatedStudioVenuesIndexRoute: AuthenticatedStudioVenuesIndexRoute,
     AuthenticatedStudioVenuesVenueIdDesignerRoute:
       AuthenticatedStudioVenuesVenueIdDesignerRoute,
   }
