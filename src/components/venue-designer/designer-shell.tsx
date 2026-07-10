@@ -155,6 +155,101 @@ export function DesignerShell({ venueId, organizationId, venueName, initial, onS
     } finally { setSaving(false); }
   };
 
+  // Background actions ------------------------------------------------------
+  const onFilePicked = async (file: File | null) => {
+    if (!file) return;
+    if (!organizationId) { toast.error("Organization not resolved yet."); return; }
+    const t = toast.loading("Uploading reference…");
+    try {
+      const bg = await uploadReferenceBackground({ organizationId, venueId, file });
+      setBackground(bg);
+      toast.success("Reference added. Use Calibrate to set the true scale.", { id: t });
+    } catch (err: any) {
+      toast.error(err?.message ?? "Upload failed", { id: t });
+    }
+  };
+
+  const onFetchSatellite = async () => {
+    if (!addressValue.trim()) return;
+    setAddressLoading(true);
+    try {
+      const res = await fetchSatFn({ data: { venueId, address: addressValue.trim() } });
+      // res.widthFeet == res.heightFeet (square image)
+      const w = res.widthFeet;
+      const h = res.heightFeet;
+      setBackground({
+        kind: "satellite",
+        url: res.url,
+        x: -w / 2,
+        y: -h / 2,
+        w,
+        h,
+        rotation: 0,
+        opacity: 1,
+        locked: true,
+        calibrated: true,
+        attribution: "Imagery ©Google",
+        meta: res.meta,
+      });
+      setAddressDialogOpen(false);
+      setAddressValue("");
+      toast.success("Satellite imagery loaded");
+    } catch (err: any) {
+      toast.error(err?.message ?? "Failed to load satellite imagery");
+    } finally {
+      setAddressLoading(false);
+    }
+  };
+
+  const onCalibrate = (p1: { x: number; y: number }, p2: { x: number; y: number }) => {
+    if (!background) return;
+    const distStr = window.prompt("Real-world distance between the two points, in feet:");
+    if (!distStr) { setTool("select"); return; }
+    const dist = Number(distStr);
+    if (!Number.isFinite(dist) || dist <= 0) {
+      toast.error("Enter a positive number of feet.");
+      setTool("select");
+      return;
+    }
+    setBackground(calibrateBackground(background, p1, p2, dist));
+    setTool("select");
+    toast.success(`Calibrated: ${dist} ft reference set`);
+  };
+
+  const onDetectRects = async () => {
+    if (!background) return;
+    if (!background.calibrated) {
+      toast.error("Calibrate the background first so booth sizes are accurate.");
+      return;
+    }
+    if (!window.confirm("Detect rectangular booths from the background image? Results are approximate and will be added on top of your current layout.")) return;
+    setDetectingRects(true);
+    try {
+      const { rects, imageWidth, imageHeight } = await detectRectanglesFromUrl(background.url);
+      if (!rects.length) { toast.warning("No rectangles detected."); return; }
+      // Map pixel-space (in the original image) → world coords using the background's
+      // world transform. Rotation is not applied to detected rects (users can rotate the
+      // batch afterwards if needed).
+      const sx = background.w / imageWidth;
+      const sy = background.h / imageHeight;
+      const booths = rects.map((r) => {
+        const b = makeBooth(background.x + r.x * sx, background.y + r.y * sy);
+        b.w = r.w * sx;
+        b.h = r.h * sy;
+        return b;
+      });
+      booths.forEach((b) => actions.add(b));
+      toast.success(`Detected ${booths.length} rectangles`);
+    } catch (err: any) {
+      toast.error(err?.message ?? "Detection failed");
+    } finally {
+      setDetectingRects(false);
+    }
+  };
+
+  const removeBackground = () => setBackground(null);
+
+
   return (
     <div className="flex h-[calc(100vh-3.5rem)] w-full flex-col overflow-hidden bg-background">
       {/* Top bar */}
