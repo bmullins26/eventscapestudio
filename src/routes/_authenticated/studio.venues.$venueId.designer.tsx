@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   MousePointer2, Hand, Square, Circle as CircleIcon, Type as TypeIcon,
   Layers, Library, LayoutTemplate, Search, ChevronLeft, Ruler, Grid3x3, Magnet,
-  Eye, EyeOff, Lock, Unlock, Trash2, Plus, Store,
+  Eye, EyeOff, Lock, Unlock, Trash2, Plus, Store, Image as ImageIcon, Sparkles, Upload, Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,11 +14,14 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Slider } from "@/components/ui/slider";
 import { EmptyState } from "@/components/shared/empty-state";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import {
   getVenueDesign, createVenueObject, updateVenueObject, deleteVenueObject,
   createVenueLayer, updateVenueLayer, deleteVenueLayer,
+  createVenueReference, updateVenueReference, deleteVenueReference, analyzeVenueDrawing,
 } from "@/lib/venue-designer.functions";
 import { useCanvasInput, type CanvasCoords } from "@/components/booth-builder/use-canvas-input";
 import { cn } from "@/lib/utils";
@@ -95,6 +98,10 @@ function VenueDesignerPage() {
   const createLayer = useServerFn(createVenueLayer);
   const updateLayer = useServerFn(updateVenueLayer);
   const deleteLayer = useServerFn(deleteVenueLayer);
+  const createRef = useServerFn(createVenueReference);
+  const updateRef = useServerFn(updateVenueReference);
+  const deleteRef = useServerFn(deleteVenueReference);
+  const analyzeDrawing = useServerFn(analyzeVenueDrawing);
 
   const queryKey = ["venue-design", venueId];
   const { data, isLoading } = useQuery({
@@ -109,13 +116,19 @@ function VenueDesignerPage() {
   const [showGrid, setShowGrid] = useState(true);
   const [snap, setSnap] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedRefId, setSelectedRefId] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [analyzingRefId, setAnalyzingRefId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
   const dragRef = useRef<{ id: string; startX: number; startY: number; origX: number; origY: number; mode: "move" | "resize"; handle?: string } | null>(null);
 
   const layers: any[] = (data?.layers as any[] | undefined) ?? [];
   const objects: any[] = (data?.objects as any[] | undefined) ?? [];
+  const references: any[] = ((data as any)?.references as any[] | undefined) ?? [];
   const layerById = useMemo(() => Object.fromEntries(layers.map((l: any) => [l.id, l])), [layers]);
   const selected = objects.find((o: any) => o.id === selectedId) ?? null;
+  const selectedRef = references.find((r: any) => r.id === selectedRefId) ?? null;
 
   const onPan = useCallback((dx: number, dy: number) => {
     if (dragRef.current) return;
@@ -192,6 +205,89 @@ function VenueDesignerPage() {
     onSuccess: (_r, id) => patchCache((d) => ({ ...d, layers: d.layers.filter((l: any) => l.id !== id) })),
     onError: (e: any) => toast.error(e?.message ?? "Delete failed (layer may have objects)"),
   });
+
+  // ------ Reference mutations ------
+  const refCreateMutation = useMutation({
+    mutationFn: (input: any) => createRef({ data: input }),
+    onSuccess: (ref: any) => {
+      patchCache((d) => ({ ...d, references: [...(d.references ?? []), ref] }));
+      setSelectedRefId(ref.id);
+      toast.success("Reference uploaded");
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Upload failed"),
+  });
+  const refUpdateMutation = useMutation({
+    mutationFn: ({ id, patch }: { id: string; patch: any }) => updateRef({ data: { id, patch } }),
+    onMutate: ({ id, patch }) => patchCache((d) => ({ ...d, references: (d.references ?? []).map((r: any) => r.id === id ? { ...r, ...patch } : r) })),
+  });
+  const refDeleteMutation = useMutation({
+    mutationFn: (id: string) => deleteRef({ data: { id } }),
+    onSuccess: (_r, id) => {
+      patchCache((d) => ({ ...d, references: (d.references ?? []).filter((r: any) => r.id !== id) }));
+      if (selectedRefId === id) setSelectedRefId(null);
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Delete failed"),
+  });
+
+  // ------ Upload handler ------
+  const handleFileUpload = async (file: File) => {
+    if (!data?.venue) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please upload an image (PDF import arrives in a later phase).");
+      return;
+    }
+    setUploading(true);
+    try {
+      const orgId = (data.venue as any).organization_id;
+      const ext = file.name.split(".").pop() || "png";
+      const path = `${orgId}/venues/${venueId}/refs/${crypto.randomUUID()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("venue-assets").upload(path, file, {
+        contentType: file.type, upsert: false,
+      });
+      if (upErr) throw upErr;
+      // Read intrinsic size to set an initial transform
+      const dims = await new Promise<{ w: number; h: number }>((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
+        img.onerror = reject;
+        img.src = URL.createObjectURL(file);
+      });
+      const canvasW = (data.venue as any).canvas_width ?? 2000;
+      const canvasH = (data.venue as any).canvas_height ?? 1500;
+      // Fit the image inside the canvas while preserving aspect ratio
+      const scale = Math.min(canvasW / dims.w, canvasH / dims.h) * 0.9;
+      const width = dims.w * scale;
+      const height = dims.h * scale;
+      const transform = {
+        x: (canvasW - width) / 2,
+        y: (canvasH - height) / 2,
+        width, height, rotation: 0,
+      };
+      await refCreateMutation.mutateAsync({
+        venueId, file_url: path, mime_type: file.type, label: file.name,
+        transform, opacity: 0.5,
+      });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleAiImport = async (referenceId: string) => {
+    setAnalyzingRefId(referenceId);
+    try {
+      const r: any = await analyzeDrawing({ data: { venueId, referenceId } });
+      toast.success(`AI detected ${r.count} object${r.count === 1 ? "" : "s"}`);
+      // Refetch to load new layer + objects
+      qc.invalidateQueries({ queryKey });
+    } catch (e: any) {
+      toast.error(e?.message ?? "AI import failed");
+    } finally {
+      setAnalyzingRefId(null);
+    }
+  };
+
 
   // ------ Keyboard shortcuts ------
   useEffect(() => {
@@ -310,8 +406,13 @@ function VenueDesignerPage() {
         <ToolButton icon={Square} label="Rectangle" active={placingType === "building"} onClick={() => { setPlacingType("building"); setTool("place"); }} />
         <ToolButton icon={CircleIcon} label="Tree" active={placingType === "tree"} onClick={() => { setPlacingType("tree"); setTool("place"); }} />
         <ToolButton icon={TypeIcon} label="Sign" active={placingType === "sign"} onClick={() => { setPlacingType("sign"); setTool("place"); }} />
+        <div className="mx-1 h-6 w-px bg-border" />
+        <Button variant="ghost" size="sm" onClick={() => fileInputRef.current?.click()} disabled={uploading} className="h-8 gap-1 px-2" title="Upload reference image">
+          {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageIcon className="h-4 w-4" />}
+          <span className="hidden text-xs md:inline">Import</span>
+        </Button>
         <div className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
-          {tool === "place" ? <>Click to place · Shift for multi · Esc to cancel</> : <>Phase 2 · object editing</>}
+          {tool === "place" ? <>Click to place · Shift for multi · Esc to cancel</> : <>Phase 3 · references + AI import</>}
         </div>
       </div>
 
@@ -325,6 +426,9 @@ function VenueDesignerPage() {
               </TabsTrigger>
               <TabsTrigger value="layers" className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary">
                 <Layers className="mr-1 h-3.5 w-3.5" />Layers
+              </TabsTrigger>
+              <TabsTrigger value="references" className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary">
+                <ImageIcon className="mr-1 h-3.5 w-3.5" />Refs
               </TabsTrigger>
               <TabsTrigger value="templates" className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary">
                 <LayoutTemplate className="mr-1 h-3.5 w-3.5" />Versions
@@ -347,6 +451,30 @@ function VenueDesignerPage() {
                   const name = window.prompt("Layer name", "New Layer");
                   if (!name) return;
                   layerCreateMutation.mutate({ venueId, name, kind: "custom", order_index: layers.length });
+                }}
+              />
+            </TabsContent>
+            <TabsContent value="references" className="mt-0 flex-1 overflow-auto p-3">
+              <ReferencePanel
+                references={references}
+                uploading={uploading}
+                analyzingRefId={analyzingRefId}
+                onUploadClick={() => fileInputRef.current?.click()}
+                onSelect={(r) => { setSelectedRefId(r.id); setSelectedId(null); }}
+                onToggleVisible={(r) => refUpdateMutation.mutate({ id: r.id, patch: { visible: !r.visible } })}
+                onDelete={(r) => refDeleteMutation.mutate(r.id)}
+                onAiImport={handleAiImport}
+                selectedRefId={selectedRefId}
+              />
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) handleFileUpload(f);
+                  e.target.value = "";
                 }}
               />
             </TabsContent>
@@ -384,6 +512,40 @@ function VenueDesignerPage() {
             <g transform={`translate(${-view.x * view.zoom}, ${-view.y * view.zoom}) scale(${view.zoom})`}>
               <rect x={0} y={0} width={width} height={height} fill="hsl(var(--card))" stroke="hsl(var(--border))" strokeWidth={2 / view.zoom} />
               {showGrid && <rect x={0} y={0} width={width} height={height} fill="url(#grid-lg)" opacity={0.5} />}
+
+              {/* References (rendered below objects) */}
+              {references.map((r: any) => {
+                if (!r.visible) return null;
+                if (!r.signed_url) return null;
+                const t = r.transform ?? {};
+                const cx = (t.x ?? 0) + (t.width ?? 0) / 2;
+                const cy = (t.y ?? 0) + (t.height ?? 0) / 2;
+                const rot = t.rotation ?? 0;
+                const isSel = selectedRefId === r.id;
+                return (
+                  <g key={r.id} transform={rot ? `rotate(${rot} ${cx} ${cy})` : undefined}>
+                    <image
+                      href={r.signed_url}
+                      x={t.x ?? 0} y={t.y ?? 0}
+                      width={t.width ?? 100} height={t.height ?? 100}
+                      opacity={r.opacity ?? 0.5}
+                      preserveAspectRatio="none"
+                      onPointerDown={(e) => { e.stopPropagation(); setSelectedRefId(r.id); setSelectedId(null); }}
+                      style={{ cursor: "pointer" }}
+                    />
+                    {isSel && (
+                      <rect
+                        x={t.x ?? 0} y={t.y ?? 0}
+                        width={t.width ?? 100} height={t.height ?? 100}
+                        fill="none" stroke="hsl(var(--primary))" strokeWidth={2 / view.zoom}
+                        strokeDasharray={`${4 / view.zoom} ${4 / view.zoom}`}
+                        pointerEvents="none"
+                      />
+                    )}
+                  </g>
+                );
+              })}
+
 
               {objects.map((o: any) => {
                 const layer = layerById[o.layer_id];
@@ -428,10 +590,19 @@ function VenueDesignerPage() {
               onCommitPatch={(patch) => updateMutation.mutate({ id: selected.id, patch })}
               onDelete={() => deleteMutation.mutate(selected.id)}
             />
+          ) : selectedRef ? (
+            <ReferenceInspector
+              key={selectedRef.id}
+              reference={selectedRef}
+              onPatch={(patch) => refUpdateMutation.mutate({ id: selectedRef.id, patch })}
+              onDelete={() => refDeleteMutation.mutate(selectedRef.id)}
+              onAiImport={() => handleAiImport(selectedRef.id)}
+              analyzing={analyzingRefId === selectedRef.id}
+            />
           ) : (
             <div className="p-4">
               <div className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Inspector</div>
-              <p className="text-sm text-muted-foreground">Select an object to edit its properties, or pick from the palette to add one.</p>
+              <p className="text-sm text-muted-foreground">Select an object or reference to edit its properties.</p>
             </div>
           )}
         </aside>
@@ -726,3 +897,116 @@ function MetaSwitch({ label, value, onChange }: { label: string; value: boolean;
     </div>
   );
 }
+
+// ---------- Phase 3: References ----------
+
+function ReferencePanel({ references, uploading, analyzingRefId, onUploadClick, onSelect, onToggleVisible, onDelete, onAiImport, selectedRefId }: {
+  references: any[];
+  uploading: boolean;
+  analyzingRefId: string | null;
+  onUploadClick: () => void;
+  onSelect: (r: any) => void;
+  onToggleVisible: (r: any) => void;
+  onDelete: (r: any) => void;
+  onAiImport: (id: string) => void;
+  selectedRefId: string | null;
+}) {
+  return (
+    <div className="space-y-3">
+      <Button size="sm" variant="outline" className="w-full" onClick={onUploadClick} disabled={uploading}>
+        {uploading ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Upload className="mr-1 h-3.5 w-3.5" />}
+        {uploading ? "Uploading..." : "Upload reference image"}
+      </Button>
+      <p className="text-[11px] text-muted-foreground">
+        Upload a site plan, sketch, aerial photo, or map screenshot. Then use AI Import to auto-trace objects. PDF import arrives in a later phase.
+      </p>
+      {references.length === 0 ? (
+        <div className="rounded border border-dashed p-3 text-center text-xs text-muted-foreground">
+          No references yet.
+        </div>
+      ) : references.map((r) => (
+        <div key={r.id} className={cn("rounded border bg-background p-2", selectedRefId === r.id && "border-primary ring-1 ring-primary/40")}>
+          <div className="mb-1.5 flex items-center gap-1">
+            <button onClick={() => onToggleVisible(r)} className="text-muted-foreground hover:text-foreground">
+              {r.visible ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+            </button>
+            <button onClick={() => onSelect(r)} className="flex-1 truncate text-left text-xs font-medium hover:underline">
+              {r.label ?? "Reference"}
+            </button>
+            <button onClick={() => onDelete(r)} className="text-muted-foreground hover:text-destructive">
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
+          {r.signed_url ? (
+            <button
+              onClick={() => onSelect(r)}
+              className="mb-1.5 block h-20 w-full overflow-hidden rounded bg-muted"
+              style={{ backgroundImage: `url(${r.signed_url})`, backgroundSize: "contain", backgroundRepeat: "no-repeat", backgroundPosition: "center" }}
+              aria-label="Select reference"
+            />
+          ) : null}
+          <Button
+            size="sm" variant="secondary" className="w-full h-7 text-xs"
+            onClick={() => onAiImport(r.id)}
+            disabled={analyzingRefId === r.id}
+          >
+            {analyzingRefId === r.id ? (
+              <><Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />Analyzing...</>
+            ) : (
+              <><Sparkles className="mr-1 h-3.5 w-3.5" />AI Import objects</>
+            )}
+          </Button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ReferenceInspector({ reference, onPatch, onDelete, onAiImport, analyzing }: {
+  reference: any;
+  onPatch: (patch: any) => void;
+  onDelete: () => void;
+  onAiImport: () => void;
+  analyzing: boolean;
+}) {
+  const t = reference.transform ?? {};
+  return (
+    <div className="space-y-4 p-4">
+      <div>
+        <div className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Reference</div>
+        <div className="truncate text-sm font-medium">{reference.label}</div>
+      </div>
+
+      <Field label="Opacity">
+        <div className="flex items-center gap-2">
+          <Slider
+            value={[Math.round((reference.opacity ?? 0.5) * 100)]}
+            onValueChange={(v) => onPatch({ opacity: v[0] / 100 })}
+            max={100} step={5}
+          />
+          <span className="w-10 text-right text-xs text-muted-foreground">{Math.round((reference.opacity ?? 0.5) * 100)}%</span>
+        </div>
+      </Field>
+
+      <div className="grid grid-cols-2 gap-2">
+        <Field label="X"><NumInput value={t.x ?? 0} onCommit={(v) => onPatch({ transform: { ...t, x: v } })} /></Field>
+        <Field label="Y"><NumInput value={t.y ?? 0} onCommit={(v) => onPatch({ transform: { ...t, y: v } })} /></Field>
+        <Field label="Width"><NumInput value={t.width ?? 0} onCommit={(v) => onPatch({ transform: { ...t, width: v } })} /></Field>
+        <Field label="Height"><NumInput value={t.height ?? 0} onCommit={(v) => onPatch({ transform: { ...t, height: v } })} /></Field>
+        <Field label="Rotation°"><NumInput value={t.rotation ?? 0} onCommit={(v) => onPatch({ transform: { ...t, rotation: v } })} /></Field>
+      </div>
+
+      <Button className="w-full" onClick={onAiImport} disabled={analyzing}>
+        {analyzing ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Analyzing drawing...</>) : (<><Sparkles className="mr-2 h-4 w-4" />AI Import objects</>)}
+      </Button>
+      <p className="text-[11px] text-muted-foreground">
+        AI reads this drawing and drops detected booths, buildings, roads, and other objects onto an "AI Import" layer. Review and adjust before publishing.
+      </p>
+
+      <Button variant="destructive" size="sm" className="w-full" onClick={onDelete}>
+        <Trash2 className="mr-1 h-4 w-4" /> Delete reference
+      </Button>
+    </div>
+  );
+}
+
