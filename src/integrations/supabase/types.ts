@@ -421,6 +421,64 @@ export type Database = {
           },
         ]
       }
+      event_venue_snapshots: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          event_id: string
+          id: string
+          label: string | null
+          model: Json
+          updated_at: string
+          venue_id: string
+          venue_template_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          event_id: string
+          id?: string
+          label?: string | null
+          model?: Json
+          updated_at?: string
+          venue_id: string
+          venue_template_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          event_id?: string
+          id?: string
+          label?: string | null
+          model?: Json
+          updated_at?: string
+          venue_id?: string
+          venue_template_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_venue_snapshots_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: true
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_venue_snapshots_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_venue_snapshots_venue_template_id_fkey"
+            columns: ["venue_template_id"]
+            isOneToOne: false
+            referencedRelation: "venue_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       events: {
         Row: {
           applications_open: boolean
