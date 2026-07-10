@@ -116,13 +116,19 @@ function VenueDesignerPage() {
   const [showGrid, setShowGrid] = useState(true);
   const [snap, setSnap] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedRefId, setSelectedRefId] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [analyzingRefId, setAnalyzingRefId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
   const dragRef = useRef<{ id: string; startX: number; startY: number; origX: number; origY: number; mode: "move" | "resize"; handle?: string } | null>(null);
 
   const layers: any[] = (data?.layers as any[] | undefined) ?? [];
   const objects: any[] = (data?.objects as any[] | undefined) ?? [];
+  const references: any[] = ((data as any)?.references as any[] | undefined) ?? [];
   const layerById = useMemo(() => Object.fromEntries(layers.map((l: any) => [l.id, l])), [layers]);
   const selected = objects.find((o: any) => o.id === selectedId) ?? null;
+  const selectedRef = references.find((r: any) => r.id === selectedRefId) ?? null;
 
   const onPan = useCallback((dx: number, dy: number) => {
     if (dragRef.current) return;
