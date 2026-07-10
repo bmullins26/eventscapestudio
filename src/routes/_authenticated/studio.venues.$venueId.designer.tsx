@@ -206,6 +206,89 @@ function VenueDesignerPage() {
     onError: (e: any) => toast.error(e?.message ?? "Delete failed (layer may have objects)"),
   });
 
+  // ------ Reference mutations ------
+  const refCreateMutation = useMutation({
+    mutationFn: (input: any) => createRef({ data: input }),
+    onSuccess: (ref: any) => {
+      patchCache((d) => ({ ...d, references: [...(d.references ?? []), ref] }));
+      setSelectedRefId(ref.id);
+      toast.success("Reference uploaded");
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Upload failed"),
+  });
+  const refUpdateMutation = useMutation({
+    mutationFn: ({ id, patch }: { id: string; patch: any }) => updateRef({ data: { id, patch } }),
+    onMutate: ({ id, patch }) => patchCache((d) => ({ ...d, references: (d.references ?? []).map((r: any) => r.id === id ? { ...r, ...patch } : r) })),
+  });
+  const refDeleteMutation = useMutation({
+    mutationFn: (id: string) => deleteRef({ data: { id } }),
+    onSuccess: (_r, id) => {
+      patchCache((d) => ({ ...d, references: (d.references ?? []).filter((r: any) => r.id !== id) }));
+      if (selectedRefId === id) setSelectedRefId(null);
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Delete failed"),
+  });
+
+  // ------ Upload handler ------
+  const handleFileUpload = async (file: File) => {
+    if (!data?.venue) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please upload an image (PDF import arrives in a later phase).");
+      return;
+    }
+    setUploading(true);
+    try {
+      const orgId = (data.venue as any).organization_id;
+      const ext = file.name.split(".").pop() || "png";
+      const path = `${orgId}/venues/${venueId}/refs/${crypto.randomUUID()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("venue-assets").upload(path, file, {
+        contentType: file.type, upsert: false,
+      });
+      if (upErr) throw upErr;
+      // Read intrinsic size to set an initial transform
+      const dims = await new Promise<{ w: number; h: number }>((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
+        img.onerror = reject;
+        img.src = URL.createObjectURL(file);
+      });
+      const canvasW = (data.venue as any).canvas_width ?? 2000;
+      const canvasH = (data.venue as any).canvas_height ?? 1500;
+      // Fit the image inside the canvas while preserving aspect ratio
+      const scale = Math.min(canvasW / dims.w, canvasH / dims.h) * 0.9;
+      const width = dims.w * scale;
+      const height = dims.h * scale;
+      const transform = {
+        x: (canvasW - width) / 2,
+        y: (canvasH - height) / 2,
+        width, height, rotation: 0,
+      };
+      await refCreateMutation.mutateAsync({
+        venueId, file_url: path, mime_type: file.type, label: file.name,
+        transform, opacity: 0.5,
+      });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleAiImport = async (referenceId: string) => {
+    setAnalyzingRefId(referenceId);
+    try {
+      const r: any = await analyzeDrawing({ data: { venueId, referenceId } });
+      toast.success(`AI detected ${r.count} object${r.count === 1 ? "" : "s"}`);
+      // Refetch to load new layer + objects
+      qc.invalidateQueries({ queryKey });
+    } catch (e: any) {
+      toast.error(e?.message ?? "AI import failed");
+    } finally {
+      setAnalyzingRefId(null);
+    }
+  };
+
+
   // ------ Keyboard shortcuts ------
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
