@@ -522,7 +522,11 @@ function VenueDesignerPage() {
             <TabsContent value="objects" className="mt-0 flex-1 overflow-auto p-3">
               <ObjectPalette
                 activeType={placingType}
-                onPick={(t) => { setPlacingType(t); setTool("place"); }}
+                onPick={(t) => { setPlacingType(t); setPlacingLibraryItem(null); setTool("place"); }}
+                libraryItems={(libraryItems as any[]) ?? []}
+                activeLibraryId={placingLibraryItem?.id ?? null}
+                onPickLibrary={(item) => { setPlacingLibraryItem(item); setPlacingType(null); setTool("place"); }}
+                onDeleteLibrary={(id) => deleteLibraryMutation.mutate(id)}
               />
             </TabsContent>
             <TabsContent value="layers" className="mt-0 flex-1 overflow-auto p-3">
