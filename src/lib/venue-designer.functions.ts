@@ -76,6 +76,23 @@ export const updateVenueCanvas = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+const UpdateVenueMapLocationInput = z.object({
+  venueId: z.string().uuid(),
+  center_lat: z.number(),
+  center_lng: z.number(),
+  map_zoom: z.number().int().min(1).max(22),
+});
+
+export const updateVenueMapLocation = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => UpdateVenueMapLocationInput.parse(d))
+  .handler(async ({ data, context }) => {
+    const { venueId, ...patch } = data;
+    const { error } = await (context.supabase.from("venues") as any).update(patch).eq("id", venueId);
+    if (error) throw error;
+    return { ok: true };
+  });
+
 const CreateObjectInput = z.object({
   venueId: z.string().uuid(),
   layer_id: z.string().uuid().nullable().optional(),
