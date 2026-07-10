@@ -1033,6 +1033,10 @@ function Inspector({ object, layers, onPatch, onCommitPatch, onDelete, onSaveToL
         </div>
       )}
 
+      <Button variant="outline" size="sm" className="w-full" onClick={onSaveToLibrary} disabled={savingLibrary}>
+        <BookmarkPlus className="mr-1 h-4 w-4" /> Save to library
+      </Button>
+
       <Button variant="destructive" size="sm" className="w-full" onClick={onDelete}>
         <Trash2 className="mr-1 h-4 w-4" /> Delete object
       </Button>
