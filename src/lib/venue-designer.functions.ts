@@ -27,8 +27,14 @@ export const fetchSatelliteBackground = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => FetchSatelliteInput.parse(d))
   .handler(async ({ data, context }) => {
-    const apiKey = process.env.GOOGLE_MAPS_API_KEY;
-    if (!apiKey) throw new Error("GOOGLE_MAPS_API_KEY is not configured. Add it to enable satellite imagery.");
+    const lovableKey = process.env.LOVABLE_API_KEY;
+    const connKey = process.env.GOOGLE_MAPS_API_KEY;
+    if (!lovableKey || !connKey) throw new Error("Google Maps connector is not configured.");
+    const GATEWAY = "https://connector-gateway.lovable.dev/google_maps";
+    const gwHeaders = {
+      Authorization: `Bearer ${lovableKey}`,
+      "X-Connection-Api-Key": connKey,
+    };
 
     const { supabase, userId } = context;
 
@@ -47,11 +53,11 @@ export const fetchSatelliteBackground = createServerFn({ method: "POST" })
     });
     if (!isMember) throw new Error("Forbidden");
 
-    // Geocode
-    const geocodeUrl = new URL("https://maps.googleapis.com/maps/api/geocode/json");
-    geocodeUrl.searchParams.set("address", data.address);
-    geocodeUrl.searchParams.set("key", apiKey);
-    const geoRes = await fetch(geocodeUrl.toString());
+    // Geocode via connector gateway
+    const geoRes = await fetch(
+      `${GATEWAY}/maps/api/geocode/json?address=${encodeURIComponent(data.address)}`,
+      { headers: gwHeaders },
+    );
     if (!geoRes.ok) throw new Error(`Geocoding failed (${geoRes.status})`);
     const geoJson = (await geoRes.json()) as {
       status: string;
@@ -78,16 +84,15 @@ export const fetchSatelliteBackground = createServerFn({ method: "POST" })
     const zoom = 19;
     const sizePx = 640; // Google Static Maps free tier caps at 640
     const scale = 2; // retina; effective pixel size = 1280
-    const mapUrl = new URL("https://maps.googleapis.com/maps/api/staticmap");
+    const mapUrl = new URL(`${GATEWAY}/maps/api/staticmap`);
     mapUrl.searchParams.set("center", `${lat},${lng}`);
     mapUrl.searchParams.set("zoom", String(zoom));
     mapUrl.searchParams.set("size", `${sizePx}x${sizePx}`);
     mapUrl.searchParams.set("scale", String(scale));
     mapUrl.searchParams.set("maptype", "satellite");
-    mapUrl.searchParams.set("key", apiKey);
 
-    const imgRes = await fetch(mapUrl.toString());
-    if (!imgRes.ok) throw new Error(`Static Maps failed (${imgRes.status})`);
+    const imgRes = await fetch(mapUrl.toString(), { headers: gwHeaders });
+    if (!imgRes.ok) throw new Error(`Static Maps failed (${imgRes.status}): ${await imgRes.text()}`);
     const bytes = new Uint8Array(await imgRes.arrayBuffer());
 
     // Upload to venue-assets under <org_id>/venue-backgrounds/<venue_id>/<uuid>.png
