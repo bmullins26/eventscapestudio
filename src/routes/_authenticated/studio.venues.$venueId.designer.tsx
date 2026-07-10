@@ -22,6 +22,7 @@ import {
   getVenueDesign, createVenueObject, updateVenueObject, deleteVenueObject,
   createVenueLayer, updateVenueLayer, deleteVenueLayer,
   createVenueReference, updateVenueReference, deleteVenueReference, analyzeVenueDrawing,
+  listVenueTemplates, publishVenueTemplate, restoreVenueTemplate, deleteVenueTemplate,
 } from "@/lib/venue-designer.functions";
 import { useCanvasInput, type CanvasCoords } from "@/components/booth-builder/use-canvas-input";
 import { cn } from "@/lib/utils";
