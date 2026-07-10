@@ -370,10 +370,32 @@ function VenueDesignerPage() {
 
   // ------ Canvas click handling ------
   const handleCanvasClick = (e: React.MouseEvent<SVGSVGElement>) => {
-    if (tool !== "place" || !placingType) return;
+    if (tool !== "place") return;
+    const p = svgToCanvas(e.clientX, e.clientY);
+
+    // Library-item placement
+    if (placingLibraryItem) {
+      const li = placingLibraryItem;
+      const g0 = li.default_geometry ?? { w: 10, h: 10 };
+      const w = g0.w ?? 10, h = g0.h ?? 10;
+      const targetLayer = layers.find((l: any) => l.kind === "custom") ?? layers[0];
+      placeMutation.mutate({
+        venueId,
+        layer_id: targetLayer?.id ?? null,
+        type: li.type,
+        shape: li.shape,
+        name: li.name,
+        geometry: { x: snapVal(p.x - w / 2), y: snapVal(p.y - h / 2), w, h, rotation: 0 },
+        style: li.default_style ?? {},
+        metadata: li.default_metadata ?? {},
+      });
+      if (!e.shiftKey) { setTool("select"); setPlacingLibraryItem(null); }
+      return;
+    }
+
+    if (!placingType) return;
     const def = DEF_BY_TYPE[placingType];
     if (!def) return;
-    const p = svgToCanvas(e.clientX, e.clientY);
     const targetLayer = layers.find((l: any) => l.kind === def.defaultLayerKind) ?? layers[0];
     const g = { x: snapVal(p.x - def.size.w / 2), y: snapVal(p.y - def.size.h / 2), w: def.size.w, h: def.size.h, rotation: 0 };
     const nextBoothName = def.type === "booth"
