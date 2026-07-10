@@ -742,18 +742,72 @@ function ToolButton({ icon: Icon, label, active, onClick }: { icon: any; label: 
   );
 }
 
-function ObjectPalette({ activeType, onPick }: { activeType: string | null; onPick: (type: string) => void }) {
+function ObjectPalette({ activeType, onPick, libraryItems, activeLibraryId, onPickLibrary, onDeleteLibrary }: {
+  activeType: string | null;
+  onPick: (type: string) => void;
+  libraryItems: any[];
+  activeLibraryId: string | null;
+  onPickLibrary: (item: any) => void;
+  onDeleteLibrary: (id: string) => void;
+}) {
   const [q, setQ] = useState("");
+  const ql = q.toLowerCase();
   const filtered = OBJECT_LIBRARY.map((g) => ({
     ...g,
-    items: g.items.filter((i) => !q || i.label.toLowerCase().includes(q.toLowerCase())),
+    items: g.items.filter((i) => !q || i.label.toLowerCase().includes(ql)),
   })).filter((g) => g.items.length > 0);
+  const orgItemsFiltered = (libraryItems ?? []).filter((i: any) => !q || (i.name?.toLowerCase().includes(ql) || i.category?.toLowerCase().includes(ql)));
+  const orgByCategory = orgItemsFiltered.reduce<Record<string, any[]>>((acc, item) => {
+    const c = item.category || "Custom";
+    (acc[c] ??= []).push(item);
+    return acc;
+  }, {});
+
   return (
     <div className="space-y-4">
       <div className="relative">
         <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
         <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search library..." className="h-8 pl-7 text-xs" />
       </div>
+
+      {orgItemsFiltered.length > 0 && (
+        <div>
+          <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">My Library</div>
+          {Object.entries(orgByCategory).map(([cat, items]) => (
+            <div key={cat} className="mb-2">
+              <div className="mb-1 text-[10px] text-muted-foreground">{cat}</div>
+              <div className="grid grid-cols-2 gap-1.5">
+                {items.map((it: any) => {
+                  const style = it.default_style ?? {};
+                  const active = activeLibraryId === it.id;
+                  return (
+                    <div key={it.id} className="group relative">
+                      <button
+                        onClick={() => onPickLibrary(it)}
+                        className={cn(
+                          "w-full rounded border bg-background px-2 py-2.5 text-left text-xs transition hover:border-primary hover:bg-primary/5",
+                          active && "border-primary bg-primary/10"
+                        )}
+                      >
+                        <div className="mb-1 h-4 w-full rounded" style={{ background: style.fill ?? "#f3f4f6", border: `1px solid ${style.stroke ?? "#9ca3af"}` }} />
+                        <div className="truncate">{it.name}</div>
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); if (window.confirm(`Delete "${it.name}" from library?`)) onDeleteLibrary(it.id); }}
+                        className="absolute right-1 top-1 rounded p-0.5 text-muted-foreground opacity-0 hover:bg-background hover:text-destructive group-hover:opacity-100"
+                        aria-label="Delete from library"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {filtered.map((g) => (
         <div key={g.group}>
           <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{g.group}</div>
@@ -777,6 +831,7 @@ function ObjectPalette({ activeType, onPick }: { activeType: string | null; onPi
     </div>
   );
 }
+
 
 function LayerPanel({ layers, onToggleVisible, onToggleLocked, onRename, onDelete, onAdd }: {
   layers: any[];
