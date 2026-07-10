@@ -360,7 +360,7 @@ function VenueDesignerPage() {
         e.preventDefault();
         deleteMutation.mutate(selectedId);
       }
-      if (e.key === "Escape") { setSelectedId(null); setPlacingType(null); setTool("select"); }
+      if (e.key === "Escape") { setSelectedId(null); setPlacingType(null); setPlacingLibraryItem(null); setTool("select"); }
       if (e.key === "v") setTool("select");
       if (e.key === "h") setTool("pan");
     };
