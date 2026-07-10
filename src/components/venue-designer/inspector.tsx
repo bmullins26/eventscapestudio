@@ -1,15 +1,17 @@
-import type { AnyElement, BoothElement, IconElement, LayoutSettings, ShapeElement, TextElement } from "./types";
+import type { AnyElement, BoothElement, IconElement, LayoutSettings, ShapeElement, TextElement, BackgroundLayer } from "./types";
 import type { DesignerActions } from "./store";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { ArrowUp, ArrowDown, ArrowUpToLine, ArrowDownToLine, Trash2, Copy } from "lucide-react";
+import { ArrowUp, ArrowDown, ArrowUpToLine, ArrowDownToLine, Trash2, Copy, X } from "lucide-react";
 import { describe, uid } from "./factory";
 
 export function Inspector({
   elements, selection, actions, settings, name, onName, onSettings,
+  background, onBackgroundChange,
 }: {
   elements: AnyElement[];
   selection: string[];
@@ -18,6 +20,8 @@ export function Inspector({
   name: string;
   onName: (v: string) => void;
   onSettings: (patch: Partial<LayoutSettings>) => void;
+  background?: BackgroundLayer | null;
+  onBackgroundChange?: (bg: BackgroundLayer | null) => void;
 }) {
   const sel = elements.filter((e) => selection.includes(e.id));
 
