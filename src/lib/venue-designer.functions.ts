@@ -84,16 +84,15 @@ export const fetchSatelliteBackground = createServerFn({ method: "POST" })
     const zoom = 19;
     const sizePx = 640; // Google Static Maps free tier caps at 640
     const scale = 2; // retina; effective pixel size = 1280
-    const mapUrl = new URL("https://maps.googleapis.com/maps/api/staticmap");
+    const mapUrl = new URL(`${GATEWAY}/maps/api/staticmap`);
     mapUrl.searchParams.set("center", `${lat},${lng}`);
     mapUrl.searchParams.set("zoom", String(zoom));
     mapUrl.searchParams.set("size", `${sizePx}x${sizePx}`);
     mapUrl.searchParams.set("scale", String(scale));
     mapUrl.searchParams.set("maptype", "satellite");
-    mapUrl.searchParams.set("key", apiKey);
 
-    const imgRes = await fetch(mapUrl.toString());
-    if (!imgRes.ok) throw new Error(`Static Maps failed (${imgRes.status})`);
+    const imgRes = await fetch(mapUrl.toString(), { headers: gwHeaders });
+    if (!imgRes.ok) throw new Error(`Static Maps failed (${imgRes.status}): ${await imgRes.text()}`);
     const bytes = new Uint8Array(await imgRes.arrayBuffer());
 
     // Upload to venue-assets under <org_id>/venue-backgrounds/<venue_id>/<uuid>.png
