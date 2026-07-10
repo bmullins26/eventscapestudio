@@ -441,7 +441,7 @@ function VenueDesignerPage() {
 
   return (
     <div
-      className="fixed inset-0 top-16 z-30 overflow-hidden bg-background"
+      className="fixed inset-0 z-50 overflow-hidden bg-background"
       onPointerMove={handleGlobalPointerMove}
       onPointerUp={handleGlobalPointerUp}
       onPointerCancel={handleGlobalPointerUp}
