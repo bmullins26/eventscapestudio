@@ -271,9 +271,3 @@ function BackgroundSection({ background, onChange }: { background: BackgroundLay
   );
 }
 
-function round(n: number) { return Math.round(n * 100) / 100; }
-function colorish(v: string): string {
-  // Convert CSS var/hsl to hex only when it's already a hex; otherwise return a fallback for the input widget.
-  if (/^#([0-9a-fA-F]{3}){1,2}$/.test(v)) return v;
-  return "#4f46e5";
-}
