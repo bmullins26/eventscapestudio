@@ -892,3 +892,116 @@ function MetaSwitch({ label, value, onChange }: { label: string; value: boolean;
     </div>
   );
 }
+
+// ---------- Phase 3: References ----------
+
+function ReferencePanel({ references, uploading, analyzingRefId, onUploadClick, onSelect, onToggleVisible, onDelete, onAiImport, selectedRefId }: {
+  references: any[];
+  uploading: boolean;
+  analyzingRefId: string | null;
+  onUploadClick: () => void;
+  onSelect: (r: any) => void;
+  onToggleVisible: (r: any) => void;
+  onDelete: (r: any) => void;
+  onAiImport: (id: string) => void;
+  selectedRefId: string | null;
+}) {
+  return (
+    <div className="space-y-3">
+      <Button size="sm" variant="outline" className="w-full" onClick={onUploadClick} disabled={uploading}>
+        {uploading ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Upload className="mr-1 h-3.5 w-3.5" />}
+        {uploading ? "Uploading..." : "Upload reference image"}
+      </Button>
+      <p className="text-[11px] text-muted-foreground">
+        Upload a site plan, sketch, aerial photo, or map screenshot. Then use AI Import to auto-trace objects. PDF import arrives in a later phase.
+      </p>
+      {references.length === 0 ? (
+        <div className="rounded border border-dashed p-3 text-center text-xs text-muted-foreground">
+          No references yet.
+        </div>
+      ) : references.map((r) => (
+        <div key={r.id} className={cn("rounded border bg-background p-2", selectedRefId === r.id && "border-primary ring-1 ring-primary/40")}>
+          <div className="mb-1.5 flex items-center gap-1">
+            <button onClick={() => onToggleVisible(r)} className="text-muted-foreground hover:text-foreground">
+              {r.visible ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+            </button>
+            <button onClick={() => onSelect(r)} className="flex-1 truncate text-left text-xs font-medium hover:underline">
+              {r.label ?? "Reference"}
+            </button>
+            <button onClick={() => onDelete(r)} className="text-muted-foreground hover:text-destructive">
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
+          {r.signed_url ? (
+            <button
+              onClick={() => onSelect(r)}
+              className="mb-1.5 block h-20 w-full overflow-hidden rounded bg-muted"
+              style={{ backgroundImage: `url(${r.signed_url})`, backgroundSize: "contain", backgroundRepeat: "no-repeat", backgroundPosition: "center" }}
+              aria-label="Select reference"
+            />
+          ) : null}
+          <Button
+            size="sm" variant="secondary" className="w-full h-7 text-xs"
+            onClick={() => onAiImport(r.id)}
+            disabled={analyzingRefId === r.id}
+          >
+            {analyzingRefId === r.id ? (
+              <><Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />Analyzing...</>
+            ) : (
+              <><Sparkles className="mr-1 h-3.5 w-3.5" />AI Import objects</>
+            )}
+          </Button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ReferenceInspector({ reference, onPatch, onDelete, onAiImport, analyzing }: {
+  reference: any;
+  onPatch: (patch: any) => void;
+  onDelete: () => void;
+  onAiImport: () => void;
+  analyzing: boolean;
+}) {
+  const t = reference.transform ?? {};
+  return (
+    <div className="space-y-4 p-4">
+      <div>
+        <div className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Reference</div>
+        <div className="truncate text-sm font-medium">{reference.label}</div>
+      </div>
+
+      <Field label="Opacity">
+        <div className="flex items-center gap-2">
+          <Slider
+            value={[Math.round((reference.opacity ?? 0.5) * 100)]}
+            onValueChange={(v) => onPatch({ opacity: v[0] / 100 })}
+            max={100} step={5}
+          />
+          <span className="w-10 text-right text-xs text-muted-foreground">{Math.round((reference.opacity ?? 0.5) * 100)}%</span>
+        </div>
+      </Field>
+
+      <div className="grid grid-cols-2 gap-2">
+        <Field label="X"><NumInput value={t.x ?? 0} onCommit={(v) => onPatch({ transform: { ...t, x: v } })} /></Field>
+        <Field label="Y"><NumInput value={t.y ?? 0} onCommit={(v) => onPatch({ transform: { ...t, y: v } })} /></Field>
+        <Field label="Width"><NumInput value={t.width ?? 0} onCommit={(v) => onPatch({ transform: { ...t, width: v } })} /></Field>
+        <Field label="Height"><NumInput value={t.height ?? 0} onCommit={(v) => onPatch({ transform: { ...t, height: v } })} /></Field>
+        <Field label="Rotation°"><NumInput value={t.rotation ?? 0} onCommit={(v) => onPatch({ transform: { ...t, rotation: v } })} /></Field>
+      </div>
+
+      <Button className="w-full" onClick={onAiImport} disabled={analyzing}>
+        {analyzing ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Analyzing drawing...</>) : (<><Sparkles className="mr-2 h-4 w-4" />AI Import objects</>)}
+      </Button>
+      <p className="text-[11px] text-muted-foreground">
+        AI reads this drawing and drops detected booths, buildings, roads, and other objects onto an "AI Import" layer. Review and adjust before publishing.
+      </p>
+
+      <Button variant="destructive" size="sm" className="w-full" onClick={onDelete}>
+        <Trash2 className="mr-1 h-4 w-4" /> Delete reference
+      </Button>
+    </div>
+  );
+}
+
