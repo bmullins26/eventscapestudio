@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState, useCallback } from "react";
-import type { AnyElement, BoothElement, ShapeElement, TextElement, IconElement } from "./types";
+import { useEffect, useRef, useState } from "react";
+import type { AnyElement, BoothElement, ShapeElement, TextElement, IconElement, BackgroundLayer } from "./types";
 import type { DesignerActions } from "./store";
 import { IconGlyph } from "./icon-glyph";
 
@@ -9,14 +9,18 @@ interface Viewport {
   scale: number; // pixels per world unit (foot)
 }
 
+export type CanvasTool = "select" | "booth" | "rect" | "circle" | "triangle" | "line" | "text" | "icon" | "calibrate";
+
 export interface CanvasProps {
   elements: AnyElement[];
   selection: string[];
   actions: DesignerActions;
-  tool: "select" | "booth" | "rect" | "circle" | "triangle" | "line" | "text" | "icon";
+  tool: CanvasTool;
   toolPayload?: { iconKey?: string } | null;
   onZoomChange?: (pct: number) => void;
   viewportRef: React.MutableRefObject<Viewport>;
+  background?: BackgroundLayer | null;
+  onCalibrate?: (p1: { x: number; y: number }, p2: { x: number; y: number }) => void;
 }
 
 // Screen -> world
