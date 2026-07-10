@@ -689,7 +689,23 @@ function VenueDesignerPage() {
               onPatch={(patch) => updateMutation.mutate({ id: selected.id, patch })}
               onCommitPatch={(patch) => updateMutation.mutate({ id: selected.id, patch })}
               onDelete={() => deleteMutation.mutate(selected.id)}
+              onSaveToLibrary={() => {
+                const name = window.prompt("Library item name", selected.name ?? selected.type);
+                if (!name) return;
+                const category = window.prompt("Category", "Custom") ?? "Custom";
+                saveLibraryMutation.mutate({
+                  name,
+                  category,
+                  type: selected.type,
+                  shape: selected.shape,
+                  default_geometry: { w: selected.geometry?.w ?? 10, h: selected.geometry?.h ?? 10 },
+                  default_style: selected.style ?? {},
+                  default_metadata: selected.metadata ?? {},
+                });
+              }}
+              savingLibrary={saveLibraryMutation.isPending}
             />
+
           ) : selectedRef ? (
             <ReferenceInspector
               key={selectedRef.id}
