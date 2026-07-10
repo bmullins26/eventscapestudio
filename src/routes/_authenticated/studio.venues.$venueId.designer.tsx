@@ -556,7 +556,7 @@ function VenueDesignerPage() {
               obj={o}
               layerOpacity={layer?.opacity ?? 1}
               selected={selectedId === o.id}
-              zoom={1}
+              zoom={Math.pow(2, mapZoom - REF_ZOOM)}
               onPointerDown={(e) => handleObjectPointerDown(e, o)}
               onResizePointerDown={(e, h) => handleResizePointerDown(e, o, h)}
             />
