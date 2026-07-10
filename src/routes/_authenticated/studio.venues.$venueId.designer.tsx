@@ -519,13 +519,13 @@ function VenueDesignerPage() {
                 templates={(templates as any[]) ?? []}
                 publishing={publishMutation.isPending}
                 restoringId={restoreMutation.isPending ? (restoreMutation.variables as string) : null}
-                onPublish={(label) => publishMutation.mutate({ label })}
-                onRestore={(id) => {
+                onPublish={(label: string | undefined) => publishMutation.mutate({ label })}
+                onRestore={(id: string) => {
                   if (window.confirm("Restore this version? Current unsaved changes will be replaced.")) {
                     restoreMutation.mutate(id);
                   }
                 }}
-                onDelete={(id) => deleteTemplateMutation.mutate(id)}
+                onDelete={(id: string) => deleteTemplateMutation.mutate(id)}
               />
             </TabsContent>
           </Tabs>
