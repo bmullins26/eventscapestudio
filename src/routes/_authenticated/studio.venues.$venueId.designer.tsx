@@ -508,6 +508,40 @@ function VenueDesignerPage() {
               <rect x={0} y={0} width={width} height={height} fill="hsl(var(--card))" stroke="hsl(var(--border))" strokeWidth={2 / view.zoom} />
               {showGrid && <rect x={0} y={0} width={width} height={height} fill="url(#grid-lg)" opacity={0.5} />}
 
+              {/* References (rendered below objects) */}
+              {references.map((r: any) => {
+                if (!r.visible) return null;
+                if (!r.signed_url) return null;
+                const t = r.transform ?? {};
+                const cx = (t.x ?? 0) + (t.width ?? 0) / 2;
+                const cy = (t.y ?? 0) + (t.height ?? 0) / 2;
+                const rot = t.rotation ?? 0;
+                const isSel = selectedRefId === r.id;
+                return (
+                  <g key={r.id} transform={rot ? `rotate(${rot} ${cx} ${cy})` : undefined}>
+                    <image
+                      href={r.signed_url}
+                      x={t.x ?? 0} y={t.y ?? 0}
+                      width={t.width ?? 100} height={t.height ?? 100}
+                      opacity={r.opacity ?? 0.5}
+                      preserveAspectRatio="none"
+                      onPointerDown={(e) => { e.stopPropagation(); setSelectedRefId(r.id); setSelectedId(null); }}
+                      style={{ cursor: "pointer" }}
+                    />
+                    {isSel && (
+                      <rect
+                        x={t.x ?? 0} y={t.y ?? 0}
+                        width={t.width ?? 100} height={t.height ?? 100}
+                        fill="none" stroke="hsl(var(--primary))" strokeWidth={2 / view.zoom}
+                        strokeDasharray={`${4 / view.zoom} ${4 / view.zoom}`}
+                        pointerEvents="none"
+                      />
+                    )}
+                  </g>
+                );
+              })}
+
+
               {objects.map((o: any) => {
                 const layer = layerById[o.layer_id];
                 if (layer && !layer.visible) return null;
