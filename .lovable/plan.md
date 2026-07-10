@@ -1,105 +1,183 @@
 
-# Venue Designer — Rewrite Plan
+# Venue Designer → Full Workspace (revised with full canvas & tool spec)
 
-This replaces the existing Booth Builder with a new **Venue Designer** module. The Venue Designer becomes EventScape's foundational primitive: a structured Venue Model drives design, templates, event snapshots, applications, interactive reservations, live event management, and reporting.
-
-Because the scope is very large, this plan delivers it in **six phased milestones**. Each phase is shippable on its own; we stop and confirm before starting the next.
-
----
-
-## Guiding Architecture
+Locked layout (from your sketch):
 
 ```text
-Venue (master, editable)
-  └── VenueTemplate v1, v2, v3 ...   (versioned snapshots of the Venue Model)
-        └── Event (frozen snapshot copied from a chosen VenueTemplate version)
-              ├── EventObjects  (booths + all other objects, per-event state)
-              ├── Applications  (per event; link to org-wide VendorProfile)
-              └── Reservations  (vendor → booth, timers, payments, check-in)
+┌─────────────────────────────────────────────────────────────┐
+│ Menu   Venue   Edit   View   Insert   AI   Publish          │
+├───────────────┬──────────────────────────────┬──────────────┤
+│ Object Library│        HUGE CANVAS           │ Properties   │
+├───────────────┴──────────────────────────────┴──────────────┤
+│ Layers │ History │ AI │ Assets │ Templates │ Objects        │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-- **Venue Model = source of truth.** Every visible thing (booth, road, tree, stage, sign) is a typed object with metadata. SVG is just the render layer.
-- Editing a Venue never mutates existing Events. Events hold their own copy.
-- One map surface is reused across: design → publish → apply → reserve → check-in → report.
+## 1. Shell
 
-## Phased Delivery
+- Route escapes `AppShell` with a `fixed inset-0 z-40 bg-background` container so the workspace goes edge-to-edge.
+- 3-row grid: `[topbar auto] [main 1fr] [drawer auto]`; main row: `[left 260px] [canvas 1fr] [right 320px]`.
+- Every panel/drawer is resizable + collapsible (chevron collapses to a 40px icon rail). Widths, collapsed state, drawer height, and active tab persisted per user in `user_org_prefs.value.venue_designer`.
 
-### Phase 1 — Foundation (data model + empty designer shell)
-- New DB tables (structured, replacing per-booth-only tables for new work; old booth tables stay until Phase 6 migration):
-  - `venues` (already exists — extended with `canvas_width`, `canvas_height`, `units`, `default_view`)
-  - `venue_objects` — polymorphic object rows: `id`, `venue_id`, `layer_id`, `type` (enum: booth, building, road, walkway, parking, utility, tree, fence, stage, pavilion, food_court, beer_garden, restroom, table, bench, trash, sign, sponsor_banner, registration, info, ticket, first_aid, atm, kids_area, custom), `shape` (rect/polygon/line/circle/text), `geometry` jsonb (points/x/y/w/h/rotation), `style` jsonb, `metadata` jsonb, `locked`, `hidden`, `z_index`, `group_id`
-  - `venue_layers` — `id`, `venue_id`, `name`, `kind` (reference/buildings/roads/utilities/booths/labels/custom), `visible`, `locked`, `opacity`, `order`
-  - `venue_references` — imported PDFs/images/drone/Google Maps snapshots (`file_url`, `page`, `transform`, `opacity`)
-  - `venue_templates` — versioned snapshots of a Venue: `id`, `venue_id`, `version`, `label`, `model` jsonb (denormalized objects+layers+references at publish time), `published_at`, `created_by`
-  - `org_object_library` — reusable custom objects/assets per organization
-  - RLS: org-member read/write via existing `is_org_member`/`has_permission('venues.manage')`; anon read only for published event maps in Phase 4.
-- New route: `/studio/venues/$venueId/designer` (replaces `/studio/booths` for authoring; old route kept as read-only redirect until Phase 6).
-- Shell UI only in this phase: top toolbar, left sidebar (Objects / Layers / Templates / Search tabs — empty state), canvas center (SVG + pan/zoom via existing `use-canvas-input`), right inspector, bottom status bar.
+## 2. Top menu bar
 
-### Phase 2 — Objects, Layers, Editing
-- Object Library sidebar with all categories from the brief; drag/tap-to-place onto canvas.
-- Per-object ops: move, resize, rotate, duplicate, delete, rename, lock, hide, bring-forward/send-back, group/ungroup, snap, layer assignment, metadata editing in right inspector.
-- Manual tracing tools: rectangle, polygon, line, circle, text, booth (each writes a `venue_objects` row with the right `type` + `shape`).
-- Layers panel: reorder, visibility, lock, opacity.
-- Smart-object metadata schemas per type (booth: size/price/category/electric/water/premium/corner; building: capacity/indoor/electric; road: width/emergency; parking: kind/capacity; tree: species/protected; sponsor: assigned vendor).
-- Bottom status bar wired: zoom %, cursor coords, grid toggle, snap toggle, selection count.
-- Touch/stylus: builds on existing `use-canvas-input` (pinch zoom, two-finger pan, palm rejection). Long-press = context menu on tablet/phone. Phone gets a stripped "quick edit" mode; tablet gets full editor.
+Real dropdown menu bar (shadcn `DropdownMenu`), not a toolbar:
 
-### Phase 3 — Reference Import + AI Import
-- Reference import: PDF (pdf.js render, page picker already exists), PNG/JPG/WEBP, drone photos, map screenshots. Reference stored as `venue_references` row with adjustable transform + opacity, sits on its own layer.
-- AI Import server function (`createServerFn`, Lovable AI Gateway, Gemini 2.5 Pro vision):
-  - Input: uploaded image/PDF page.
-  - Prompt asks the model to return a structured JSON Venue Model: detected buildings, roads, parking, walkways, trees, utilities, booths, labels, dimensions with approximate normalized coordinates.
-  - Server converts the JSON into `venue_objects` rows on a new "AI Import" layer for the organizer to accept/edit.
-  - Organizer can then manually trace anything the model missed.
+- **Menu** — Back to Venues, Open venue…, Duplicate venue, Import, Export (PNG/PDF/SVG/JSON), Print, Close.
+- **Venue** — Rename, Canvas size, Units (ft/m), Background, Reference alignment, Snapshot for event.
+- **Edit** — Undo, Redo, Cut, Copy, Paste, Duplicate (⌘D), Delete, Select All, Find, **Group / Ungroup**, **Lock / Unlock**, **Hide / Show**, **Rename**, **Save as asset**.
+- **View** — Zoom In/Out/Fit/100%, **Grid**, **Rulers**, **Guides**, **Smart snap**, Minimap, Toggle Left/Right/Bottom panels, **Presentation mode**.
+- **Arrange** (new) — Align L/C/R/T/M/B, Distribute H/V, **Bring forward / Send backward / To front / To back**, Flip H/V, Rotate 90°.
+- **Insert** — every drawing tool below (mirrored), Reference image/PDF, Text label, Guide line, Measurement, Custom SVG, From org library…
+- **AI** — Trace reference, Generate booth grid, Auto-label, Suggest layout, Ask AI (opens AI drawer).
+- **Publish** — Publish version, Restore version, Manage versions, Snapshot to event.
 
-### Phase 4 — Venue Templates + Event Snapshots
-- Templates tab in left sidebar: "Publish current design as template v(N)". Stored in `venue_templates.model` as a frozen jsonb snapshot.
-- Version history: view / restore / duplicate / diff (visual overlay).
-- Event creation wired to the new flow:
-  1. Create Event → pick Venue → pick Template version → server copies the template's `model` into event-scoped tables (`event_venue_objects`, `event_venue_layers`) so subsequent edits to the Venue never touch the Event.
-  2. Old `event_booths` continues to be populated for backwards compatibility during this phase; Phase 6 migrates it out.
-- Vendor Profiles remain org-wide (already implemented). Applications continue to be per-Event and link `vendor_profile_id`.
+Below the menu bar: slim **tool strip** (36px) with the drawing tools + zoom controls + Publish CTA.
 
-### Phase 5 — Interactive Booth Reservation + Live Event Map
-- Public reservation experience at `/apply/$eventSlug/reserve` (approved vendors only, gated by application status):
-  - Concert-ticket-style map with booth states: available / reserved / pending payment / assigned / sponsor / unavailable.
-  - Zoom, pan, search, filter (size / electric / water / premium / ADA / price range).
-  - Booth detail panel: number, price, dimensions, amenities. Occupied booths show business name + category + optional logo only — never private contact info. Visibility per field is org-controlled.
-  - Reserve action creates a `booth_reservation` row with a countdown timer (configurable); expiring reservations auto-release.
-  - Smart reservations: warn on nearby same-category vendor, suggest alternatives, enforce organizer rules (recommendation / warning / restriction).
-  - Priority windows (sponsors first, returning vendors next, general last) via reservation `opens_at` per role.
-- Live Event Map for organizer at `/studio/events/$id/map`:
-  - Same canvas. Clicking a booth opens: vendor, application, payment status, check-in, notes, messages, products, power requirements, status.
-  - Check-in toggle updates status live.
+## 3. Canvas — full feature set
 
-### Phase 6 — Migration + Cleanup
-- Migrate existing `layout_templates` / `layout_template_booths` / `event_booths` into `venues` + `venue_objects` + `venue_templates` + event-scoped object tables. One-time server function; organizer confirms per venue.
-- Remove old Booth Builder routes and components; redirect `/studio/booths` to venue list.
-- Add "AI Assist" server functions (natural-language queries against the Venue Model: "show electrical booths", "find empty space", "suggest sponsor locations", "check ADA routes", "check emergency access"). These operate on structured `venue_objects`, not SVG.
+**Infinite canvas** implemented as an SVG world with a viewport transform (translate + scale) held in the Zustand store. Bounds are effectively unlimited; content is placed in world coordinates.
 
----
+- **Pan** — hand tool, Space+drag, middle-mouse drag, two-finger trackpad.
+- **Zoom** — ⌘+scroll, pinch, tool strip buttons, Fit/100%, focal-point zoom (already partially in `useCanvasInput`).
+- **Rotate** — object handle + numeric input; Shift snaps to 15°.
+- **Grid** — dotted/lined, size follows units, snap when enabled.
+- **Rulers** — top + left, follow zoom + units, hover crosshair readout.
+- **Guides** — draggable from rulers, snap targets, per-guide lock, list in Layers→Guides section.
+- **Smart snapping** — grid, object edges/centers, guides, reference outlines; live snap indicators.
+- **Marquee select** — click-drag on empty canvas; Shift extends, Alt subtracts.
+- **Multi-select** — Shift-click; group transform box for the whole selection.
+- **Grouping** — ⌘G / ⌘⇧G. Groups stored as `metadata.group_id` on `venue_objects` (no schema change).
+- **Alignment / Distribution** — Arrange menu, contextual toolbar, and keyboard shortcuts.
+- **Bring forward / Send backward** — z-order stored in existing `venue_objects.z` (or add `z` if missing).
+- **Duplicate** — ⌘D (in place) and Alt-drag (offset).
+- **Lock / Hide / Rename** — per-object flags on `venue_objects` (already present) and per-layer.
+- **Save as asset** — writes selection to `org_object_library` with chosen name + category (already partially wired).
+- **Context menus** — right-click on canvas, on objects, on the ruler; long-press on touch.
+- **Command palette** — ⌘K (`cmdk`); every action addressable ("place stage 30×20 near north road", "assign vendor Acme to selected booth", "publish v3").
+- **Presentation mode** — F5 / View menu; hides chrome, keeps canvas + optional legend.
+- **Contextual floating toolbar** above selection: align, distribute, rotate, flip, forward/back, assign vendor, save-to-library, duplicate, delete.
+- **Minimap** in bottom-right of canvas; drag to pan.
 
-## Technical Section (for engineers)
+## 4. Drawing tools
 
-- **Data**: Postgres jsonb geometry + metadata gives us a single polymorphic `venue_objects` table without an explosion of type-specific tables. Indexed on `(venue_id, layer_id, type)`. RLS via `is_org_member(auth.uid(), (SELECT organization_id FROM venues WHERE id = venue_id))`. Anon read only through a `TO anon` policy scoped to published event snapshots.
-- **Rendering**: SVG with a virtualized viewport (`getBBox` culling) so large venues stay smooth. Reuse `useCanvasInput` for pointer/pinch/pan and `useLongPress` for touch context menus.
-- **Server functions**: all mutations via `createServerFn` + `requireSupabaseAuth` (never client-direct writes for cross-table transactions like publish-template or create-event-from-template).
-- **AI**: single `analyzeVenueDrawing` server fn calling `google/gemini-2.5-pro` on the Lovable AI Gateway, returning strict JSON validated with Zod, then inserted as `venue_objects` on an "AI Import" layer.
-- **Compatibility**: Phases 1–5 add new tables alongside existing ones. Phase 6 does the destructive migration and removes the old builder. This lets us ship value incrementally without breaking the current app.
-- **Routes**:
-  - `/studio/venues` (list — extended)
-  - `/studio/venues/$venueId/designer` (new — the Venue Designer)
-  - `/studio/venues/$venueId/templates` (versions)
-  - `/studio/events/$id/map` (live event map — Phase 5)
-  - `/apply/$eventSlug/reserve` (public reservation — Phase 5)
+Tool strip + Insert menu expose every tool below. Each armed tool changes cursor + shows a hint bar.
 
----
+**Primitive tools** (draw freely, produce a `venue_object` with corresponding `shape`):
+- Select · Pan · Rectangle · Circle · Polygon · Polyline · Line · Bezier · Text · Arrow · **Measurement Line** (records distance in units into metadata) · **Custom SVG** (paste/upload SVG path; stored on object).
 
-## What I Need from You Before Starting
+To support Polygon/Polyline/Bezier/Line/Arrow/Custom SVG cleanly, extend `venue_objects.shape` to accept: `rect | circle | polygon | polyline | line | bezier | text | svg`, and store points/path in `geometry` (already `jsonb`). No column changes, only wider union.
 
-1. **Start with Phase 1?** (foundation + empty designer shell + DB migration). This is a ~1-message build and unblocks everything else.
-2. **Keep old Booth Builder live during Phases 1–5**, then migrate + remove in Phase 6 — confirm this is acceptable (versus a hard cutover on day one).
-3. **Units**: feet or meters as the default for the Venue Model? (Affects inspector display; storage is unit-agnostic floats.)
+**Preset object tools** (armed tool places a preconfigured object; edits allowed after):
+- **Vendor & event stalls**: Booth · Sponsor Banner · Food Truck · Trailer · Beer Garden · Food Court · Picnic Area
+- **Structures**: Building · Pavilion · Stage · Tent · Restroom · Ticket Booth · Information Booth · Registration · First Aid · Security · ATM · Playground
+- **Circulation**: Road · Walkway · Parking · Fence · Gate · Sign · Arrow
+- **Utilities**: Generator · Electrical Panel · Water Hookup · Fire Hydrant · Dumpster
+- **Landscape / furniture**: Tree · Bush · Bench · Table · Chair
 
-Reply "go" and I'll begin Phase 1.
+Every preset has: default size, default fill/stroke, default layer, default metadata schema (e.g. Booth → price/electric/water/vendor; Tree → species; Electrical Panel → amps/circuits). Defaults live in one config file `src/components/venue-designer/object-catalog.ts` — single source of truth for the palette, the Insert menu, and the tool strip.
+
+## 5. Left panel — Object Library
+
+Accordion in the order from your sketch: ⭐ Favorites, Booths, Buildings, Roads, Parking, Utilities, Landscaping, Signs, Furniture, Custom.
+- Populated from the object catalog + `org_object_library` for Favorites/Custom.
+- Search across all categories.
+- Click = arm placement; drag = drag-drop onto canvas.
+- "Save selection as asset" pinned at the bottom.
+
+## 6. Right panel — Properties inspector
+
+Sections match your sketch, driven by the selected object's catalog entry:
+
+- **Position** (x, y)
+- **Size** (w, h, aspect-lock)
+- **Rotation**
+- **Layer**
+- **Metadata** — dynamic fields per object type (e.g. Booth: code, capacity, tags; Stage: capacity; Sign: text; Measurement: shows computed length)
+- **Vendor** (for booths) — searchable combobox from event applications
+- **Price** · **Electric** (amps) · **Water** (yes/no) — for booths
+- **Notes**
+
+Editable inline; every change writes to `venue_objects` via a debounced mutation. Multi-select shows shared fields with mixed-value indicators.
+
+Empty selection → shows Venue-level properties (name, canvas size, units, background, reference alignment).
+
+## 7. Bottom drawer — tabbed workspace
+
+Tabs in your exact order:
+
+1. **Layers** — drag-reorder, color, visibility, lock, opacity slider, solo, object counts; guides live under a "Guides" sublayer.
+2. **History** — timeline from a new append-only `venue_history` table (venue_id, actor_user_id, action, target_type, target_id, before jsonb, after jsonb, created_at); click any entry to preview; "Revert to here".
+3. **AI** — chat-style prompt + quick actions; proposed changes render as a diff card the user Applies or Discards; powered by Lovable AI via a `runAiVenueCommand` server function using structured output.
+4. **Assets** — reference PDFs/images: upload, replace, remove; per-asset opacity, rotation, scale, lock, visibility; drag to canvas.
+5. **Templates** — published `venue_templates`: thumbnails, labels, dates, Restore/Delete/Snapshot-to-event; "Publish current design" pinned.
+6. **Objects** — flat outline grouped by layer; search, multi-select, inline rename; click to select on canvas.
+
+Drawer height, active tab, collapse state persisted.
+
+## 8. Organization assets (reuse)
+
+- Every object is fully editable in place; nothing is a locked stamp.
+- Every object carries metadata via `venue_objects.metadata jsonb` — schemas defined per object type in the catalog.
+- **Reuse** — "Save as asset" writes the object (shape, geometry, style, metadata schema) to `org_object_library`. Any org user can drag it back into any venue from Object Library → Favorites/Custom. Editing a library item does NOT retro-update placed copies (placed copies are snapshots); we add an optional `library_item_id` reference on the placed object so we can offer "Update to latest library version" per-selection later.
+
+## 9. Keyboard
+
+Full shortcut map: V select · H pan · R rect · O circle · P polygon · L line · B booth · T text · M measurement · G grid · Shift+G snap · ⌘G / ⌘⇧G group/ungroup · ⌘L lock · ⌘⇧H hide · ⌘D duplicate · ⌫ delete · ⌘Z / ⌘⇧Z undo/redo · ⌘K palette · ⌘S publish version · F5 present · Space+drag pan · 1–6 switch drawer tabs.
+
+## 10. Refactor (mandatory)
+
+Current file is 1262 lines. Split before growing:
+
+```text
+src/routes/_authenticated/studio.venues.$venueId.designer.tsx      (thin route)
+src/components/venue-designer/
+  workspace.tsx                grid shell, resize/collapse, prefs persistence
+  menu-bar.tsx                 top menu bar dropdowns
+  tool-strip.tsx               drawing tool buttons + zoom + publish
+  object-catalog.ts            single source of truth for every tool/preset
+  canvas/
+    Canvas.tsx                 viewport + world SVG
+    SelectionOverlay.tsx       handles, marquee, snap indicators, HUD
+    RulersGrid.tsx
+    Guides.tsx
+    Minimap.tsx
+    ContextualToolbar.tsx
+    ContextMenu.tsx
+  left/ObjectLibrary.tsx
+  right/Inspector.tsx          (venue props when empty)
+  drawer/
+    BottomDrawer.tsx
+    tabs/{Layers,History,Ai,Assets,Templates,Objects}Tab.tsx
+  command-palette.tsx
+  presentation.tsx
+  store.ts                     Zustand: tool, selection, viewport, panels, snap flags, guides
+  shortcuts.ts
+  types.ts
+```
+
+## 11. Data + server
+
+Reuse existing tables — no destructive migrations:
+
+- `venue_objects` (widen `shape` union + start using `geometry.points`/`geometry.path`/`geometry.rotation` for new shapes; add optional `library_item_id` and `z` if not present).
+- New table `venue_history` for the History tab and cross-session undo.
+- New server fns: `alignVenueObjects`, `distributeVenueObjects`, `groupVenueObjects`, `reorderZ`, `assignVendorToBooth`, `listVenueHistory`, `revertVenueTo`, `runAiVenueCommand`.
+- Layout prefs on `user_org_prefs.value.venue_designer`.
+
+## 12. Phasing
+
+- **Phase A — Shell + refactor + catalog**: new grid, menu bar, tool strip, all three panels/drawer wired to existing data; object catalog file introduced; nothing lost. Shippable.
+- **Phase B — Canvas power-ups**: rulers, grid, guides, smart snap, marquee, multi-select, group, align/distribute, z-order, rotate/resize HUD, contextual toolbar, minimap, context menus, presentation mode, command palette.
+- **Phase C — Full tool set + org assets**: Polygon/Polyline/Line/Bezier/Arrow/Text/Measurement/Custom SVG + every preset object with metadata schema; Object Library reflects catalog; Save-as-asset + library placement.
+- **Phase D — History + AI + Vendors + Publish polish**: `venue_history` + undo/redo/revert; AI drawer with diff-apply; vendor assign from Inspector and drag from drawer; version thumbnails, snapshot-to-event, export PNG/PDF/SVG/JSON.
+
+Each phase leaves the app shippable.
+
+## Out of scope this pass
+
+- Realtime multi-user cursors/comments (hooks left in store).
+- 3D / isometric view.
+- Native mobile app.
+
+Ready to start with **Phase A (shell + refactor + object catalog)** on approval.
