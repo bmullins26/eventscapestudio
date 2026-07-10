@@ -38,9 +38,6 @@ export function ObjectLibrary({ activeType, onPick, libraryItems, activeLibraryI
   return (
     <div className="flex h-full flex-col">
       <div className="border-b p-2">
-        <div className="mb-2 flex items-center justify-between">
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Object Library</div>
-        </div>
         <div className="relative">
           <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search library..." className="h-8 pl-7 text-xs" />
