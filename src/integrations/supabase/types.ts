@@ -1766,6 +1766,44 @@ export type Database = {
           },
         ]
       }
+      venue_layouts: {
+        Row: {
+          created_at: string
+          elements: Json
+          id: string
+          name: string
+          settings: Json
+          updated_at: string
+          venue_id: string
+        }
+        Insert: {
+          created_at?: string
+          elements?: Json
+          id?: string
+          name?: string
+          settings?: Json
+          updated_at?: string
+          venue_id: string
+        }
+        Update: {
+          created_at?: string
+          elements?: Json
+          id?: string
+          name?: string
+          settings?: Json
+          updated_at?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_layouts_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: true
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       venue_map_references: {
         Row: {
           created_at: string
