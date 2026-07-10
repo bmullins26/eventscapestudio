@@ -2076,6 +2076,8 @@ export type Database = {
           archived_at: string | null
           canvas_height: number
           canvas_width: number
+          center_lat: number | null
+          center_lng: number | null
           city: string | null
           country: string | null
           cover_image_url: string | null
@@ -2085,6 +2087,7 @@ export type Database = {
           id: string
           latitude: number | null
           longitude: number | null
+          map_zoom: number | null
           name: string
           notes: string | null
           organization_id: string
@@ -2101,6 +2104,8 @@ export type Database = {
           archived_at?: string | null
           canvas_height?: number
           canvas_width?: number
+          center_lat?: number | null
+          center_lng?: number | null
           city?: string | null
           country?: string | null
           cover_image_url?: string | null
@@ -2110,6 +2115,7 @@ export type Database = {
           id?: string
           latitude?: number | null
           longitude?: number | null
+          map_zoom?: number | null
           name: string
           notes?: string | null
           organization_id: string
@@ -2126,6 +2132,8 @@ export type Database = {
           archived_at?: string | null
           canvas_height?: number
           canvas_width?: number
+          center_lat?: number | null
+          center_lng?: number | null
           city?: string | null
           country?: string | null
           cover_image_url?: string | null
@@ -2135,6 +2143,7 @@ export type Database = {
           id?: string
           latitude?: number | null
           longitude?: number | null
+          map_zoom?: number | null
           name?: string
           notes?: string | null
           organization_id?: string
