@@ -112,8 +112,8 @@ function VenueDesignerPage() {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const dragRef = useRef<{ id: string; startX: number; startY: number; origX: number; origY: number; mode: "move" | "resize"; handle?: string } | null>(null);
 
-  const layers = data?.layers ?? [];
-  const objects = data?.objects ?? [];
+  const layers: any[] = (data?.layers as any[] | undefined) ?? [];
+  const objects: any[] = (data?.objects as any[] | undefined) ?? [];
   const layerById = useMemo(() => Object.fromEntries(layers.map((l: any) => [l.id, l])), [layers]);
   const selected = objects.find((o: any) => o.id === selectedId) ?? null;
 
