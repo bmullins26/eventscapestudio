@@ -234,7 +234,38 @@ function VenueDesignerPage() {
     onError: (e: any) => toast.error(e?.message ?? "Delete failed"),
   });
 
+  // ------ Templates (versions) ------
+  const templatesKey = ["venue-templates", venueId];
+  const { data: templates } = useQuery({
+    queryKey: templatesKey,
+    queryFn: () => fetchTemplates({ data: { venueId } }),
+  });
+  const publishMutation = useMutation({
+    mutationFn: (input: { label?: string; description?: string }) =>
+      publishTemplate({ data: { venueId, ...input } }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: templatesKey });
+      toast.success("Version published");
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Publish failed"),
+  });
+  const restoreMutation = useMutation({
+    mutationFn: (templateId: string) =>
+      restoreTemplate({ data: { venueId, templateId } }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey });
+      toast.success("Version restored");
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Restore failed"),
+  });
+  const deleteTemplateMutation = useMutation({
+    mutationFn: (id: string) => removeTemplate({ data: { id } }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: templatesKey }),
+    onError: (e: any) => toast.error(e?.message ?? "Delete failed"),
+  });
+
   // ------ Upload handler ------
+
   const handleFileUpload = async (file: File) => {
     if (!data?.venue) return;
     if (!file.type.startsWith("image/")) {
