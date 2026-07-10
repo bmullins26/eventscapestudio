@@ -534,7 +534,7 @@ export function ObjectShape({ obj, layerOpacity, selected, zoom, onPointerDown, 
   );
 
   const handles = ["nw","n","ne","e","se","s","sw","w"];
-  const handleSize = 8 / zoom;
+  const handleSize = 12 / zoom;
 
   return (
     <g opacity={layerOpacity} transform={transform} style={{ cursor: obj.locked ? "not-allowed" : "move" }}>
