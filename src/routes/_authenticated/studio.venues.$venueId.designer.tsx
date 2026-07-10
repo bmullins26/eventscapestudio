@@ -98,6 +98,10 @@ function VenueDesignerPage() {
   const createLayer = useServerFn(createVenueLayer);
   const updateLayer = useServerFn(updateVenueLayer);
   const deleteLayer = useServerFn(deleteVenueLayer);
+  const createRef = useServerFn(createVenueReference);
+  const updateRef = useServerFn(updateVenueReference);
+  const deleteRef = useServerFn(deleteVenueReference);
+  const analyzeDrawing = useServerFn(analyzeVenueDrawing);
 
   const queryKey = ["venue-design", venueId];
   const { data, isLoading } = useQuery({
