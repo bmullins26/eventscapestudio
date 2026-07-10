@@ -244,11 +244,45 @@ export function DesignerCanvas({ elements, selection, actions, tool, toolPayload
         <rect x={0} y={0} width={size.w} height={size.h} fill="url(#vd-grid-minor)" />
         <rect x={0} y={0} width={size.w} height={size.h} fill="url(#vd-grid-major)" />
 
+        {/* Background reference layer (behind elements) */}
+        {background && (() => {
+          const bx = (background.x - vp.x) * vp.scale;
+          const by = (background.y - vp.y) * vp.scale;
+          const bw = background.w * vp.scale;
+          const bh = background.h * vp.scale;
+          const cx = bx + bw / 2;
+          const cy = by + bh / 2;
+          return (
+            <g transform={`rotate(${background.rotation} ${cx} ${cy})`} style={{ pointerEvents: "none" }}>
+              <image
+                href={background.url}
+                x={bx}
+                y={by}
+                width={bw}
+                height={bh}
+                opacity={background.opacity}
+                preserveAspectRatio="none"
+              />
+              {background.kind === "satellite" && (
+                <text x={bx + 6} y={by + bh - 6} fontSize={10} fill="#fff" stroke="#000" strokeWidth={0.3}
+                  style={{ pointerEvents: "none" }}>Imagery ©Google</text>
+              )}
+            </g>
+          );
+        })()}
+
         <g transform={`scale(${vp.scale}) translate(${-vp.x} ${-vp.y})`}>
           {elements.map((el) => el.hidden ? null : (
             <ElementNode key={el.id} el={el} selected={selection.includes(el.id)} vpScale={vp.scale} />
           ))}
         </g>
+
+        {/* Calibration guide overlay */}
+        {tool === "calibrate" && calibratePt1 && (() => {
+          const p1x = (calibratePt1.x - vp.x) * vp.scale;
+          const p1y = (calibratePt1.y - vp.y) * vp.scale;
+          return <circle cx={p1x} cy={p1y} r={5} fill="hsl(var(--primary))" />;
+        })()}
 
         {/* Selection handles overlay (screen space) */}
         {selection.length === 1 && (() => {
