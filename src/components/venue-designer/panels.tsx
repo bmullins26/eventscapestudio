@@ -98,8 +98,13 @@ export function ObjectLibrary({ activeType, onPick, libraryItems, activeLibraryI
                 <button
                   key={it.type}
                   onClick={() => onPick(it.type)}
+                  draggable
+                  onDragStart={(e) => {
+                    e.dataTransfer.effectAllowed = "copy";
+                    e.dataTransfer.setData("application/x-vd-object", JSON.stringify({ kind: "catalog", type: it.type }));
+                  }}
                   className={cn(
-                    "rounded border bg-background px-2 py-2 text-left text-xs transition hover:border-primary hover:bg-primary/5",
+                    "cursor-grab rounded border bg-background px-2 py-2 text-left text-xs transition hover:border-primary hover:bg-primary/5 active:cursor-grabbing",
                     activeType === it.type && "border-primary bg-primary/10"
                   )}
                   title={it.label}
@@ -108,6 +113,7 @@ export function ObjectLibrary({ activeType, onPick, libraryItems, activeLibraryI
                   <div className="truncate">{it.label}</div>
                 </button>
               ))}
+
             </div>
           </div>
         ))}
