@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   MousePointer2, Hand, Square, Circle as CircleIcon, Type as TypeIcon,
   Layers, Library, LayoutTemplate, Search, ChevronLeft, Ruler, Grid3x3, Magnet,
-  Eye, EyeOff, Lock, Unlock, Trash2, Plus, Store, Image as ImageIcon, Sparkles, Upload, Loader2,
+  Eye, EyeOff, Lock, Unlock, Trash2, Plus, Store, Image as ImageIcon, Sparkles, Upload, Loader2, BookmarkPlus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +23,7 @@ import {
   createVenueLayer, updateVenueLayer, deleteVenueLayer,
   createVenueReference, updateVenueReference, deleteVenueReference, analyzeVenueDrawing,
   listVenueTemplates, publishVenueTemplate, restoreVenueTemplate, deleteVenueTemplate,
+  listOrgLibrary, saveObjectToLibrary, deleteOrgLibraryItem,
 } from "@/lib/venue-designer.functions";
 import { useCanvasInput, type CanvasCoords } from "@/components/booth-builder/use-canvas-input";
 import { cn } from "@/lib/utils";
@@ -107,6 +108,9 @@ function VenueDesignerPage() {
   const publishTemplate = useServerFn(publishVenueTemplate);
   const restoreTemplate = useServerFn(restoreVenueTemplate);
   const removeTemplate = useServerFn(deleteVenueTemplate);
+  const fetchLibrary = useServerFn(listOrgLibrary);
+  const saveToLibrary = useServerFn(saveObjectToLibrary);
+  const removeLibraryItem = useServerFn(deleteOrgLibraryItem);
 
   const queryKey = ["venue-design", venueId];
   const { data, isLoading } = useQuery({
@@ -116,6 +120,7 @@ function VenueDesignerPage() {
 
   const [tool, setTool] = useState<Tool>("select");
   const [placingType, setPlacingType] = useState<string | null>(null);
+  const [placingLibraryItem, setPlacingLibraryItem] = useState<any | null>(null);
   const [view, setView] = useState({ x: 0, y: 0, zoom: 1 });
   const [cursor, setCursor] = useState<CanvasCoords>({ x: 0, y: 0 });
   const [showGrid, setShowGrid] = useState(true);
@@ -264,6 +269,28 @@ function VenueDesignerPage() {
     onError: (e: any) => toast.error(e?.message ?? "Delete failed"),
   });
 
+  // ------ Org Object Library ------
+  const libraryKey = ["org-library", venueId];
+  const { data: libraryItems } = useQuery({
+    queryKey: libraryKey,
+    queryFn: () => fetchLibrary({ data: { venueId } }),
+  });
+  const saveLibraryMutation = useMutation({
+    mutationFn: (input: any) => saveToLibrary({ data: { venueId, ...input } }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: libraryKey });
+      toast.success("Saved to library");
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Save failed"),
+  });
+  const deleteLibraryMutation = useMutation({
+    mutationFn: (id: string) => removeLibraryItem({ data: { id } }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: libraryKey }),
+    onError: (e: any) => toast.error(e?.message ?? "Delete failed"),
+  });
+
+
+
   // ------ Upload handler ------
 
   const handleFileUpload = async (file: File) => {
@@ -333,7 +360,7 @@ function VenueDesignerPage() {
         e.preventDefault();
         deleteMutation.mutate(selectedId);
       }
-      if (e.key === "Escape") { setSelectedId(null); setPlacingType(null); setTool("select"); }
+      if (e.key === "Escape") { setSelectedId(null); setPlacingType(null); setPlacingLibraryItem(null); setTool("select"); }
       if (e.key === "v") setTool("select");
       if (e.key === "h") setTool("pan");
     };
@@ -343,10 +370,32 @@ function VenueDesignerPage() {
 
   // ------ Canvas click handling ------
   const handleCanvasClick = (e: React.MouseEvent<SVGSVGElement>) => {
-    if (tool !== "place" || !placingType) return;
+    if (tool !== "place") return;
+    const p = svgToCanvas(e.clientX, e.clientY);
+
+    // Library-item placement
+    if (placingLibraryItem) {
+      const li = placingLibraryItem;
+      const g0 = li.default_geometry ?? { w: 10, h: 10 };
+      const w = g0.w ?? 10, h = g0.h ?? 10;
+      const targetLayer = layers.find((l: any) => l.kind === "custom") ?? layers[0];
+      placeMutation.mutate({
+        venueId,
+        layer_id: targetLayer?.id ?? null,
+        type: li.type,
+        shape: li.shape,
+        name: li.name,
+        geometry: { x: snapVal(p.x - w / 2), y: snapVal(p.y - h / 2), w, h, rotation: 0 },
+        style: li.default_style ?? {},
+        metadata: li.default_metadata ?? {},
+      });
+      if (!e.shiftKey) { setTool("select"); setPlacingLibraryItem(null); }
+      return;
+    }
+
+    if (!placingType) return;
     const def = DEF_BY_TYPE[placingType];
     if (!def) return;
-    const p = svgToCanvas(e.clientX, e.clientY);
     const targetLayer = layers.find((l: any) => l.kind === def.defaultLayerKind) ?? layers[0];
     const g = { x: snapVal(p.x - def.size.w / 2), y: snapVal(p.y - def.size.h / 2), w: def.size.w, h: def.size.h, rotation: 0 };
     const nextBoothName = def.type === "booth"
@@ -473,7 +522,11 @@ function VenueDesignerPage() {
             <TabsContent value="objects" className="mt-0 flex-1 overflow-auto p-3">
               <ObjectPalette
                 activeType={placingType}
-                onPick={(t) => { setPlacingType(t); setTool("place"); }}
+                onPick={(t) => { setPlacingType(t); setPlacingLibraryItem(null); setTool("place"); }}
+                libraryItems={(libraryItems as any[]) ?? []}
+                activeLibraryId={placingLibraryItem?.id ?? null}
+                onPickLibrary={(item) => { setPlacingLibraryItem(item); setPlacingType(null); setTool("place"); }}
+                onDeleteLibrary={(id) => deleteLibraryMutation.mutate(id)}
               />
             </TabsContent>
             <TabsContent value="layers" className="mt-0 flex-1 overflow-auto p-3">
@@ -636,7 +689,23 @@ function VenueDesignerPage() {
               onPatch={(patch) => updateMutation.mutate({ id: selected.id, patch })}
               onCommitPatch={(patch) => updateMutation.mutate({ id: selected.id, patch })}
               onDelete={() => deleteMutation.mutate(selected.id)}
+              onSaveToLibrary={() => {
+                const name = window.prompt("Library item name", selected.name ?? selected.type);
+                if (!name) return;
+                const category = window.prompt("Category", "Custom") ?? "Custom";
+                saveLibraryMutation.mutate({
+                  name,
+                  category,
+                  type: selected.type,
+                  shape: selected.shape,
+                  default_geometry: { w: selected.geometry?.w ?? 10, h: selected.geometry?.h ?? 10 },
+                  default_style: selected.style ?? {},
+                  default_metadata: selected.metadata ?? {},
+                });
+              }}
+              savingLibrary={saveLibraryMutation.isPending}
             />
+
           ) : selectedRef ? (
             <ReferenceInspector
               key={selectedRef.id}
@@ -689,18 +758,72 @@ function ToolButton({ icon: Icon, label, active, onClick }: { icon: any; label: 
   );
 }
 
-function ObjectPalette({ activeType, onPick }: { activeType: string | null; onPick: (type: string) => void }) {
+function ObjectPalette({ activeType, onPick, libraryItems, activeLibraryId, onPickLibrary, onDeleteLibrary }: {
+  activeType: string | null;
+  onPick: (type: string) => void;
+  libraryItems: any[];
+  activeLibraryId: string | null;
+  onPickLibrary: (item: any) => void;
+  onDeleteLibrary: (id: string) => void;
+}) {
   const [q, setQ] = useState("");
+  const ql = q.toLowerCase();
   const filtered = OBJECT_LIBRARY.map((g) => ({
     ...g,
-    items: g.items.filter((i) => !q || i.label.toLowerCase().includes(q.toLowerCase())),
+    items: g.items.filter((i) => !q || i.label.toLowerCase().includes(ql)),
   })).filter((g) => g.items.length > 0);
+  const orgItemsFiltered = (libraryItems ?? []).filter((i: any) => !q || (i.name?.toLowerCase().includes(ql) || i.category?.toLowerCase().includes(ql)));
+  const orgByCategory = orgItemsFiltered.reduce<Record<string, any[]>>((acc, item) => {
+    const c = item.category || "Custom";
+    (acc[c] ??= []).push(item);
+    return acc;
+  }, {});
+
   return (
     <div className="space-y-4">
       <div className="relative">
         <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
         <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search library..." className="h-8 pl-7 text-xs" />
       </div>
+
+      {orgItemsFiltered.length > 0 && (
+        <div>
+          <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">My Library</div>
+          {Object.entries(orgByCategory).map(([cat, items]) => (
+            <div key={cat} className="mb-2">
+              <div className="mb-1 text-[10px] text-muted-foreground">{cat}</div>
+              <div className="grid grid-cols-2 gap-1.5">
+                {items.map((it: any) => {
+                  const style = it.default_style ?? {};
+                  const active = activeLibraryId === it.id;
+                  return (
+                    <div key={it.id} className="group relative">
+                      <button
+                        onClick={() => onPickLibrary(it)}
+                        className={cn(
+                          "w-full rounded border bg-background px-2 py-2.5 text-left text-xs transition hover:border-primary hover:bg-primary/5",
+                          active && "border-primary bg-primary/10"
+                        )}
+                      >
+                        <div className="mb-1 h-4 w-full rounded" style={{ background: style.fill ?? "#f3f4f6", border: `1px solid ${style.stroke ?? "#9ca3af"}` }} />
+                        <div className="truncate">{it.name}</div>
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); if (window.confirm(`Delete "${it.name}" from library?`)) onDeleteLibrary(it.id); }}
+                        className="absolute right-1 top-1 rounded p-0.5 text-muted-foreground opacity-0 hover:bg-background hover:text-destructive group-hover:opacity-100"
+                        aria-label="Delete from library"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {filtered.map((g) => (
         <div key={g.group}>
           <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{g.group}</div>
@@ -724,6 +847,7 @@ function ObjectPalette({ activeType, onPick }: { activeType: string | null; onPi
     </div>
   );
 }
+
 
 function LayerPanel({ layers, onToggleVisible, onToggleLocked, onRename, onDelete, onAdd }: {
   layers: any[];
@@ -815,12 +939,14 @@ function ObjectShape({ obj, layerOpacity, selected, zoom, onPointerDown, onResiz
   );
 }
 
-function Inspector({ object, layers, onPatch, onCommitPatch, onDelete }: {
+function Inspector({ object, layers, onPatch, onCommitPatch, onDelete, onSaveToLibrary, savingLibrary }: {
   object: any;
   layers: any[];
   onPatch: (patch: any) => void;
   onCommitPatch: (patch: any) => void;
   onDelete: () => void;
+  onSaveToLibrary: () => void;
+  savingLibrary: boolean;
 }) {
   const g = object.geometry ?? {};
   const m = object.metadata ?? {};
@@ -906,6 +1032,10 @@ function Inspector({ object, layers, onPatch, onCommitPatch, onDelete }: {
           <MetaSwitch label="Protected" value={!!m.protected} onChange={(v) => onCommitPatch({ metadata: { ...m, protected: v } })} />
         </div>
       )}
+
+      <Button variant="outline" size="sm" className="w-full" onClick={onSaveToLibrary} disabled={savingLibrary}>
+        <BookmarkPlus className="mr-1 h-4 w-4" /> Save to library
+      </Button>
 
       <Button variant="destructive" size="sm" className="w-full" onClick={onDelete}>
         <Trash2 className="mr-1 h-4 w-4" /> Delete object
