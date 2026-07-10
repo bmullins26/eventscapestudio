@@ -22,6 +22,7 @@ import { OBJECT_DEF_BY_TYPE } from "@/components/venue-designer/object-catalog";
 import { ClientMapCanvas } from "@/components/venue-designer/client-map-canvas";
 import { REF_ZOOM } from "@/components/venue-designer/map-canvas";
 import { FloatingTopbar } from "@/components/venue-designer/floating-topbar";
+import { MapSearch } from "@/components/venue-designer/map-search";
 import { FloatingTools } from "@/components/venue-designer/floating-tools";
 import { FloatingZoom, type Basemap } from "@/components/venue-designer/floating-zoom";
 import { PropertiesCard } from "@/components/venue-designer/properties-card";
@@ -548,6 +549,13 @@ function VenueDesignerPage() {
             onSaveMapLocation={handleSaveMapLocation}
             mapLocationSaved={centerLat != null}
           />
+
+          <MapSearch
+            getMap={() => mapRef.current}
+            onPicked={() => toast.info("Click ⋯ → Save map location to anchor this venue here")}
+          />
+
+
 
           <FloatingTools
             tool={tool}
