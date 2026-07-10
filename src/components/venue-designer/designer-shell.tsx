@@ -47,13 +47,22 @@ function installFactory() {
   };
 }
 
-export function DesignerShell({ venueId: _venueId, venueName, initial, onSave }: DesignerShellProps) {
+export function DesignerShell({ venueId, organizationId, venueName, initial, onSave }: DesignerShellProps) {
   const { state, actions } = useDesignerStore(initial);
   const [tool, setTool] = useState<Tool>("select");
   const [iconKey, setIconKey] = useState<IconKey>("tree");
   const [zoomPct, setZoomPct] = useState(100);
   const [saving, setSaving] = useState(false);
+  const [addressDialogOpen, setAddressDialogOpen] = useState(false);
+  const [addressValue, setAddressValue] = useState("");
+  const [addressLoading, setAddressLoading] = useState(false);
+  const [detectingRects, setDetectingRects] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const viewportRef = useRef({ x: -20, y: -20, scale: 4 });
+  const fetchSatFn = useServerFn(fetchSatelliteBackground);
+
+  const background = state.settings.background ?? null;
+  const setBackground = (bg: BackgroundLayer | null) => actions.setSettings({ background: bg });
 
   useEffect(() => { installFactory(); }, []);
 
