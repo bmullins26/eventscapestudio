@@ -299,8 +299,46 @@ export function DesignerShell({ venueId, organizationId, venueName, initial, onS
 
         <div className="mx-3 h-6 w-px bg-border" />
 
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              className={cn("flex h-8 items-center gap-1 rounded px-2 text-xs hover:bg-muted", background && "text-primary")}
+              title="Background reference"
+            >
+              <Layers className="h-4 w-4" />
+              <span>Background</span>
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-64">
+            <DropdownMenuLabel className="text-xs">Background reference</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => setAddressDialogOpen(true)}>
+              <MapPin className="mr-2 h-4 w-4" /> Add satellite from address…
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
+              <Upload className="mr-2 h-4 w-4" /> Upload image or PDF…
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem disabled={!background} onClick={() => setTool("calibrate")}>
+              <Ruler className="mr-2 h-4 w-4" /> Calibrate scale (2 points)
+            </DropdownMenuItem>
+            <DropdownMenuItem disabled={!background || detectingRects} onClick={onDetectRects}>
+              <Wand2 className="mr-2 h-4 w-4" /> Detect booths from image {detectingRects ? "…" : ""}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem disabled={!background} onClick={removeBackground}>
+              <X className="mr-2 h-4 w-4" /> Remove background
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
         <ToolBtn onClick={actions.undo} disabled={state.past.length === 0} title="Undo (⌘Z)"><Undo2 className="h-4 w-4" /></ToolBtn>
         <ToolBtn onClick={actions.redo} disabled={state.future.length === 0} title="Redo (⌘⇧Z)"><Redo2 className="h-4 w-4" /></ToolBtn>
+
+        {tool === "calibrate" && (
+          <span className="ml-2 rounded bg-primary/10 px-2 py-1 text-[11px] text-primary">Click two points on the background…</span>
+        )}
+
 
         <div className="ml-auto flex items-center gap-2">
           <span className="text-[11px] text-muted-foreground tabular-nums">{zoomPct}%</span>
