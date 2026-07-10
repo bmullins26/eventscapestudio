@@ -1,25 +1,36 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft, Undo2, Redo2, Save, MousePointer2, Square, Circle as CircleIcon, Triangle, Minus, Type, Store, Image as ImageIcon } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { ArrowLeft, Undo2, Redo2, Save, MousePointer2, Square, Circle as CircleIcon, Triangle, Minus, Type, Store, Image as ImageIcon, Layers, MapPin, Upload, Ruler, X, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { DesignerCanvas } from "./canvas";
+import type { CanvasTool } from "./canvas";
 import { ObjectExplorer } from "./object-explorer";
 import { Inspector } from "./inspector";
 import { useDesignerStore } from "./store";
-import type { AnyElement, Layout } from "./types";
+import type { AnyElement, Layout, BackgroundLayer } from "./types";
 import type { IconKey } from "./types";
 import { makeBooth, makeShape, makeText, makeIcon, ICONS, uid, resetBoothCounter } from "./factory";
 import { IconGlyph } from "./icon-glyph";
+import { uploadReferenceBackground, calibrateBackground } from "./background";
+import { detectRectanglesFromUrl } from "./detect-rects";
+import { fetchSatelliteBackground } from "@/lib/venue-designer.functions";
 
-type Tool = "select" | "booth" | "rect" | "circle" | "triangle" | "line" | "text" | "icon";
+type Tool = CanvasTool;
 
 interface DesignerShellProps {
   venueId: string;
+  organizationId: string;
   venueName: string;
   initial: Layout;
   onSave: (layout: Layout) => Promise<void>;
