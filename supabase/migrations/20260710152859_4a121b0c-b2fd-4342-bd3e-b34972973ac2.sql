@@ -1,0 +1,16 @@
+ALTER TYPE public.venue_object_type ADD VALUE IF NOT EXISTS 'food_truck';
+ALTER TYPE public.venue_object_type ADD VALUE IF NOT EXISTS 'trailer';
+ALTER TYPE public.venue_object_type ADD VALUE IF NOT EXISTS 'picnic_area';
+ALTER TYPE public.venue_object_type ADD VALUE IF NOT EXISTS 'tent';
+ALTER TYPE public.venue_object_type ADD VALUE IF NOT EXISTS 'security';
+ALTER TYPE public.venue_object_type ADD VALUE IF NOT EXISTS 'playground';
+ALTER TYPE public.venue_object_type ADD VALUE IF NOT EXISTS 'gate';
+ALTER TYPE public.venue_object_type ADD VALUE IF NOT EXISTS 'generator';
+ALTER TYPE public.venue_object_type ADD VALUE IF NOT EXISTS 'electrical';
+ALTER TYPE public.venue_object_type ADD VALUE IF NOT EXISTS 'water';
+ALTER TYPE public.venue_object_type ADD VALUE IF NOT EXISTS 'hydrant';
+ALTER TYPE public.venue_object_type ADD VALUE IF NOT EXISTS 'dumpster';
+ALTER TYPE public.venue_object_type ADD VALUE IF NOT EXISTS 'bush';
+ALTER TYPE public.venue_object_type ADD VALUE IF NOT EXISTS 'arrow';
+ALTER TYPE public.venue_object_type ADD VALUE IF NOT EXISTS 'measurement';
+ALTER TYPE public.venue_object_type ADD VALUE IF NOT EXISTS 'chair';

@@ -440,13 +440,54 @@ function VenueDesignerPage() {
 
   const zoomPct = Math.round(Math.pow(2, mapZoom - REF_ZOOM) * 100);
 
+  const placeAtPoint = useCallback((payload: { kind: "catalog"; type: string } | { kind: "library"; item: any }, p: { x: number; y: number }) => {
+    if (payload.kind === "library") {
+      const li = payload.item;
+      const g0 = li.default_geometry ?? { w: 10, h: 10 };
+      const w = g0.w ?? 10, h = g0.h ?? 10;
+      const targetLayer = layers.find((l: any) => l.kind === "custom") ?? layers[0];
+      placeMutation.mutate({
+        venueId, layer_id: targetLayer?.id ?? null, type: li.type, shape: li.shape, name: li.name,
+        geometry: { x: p.x - w / 2, y: p.y - h / 2, w, h, rotation: 0 },
+        style: li.default_style ?? {}, metadata: li.default_metadata ?? {},
+      });
+      return;
+    }
+    const def = OBJECT_DEF_BY_TYPE[payload.type];
+    if (!def) return;
+    const targetLayer = layers.find((l: any) => l.kind === def.defaultLayerKind) ?? layers[0];
+    const g = { x: p.x - def.size.w / 2, y: p.y - def.size.h / 2, w: def.size.w, h: def.size.h, rotation: 0 };
+    const nextBoothName = def.type === "booth"
+      ? `B${(objects.filter((o: any) => o.type === "booth").length + 1).toString().padStart(3, "0")}`
+      : undefined;
+    placeMutation.mutate({
+      venueId, layer_id: targetLayer?.id ?? null, type: def.type, shape: def.shape,
+      name: nextBoothName ?? def.label, geometry: g,
+      style: { fill: def.fill, stroke: def.stroke },
+      metadata: def.type === "booth" ? { price: 0, size: `${def.size.w}x${def.size.h}`, electric: false, water: false, premium: false, corner: false } : {},
+    });
+  }, [layers, objects, placeMutation, venueId]);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    const raw = e.dataTransfer.getData("application/x-vd-object");
+    if (!raw) return;
+    e.preventDefault();
+    let parsed: any;
+    try { parsed = JSON.parse(raw); } catch { return; }
+    const p = svgToCanvas(e.clientX, e.clientY);
+    placeAtPoint(parsed, p);
+  }, [placeAtPoint, svgToCanvas]);
+
   return (
     <div
       className="fixed inset-0 z-50 overflow-hidden bg-background"
       onPointerMove={handleGlobalPointerMove}
       onPointerUp={handleGlobalPointerUp}
       onPointerCancel={handleGlobalPointerUp}
+      onDragOver={(e) => { if (e.dataTransfer.types.includes("application/x-vd-object")) { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; } }}
+      onDrop={handleDrop}
     >
+
       <input
         ref={fileInputRef}
         type="file"

@@ -60,14 +60,20 @@ export function ObjectLibrary({ activeType, onPick, libraryItems, activeLibraryI
                       <div key={it.id} className="group relative">
                         <button
                           onClick={() => onPickLibrary(it)}
+                          draggable
+                          onDragStart={(e) => {
+                            e.dataTransfer.effectAllowed = "copy";
+                            e.dataTransfer.setData("application/x-vd-object", JSON.stringify({ kind: "library", item: it }));
+                          }}
                           className={cn(
-                            "w-full rounded border bg-background px-2 py-2 text-left text-xs transition hover:border-primary hover:bg-primary/5",
+                            "w-full cursor-grab rounded border bg-background px-2 py-2 text-left text-xs transition hover:border-primary hover:bg-primary/5 active:cursor-grabbing",
                             active && "border-primary bg-primary/10"
                           )}
                         >
                           <div className="mb-1 h-4 w-full rounded" style={{ background: style.fill ?? "#f3f4f6", border: `1px solid ${style.stroke ?? "#9ca3af"}` }} />
                           <div className="truncate">{it.name}</div>
                         </button>
+
                         <button
                           onClick={(e) => { e.stopPropagation(); if (window.confirm(`Delete "${it.name}" from library?`)) onDeleteLibrary(it.id); }}
                           className="absolute right-1 top-1 rounded p-0.5 text-muted-foreground opacity-0 hover:bg-background hover:text-destructive group-hover:opacity-100"
@@ -92,8 +98,13 @@ export function ObjectLibrary({ activeType, onPick, libraryItems, activeLibraryI
                 <button
                   key={it.type}
                   onClick={() => onPick(it.type)}
+                  draggable
+                  onDragStart={(e) => {
+                    e.dataTransfer.effectAllowed = "copy";
+                    e.dataTransfer.setData("application/x-vd-object", JSON.stringify({ kind: "catalog", type: it.type }));
+                  }}
                   className={cn(
-                    "rounded border bg-background px-2 py-2 text-left text-xs transition hover:border-primary hover:bg-primary/5",
+                    "cursor-grab rounded border bg-background px-2 py-2 text-left text-xs transition hover:border-primary hover:bg-primary/5 active:cursor-grabbing",
                     activeType === it.type && "border-primary bg-primary/10"
                   )}
                   title={it.label}
@@ -102,6 +113,7 @@ export function ObjectLibrary({ activeType, onPick, libraryItems, activeLibraryI
                   <div className="truncate">{it.label}</div>
                 </button>
               ))}
+
             </div>
           </div>
         ))}

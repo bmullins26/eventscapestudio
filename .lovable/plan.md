@@ -1,75 +1,45 @@
-# OnePlan-style Venue Designer
+## Fix "Invalid enum value" error
 
-Reshape the designer so it feels like OnePlan: a satellite map you draw on, with minimal floating chrome — instead of an Adobe-style multi-panel CAD app.
+The zod validator on the server rejects object types (e.g. `generator`, `electrical`, `water`, `hydrant`, `dumpster`, `food_truck`, `trailer`, `picnic_area`, `tent`, `security`, `playground`, `gate`, `bush`, `arrow`, `measurement`, `chair`) that exist in the catalog but not in the `venue_object_type` Postgres enum. Widen the enum so the catalog and DB stay in sync.
 
-## Visual direction
+**Migration:** `ALTER TYPE public.venue_object_type ADD VALUE IF NOT EXISTS '...'` for every catalog type missing from the enum. After types regenerate, `createVenueObject`'s zod schema (derived from the Supabase enum) will accept all catalog types.
 
-- **Base canvas** = real Esri World Imagery satellite tiles via Leaflet (no API key required, attribution shown).
-- **Chrome** floats over the map, not fixed rails eating the viewport.
-- Light, airy, minimal — matches OnePlan. Uses current EventScape `--primary` for accents (buttons, selection stroke, active tool state).
-- Kill the giant top MenuBar, the vertical ToolStrip, and the bottom tabs drawer. Everything relocates.
+## Drag-and-drop object placement
 
-## New layout
+Replace the current "click tile → click canvas" flow with real HTML5 drag-and-drop, while keeping click-to-arm as a fallback (nothing removed).
 
-```text
-┌──────────────────────────────────────────────────────────────┐
-│  ← Venue name         ↶ ↷        [Export] [ Share ]  [avatar]│  floating top bar
-├──┬───────────────────────────────────────────────────────────┤
-│▸ │                                                            │
-│  │              [ satellite map + drawn objects ]             │
-│  │                                                            │
-│L │                                             ┌────────────┐ │
-│i │                                             │ Properties │ │  floating card (only when selection)
-│b │                                             └────────────┘ │
-│  │                                                            │
-│  │   [ ▢ ▷ ✋ ]                            [ − % + ][🗺][?]   │  bottom-left tools · bottom-right zoom/basemap
-└──┴───────────────────────────────────────────────────────────┘
-```
+**`ObjectLibrary` (panels.tsx)** — make each catalog tile and each "My Library" tile `draggable`. On `dragstart`, set:
+- `dataTransfer.setData("application/x-vd-object", JSON.stringify({ kind: "catalog", type }))` for catalog tiles
+- `dataTransfer.setData("application/x-vd-object", JSON.stringify({ kind: "library", id }))` for library tiles
+- Set a small drag preview (a canvas element mirroring the tile swatch).
 
-- **Top bar** (floating, rounded, shadow): back → venue name (left) · undo/redo (center) · Export + Share buttons (right). No menu-heavy dropdowns; a small ⋯ hides the rare actions (rename, versions, presentation).
-- **Left library rail**: collapsible via a single chevron. Same object catalog content, tighter grid, sticky search. Collapsed = 40px strip with a chevron.
-- **Right Properties panel**: floats as a card, mounts only when an object/reference is selected. Not a permanent rail.
-- **Bottom-left tools cluster**: select · pan · draw-shape trio. Placing objects still happens by clicking a library tile.
-- **Bottom-right cluster**: zoom −, zoom %, zoom +, basemap toggle (satellite ↔ street ↔ blank), help.
-- **Everything else** (layers, history, AI, versions, org assets) moves into a `⋯ More` popover from the top bar — accessible but out of the way.
+**`MapCanvas` (map-canvas.tsx)** — on the Leaflet container:
+- `onDragOver`: `e.preventDefault()` so drop is allowed and set `dropEffect = "copy"`.
+- `onDrop`: read the payload, use the existing `svgToCanvas(clientX, clientY)` to get canvas coords, and invoke a new prop `onCanvasDrop({ payload, point })`.
 
-## Map integration
+**Designer route** — implement `handleCanvasDrop`:
+- If payload is `catalog`, run the same `placeMutation` path used by `handleCanvasClick`'s type branch.
+- If payload is `library`, run the library-item branch.
+- No arming required, tool stays as-is, and selection jumps to the new object.
 
-- **Library:** `leaflet` + `react-leaflet`, plus `leaflet/dist/leaflet.css` loaded via a `<link>` in `__root.tsx` head (Tailwind v4 can't `@import` remote in `styles.css`).
-- **SSR:** Leaflet is browser-only, so the whole map component is `React.lazy` + `<ClientOnly>`. Fallback = neutral map-toned placeholder.
-- **CRS:** `L.CRS.EPSG3857` with Esri World Imagery tile URL: `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}`.
-- **Geo-anchor per venue:** add `center_lat`, `center_lng`, `map_zoom` to `venues`. If null on load, the map opens at a friendly default (e.g. `[0, 0]` zoom 2 with a "Search for this venue's address" prompt) and calling `Save map location` writes the current map center/zoom back to the venue.
-- **Object coordinates stay pixel-based** in the DB (no destructive schema change). At runtime we anchor pixels to lat/lng: `anchorPoint = map.project(center, REF_ZOOM)`, `objectPoint = anchorPoint + (obj.x, obj.y)`, `objectLatLng = map.unproject(objectPoint, REF_ZOOM)`. `REF_ZOOM` is a per-venue constant (default 20) that fixes the "1 canvas unit = N pixels at reference zoom" relationship. Objects re-project on every map `move`/`zoom` event.
-- **Draw/edit** stays SVG-based, but the SVG lives inside a Leaflet overlay pane so it pans/zooms with the map for free.
-- **Address search:** small OpenStreetMap Nominatim search box top-left of the map (no key), used once per venue to set the center. Rate-limit friendly for the "set my venue" flow.
+Keyboard/keyboard-users still get the click-to-arm placement flow untouched.
 
-## Files
+## Files touched
 
-Create:
-- `src/components/venue-designer/map-canvas.tsx` — the Leaflet + SVG overlay component (client-only).
-- `src/components/venue-designer/floating-topbar.tsx` — new slim top bar.
-- `src/components/venue-designer/floating-tools.tsx` — bottom-left tool trio.
-- `src/components/venue-designer/floating-zoom.tsx` — bottom-right zoom + basemap.
-- `src/components/venue-designer/properties-card.tsx` — floating card wrapper reusing the existing `Inspector` / `ReferenceInspector` / `VenueInspector`.
-- `src/components/venue-designer/more-menu.tsx` — popover for layers/history/AI/versions/library.
-- Migration: add nullable `center_lat float8`, `center_lng float8`, `map_zoom int` on `public.venues`.
-
-Rewrite:
-- `src/routes/_authenticated/studio.venues.$venueId.designer.tsx` — new shell, mounts `MapCanvas`, wires floating chrome to existing mutations. Existing state, mutations, and `panels.tsx` inspectors are preserved.
-- `src/routes/__root.tsx` — add Leaflet CSS `<link>` in `head()`.
-
-Delete usage of (files stay for now, unimported):
-- `menu-bar.tsx`, `tool-strip.tsx`, `bottom-drawer.tsx`.
+- `supabase/migrations/<new>.sql` — widen `venue_object_type` enum.
+- `src/components/venue-designer/panels.tsx` — add `draggable` + `onDragStart` handlers to library tiles.
+- `src/components/venue-designer/map-canvas.tsx` — add `onDragOver`/`onDrop` on the map wrapper; expose `onCanvasDrop` prop.
+- `src/components/venue-designer/client-map-canvas.tsx` — thread the new prop through.
+- `src/routes/_authenticated/studio.venues.$venueId.designer.tsx` — implement `handleCanvasDrop`, pass to `ClientMapCanvas`.
 
 ## Verification
 
-- Playwright: navigate to `/studio/venues/<id>/designer`, screenshot — expect satellite tiles + floating chrome, no dark CAD panels.
-- Place a booth, drag it, zoom the map — booth stays glued to its geographic spot.
-- Toggle basemap to blank — chrome unchanged, canvas still usable.
-- Existing venue directory route unaffected.
+- Drag "Generator" from the library to the map → object appears at the drop point, no zod error in the network response.
+- Drag "Booth" → placed and selected.
+- Drag a "My Library" tile → placed with saved geometry/style.
+- Existing click-to-arm placement still works.
 
-## Out of scope this pass
+## Out of scope
 
-- Draw-on-map for polylines/polygons (roads, fences) still uses SVG rectangles/shapes; native map polyline tool is a follow-up.
-- Storing objects as GeoJSON. Pixel coords with per-venue anchor keeps existing data valid.
-- Real-time collaboration cursors.
+- Touch-drag / mobile drag (HTML5 drag events don't work on iOS Safari — a later pass can add pointer-based dragging).
+- Ghost preview that follows the cursor with real object dimensions.

@@ -2306,6 +2306,22 @@ export type Database = {
         | "kids_area"
         | "petting_zoo"
         | "custom"
+        | "food_truck"
+        | "trailer"
+        | "picnic_area"
+        | "tent"
+        | "security"
+        | "playground"
+        | "gate"
+        | "generator"
+        | "electrical"
+        | "water"
+        | "hydrant"
+        | "dumpster"
+        | "bush"
+        | "arrow"
+        | "measurement"
+        | "chair"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2527,6 +2543,22 @@ export const Constants = {
         "kids_area",
         "petting_zoo",
         "custom",
+        "food_truck",
+        "trailer",
+        "picnic_area",
+        "tent",
+        "security",
+        "playground",
+        "gate",
+        "generator",
+        "electrical",
+        "water",
+        "hydrant",
+        "dumpster",
+        "bush",
+        "arrow",
+        "measurement",
+        "chair",
       ],
     },
   },
