@@ -43,11 +43,18 @@ export const getVenueDesign = createServerFn({ method: "GET" })
       layerList = inserted ?? [];
     }
 
+    // Sign reference URLs so the client can render them without extra round-trips
+    const refsWithUrls = await Promise.all((refs ?? []).map(async (r: any) => {
+      if (!r.file_url) return { ...r, signed_url: null };
+      const { data: signed } = await supabase.storage.from("venue-assets").createSignedUrl(r.file_url, 60 * 60);
+      return { ...r, signed_url: signed?.signedUrl ?? null };
+    }));
+
     return {
       venue,
       layers: layerList,
       objects: objects ?? [],
-      references: refs ?? [],
+      references: refsWithUrls,
     };
   });
 
