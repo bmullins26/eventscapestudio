@@ -16,7 +16,7 @@ const SaveLayoutInput = z.object({
 export const getVenueLayout = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => VenueIdInput.parse(d))
-  .handler(async ({ data, context }) => {
+  .handler(async ({ data, context }): Promise<any> => {
     const { supabase } = context;
     const { data: venue, error: vErr } = await supabase
       .from("venues")
