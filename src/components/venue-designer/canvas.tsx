@@ -109,6 +109,18 @@ export function DesignerCanvas({ elements, selection, actions, tool, toolPayload
       return;
     }
 
+    // Calibrate tool: record two clicks, then invoke onCalibrate.
+    if (tool === "calibrate" && e.button === 0) {
+      const w = s2w(sx, sy, vp);
+      if (!calibratePt1) {
+        setCalibratePt1({ x: w.x, y: w.y });
+      } else {
+        onCalibrate?.(calibratePt1, { x: w.x, y: w.y });
+        setCalibratePt1(null);
+      }
+      return;
+    }
+
     // Placement tool: create element at cursor
     if (tool !== "select" && e.button === 0) {
       const w = s2w(sx, sy, vp);
