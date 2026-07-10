@@ -406,8 +406,13 @@ function VenueDesignerPage() {
         <ToolButton icon={Square} label="Rectangle" active={placingType === "building"} onClick={() => { setPlacingType("building"); setTool("place"); }} />
         <ToolButton icon={CircleIcon} label="Tree" active={placingType === "tree"} onClick={() => { setPlacingType("tree"); setTool("place"); }} />
         <ToolButton icon={TypeIcon} label="Sign" active={placingType === "sign"} onClick={() => { setPlacingType("sign"); setTool("place"); }} />
+        <div className="mx-1 h-6 w-px bg-border" />
+        <Button variant="ghost" size="sm" onClick={() => fileInputRef.current?.click()} disabled={uploading} className="h-8 gap-1 px-2" title="Upload reference image">
+          {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageIcon className="h-4 w-4" />}
+          <span className="hidden text-xs md:inline">Import</span>
+        </Button>
         <div className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
-          {tool === "place" ? <>Click to place · Shift for multi · Esc to cancel</> : <>Phase 2 · object editing</>}
+          {tool === "place" ? <>Click to place · Shift for multi · Esc to cancel</> : <>Phase 3 · references + AI import</>}
         </div>
       </div>
 
