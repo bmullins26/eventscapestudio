@@ -627,3 +627,60 @@ export const getEventVenueSnapshot = createServerFn({ method: "GET" })
     return row ?? null;
   });
 
+// ==================== Org Object Library (Phase 6) ====================
+
+async function orgIdForVenue(supabase: any, venueId: string): Promise<string> {
+  const { data } = await supabase.rpc("venue_org_id", { _venue_id: venueId });
+  if (!data) throw new Error("Venue org not found");
+  return data as string;
+}
+
+export const listOrgLibrary = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ venueId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const orgId = await orgIdForVenue(context.supabase, data.venueId);
+    const { data: rows, error } = await context.supabase
+      .from("org_object_library" as never)
+      .select("*")
+      .eq("organization_id", orgId)
+      .order("category", { ascending: true })
+      .order("name", { ascending: true });
+    if (error) throw error;
+    return rows ?? [];
+  });
+
+const SaveLibraryInput = z.object({
+  venueId: z.string().uuid(),
+  name: z.string().min(1),
+  category: z.string().min(1).default("Custom"),
+  type: z.enum(OBJECT_TYPES),
+  shape: z.enum(SHAPES),
+  default_geometry: z.record(z.string(), z.any()),
+  default_style: z.record(z.string(), z.any()).default({}),
+  default_metadata: z.record(z.string(), z.any()).default({}),
+});
+
+export const saveObjectToLibrary = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => SaveLibraryInput.parse(d))
+  .handler(async ({ data, context }) => {
+    const orgId = await orgIdForVenue(context.supabase, data.venueId);
+    const { venueId: _, ...row } = data;
+    const { data: inserted, error } = await (context.supabase.from("org_object_library" as never) as any)
+      .insert({ ...row, organization_id: orgId, created_by: context.userId })
+      .select().single();
+    if (error) throw error;
+    return inserted;
+  });
+
+export const deleteOrgLibraryItem = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { error } = await (context.supabase.from("org_object_library" as never) as any)
+      .delete().eq("id", data.id);
+    if (error) throw error;
+    return { ok: true };
+  });
+
