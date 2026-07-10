@@ -120,6 +120,7 @@ function VenueDesignerPage() {
 
   const [tool, setTool] = useState<Tool>("select");
   const [placingType, setPlacingType] = useState<string | null>(null);
+  const [placingLibraryItem, setPlacingLibraryItem] = useState<any | null>(null);
   const [view, setView] = useState({ x: 0, y: 0, zoom: 1 });
   const [cursor, setCursor] = useState<CanvasCoords>({ x: 0, y: 0 });
   const [showGrid, setShowGrid] = useState(true);
