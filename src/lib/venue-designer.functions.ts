@@ -55,10 +55,21 @@ export const fetchSatelliteBackground = createServerFn({ method: "POST" })
     if (!geoRes.ok) throw new Error(`Geocoding failed (${geoRes.status})`);
     const geoJson = (await geoRes.json()) as {
       status: string;
+      error_message?: string;
       results: Array<{ geometry: { location: { lat: number; lng: number } }; formatted_address: string }>;
     };
     if (geoJson.status !== "OK" || !geoJson.results.length) {
-      throw new Error(`Address not found (${geoJson.status})`);
+      const detail = geoJson.error_message ? `: ${geoJson.error_message}` : "";
+      if (geoJson.status === "ZERO_RESULTS") {
+        throw new Error(`No match for "${data.address}". Try a more specific address (street, city, state).`);
+      }
+      if (geoJson.status === "REQUEST_DENIED") {
+        throw new Error(`Google denied the request${detail}. Enable the Geocoding API and Static Maps API on the API key, and check key restrictions.`);
+      }
+      if (geoJson.status === "OVER_QUERY_LIMIT" || geoJson.status === "OVER_DAILY_LIMIT") {
+        throw new Error(`Google API quota exceeded${detail}. Enable billing on the Google Cloud project.`);
+      }
+      throw new Error(`Geocoding failed (${geoJson.status})${detail}`);
     }
     const { lat, lng } = geoJson.results[0].geometry.location;
     const formatted = geoJson.results[0].formatted_address;
