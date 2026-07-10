@@ -515,7 +515,18 @@ function VenueDesignerPage() {
               />
             </TabsContent>
             <TabsContent value="templates" className="mt-0 flex-1 overflow-auto p-3">
-              <EmptyState icon={LayoutTemplate} title="No published versions" description="Publish templates arrives in Phase 4 alongside event snapshots." />
+              <VersionsPanel
+                templates={(templates as any[]) ?? []}
+                publishing={publishMutation.isPending}
+                restoringId={restoreMutation.isPending ? (restoreMutation.variables as string) : null}
+                onPublish={(label) => publishMutation.mutate({ label })}
+                onRestore={(id) => {
+                  if (window.confirm("Restore this version? Current unsaved changes will be replaced.")) {
+                    restoreMutation.mutate(id);
+                  }
+                }}
+                onDelete={(id) => deleteTemplateMutation.mutate(id)}
+              />
             </TabsContent>
           </Tabs>
         </aside>
