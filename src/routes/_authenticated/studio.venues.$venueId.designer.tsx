@@ -22,6 +22,7 @@ import {
   getVenueDesign, createVenueObject, updateVenueObject, deleteVenueObject,
   createVenueLayer, updateVenueLayer, deleteVenueLayer,
   createVenueReference, updateVenueReference, deleteVenueReference, analyzeVenueDrawing,
+  listVenueTemplates, publishVenueTemplate, restoreVenueTemplate, deleteVenueTemplate,
 } from "@/lib/venue-designer.functions";
 import { useCanvasInput, type CanvasCoords } from "@/components/booth-builder/use-canvas-input";
 import { cn } from "@/lib/utils";
@@ -102,6 +103,10 @@ function VenueDesignerPage() {
   const updateRef = useServerFn(updateVenueReference);
   const deleteRef = useServerFn(deleteVenueReference);
   const analyzeDrawing = useServerFn(analyzeVenueDrawing);
+  const fetchTemplates = useServerFn(listVenueTemplates);
+  const publishTemplate = useServerFn(publishVenueTemplate);
+  const restoreTemplate = useServerFn(restoreVenueTemplate);
+  const removeTemplate = useServerFn(deleteVenueTemplate);
 
   const queryKey = ["venue-design", venueId];
   const { data, isLoading } = useQuery({
@@ -229,7 +234,38 @@ function VenueDesignerPage() {
     onError: (e: any) => toast.error(e?.message ?? "Delete failed"),
   });
 
+  // ------ Templates (versions) ------
+  const templatesKey = ["venue-templates", venueId];
+  const { data: templates } = useQuery({
+    queryKey: templatesKey,
+    queryFn: () => fetchTemplates({ data: { venueId } }),
+  });
+  const publishMutation = useMutation({
+    mutationFn: (input: { label?: string; description?: string }) =>
+      publishTemplate({ data: { venueId, ...input } }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: templatesKey });
+      toast.success("Version published");
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Publish failed"),
+  });
+  const restoreMutation = useMutation({
+    mutationFn: (templateId: string) =>
+      restoreTemplate({ data: { venueId, templateId } }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey });
+      toast.success("Version restored");
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Restore failed"),
+  });
+  const deleteTemplateMutation = useMutation({
+    mutationFn: (id: string) => removeTemplate({ data: { id } }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: templatesKey }),
+    onError: (e: any) => toast.error(e?.message ?? "Delete failed"),
+  });
+
   // ------ Upload handler ------
+
   const handleFileUpload = async (file: File) => {
     if (!data?.venue) return;
     if (!file.type.startsWith("image/")) {
@@ -479,7 +515,18 @@ function VenueDesignerPage() {
               />
             </TabsContent>
             <TabsContent value="templates" className="mt-0 flex-1 overflow-auto p-3">
-              <EmptyState icon={LayoutTemplate} title="No published versions" description="Publish templates arrives in Phase 4 alongside event snapshots." />
+              <VersionsPanel
+                templates={(templates as any[]) ?? []}
+                publishing={publishMutation.isPending}
+                restoringId={restoreMutation.isPending ? (restoreMutation.variables as string) : null}
+                onPublish={(label: string | undefined) => publishMutation.mutate({ label })}
+                onRestore={(id: string) => {
+                  if (window.confirm("Restore this version? Current unsaved changes will be replaced.")) {
+                    restoreMutation.mutate(id);
+                  }
+                }}
+                onDelete={(id: string) => deleteTemplateMutation.mutate(id)}
+              />
             </TabsContent>
           </Tabs>
         </aside>
@@ -1006,6 +1053,79 @@ function ReferenceInspector({ reference, onPatch, onDelete, onAiImport, analyzin
       <Button variant="destructive" size="sm" className="w-full" onClick={onDelete}>
         <Trash2 className="mr-1 h-4 w-4" /> Delete reference
       </Button>
+    </div>
+  );
+}
+
+// ---------- Phase 4: Versions ----------
+
+function VersionsPanel({ templates, publishing, restoringId, onPublish, onRestore, onDelete }: {
+  templates: any[];
+  publishing: boolean;
+  restoringId: string | null;
+  onPublish: (label?: string) => void;
+  onRestore: (id: string) => void;
+  onDelete: (id: string) => void;
+}) {
+  const [label, setLabel] = useState("");
+  return (
+    <div className="space-y-3">
+      <div className="rounded border bg-background p-2 space-y-2">
+        <Label className="text-xs">New version label</Label>
+        <Input
+          value={label}
+          onChange={(e) => setLabel(e.target.value)}
+          placeholder="e.g. Summer 2026 layout"
+          className="h-8 text-xs"
+        />
+        <Button
+          size="sm" className="w-full"
+          disabled={publishing}
+          onClick={() => { onPublish(label.trim() || undefined); setLabel(""); }}
+        >
+          {publishing ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <LayoutTemplate className="mr-1 h-3.5 w-3.5" />}
+          Publish current design
+        </Button>
+        <p className="text-[11px] text-muted-foreground">
+          A version freezes the current venue design. Events reference a version to snapshot the layout.
+        </p>
+      </div>
+
+      {templates.length === 0 ? (
+        <div className="rounded border border-dashed p-3 text-center text-xs text-muted-foreground">
+          No published versions yet.
+        </div>
+      ) : templates.map((t) => (
+        <div key={t.id} className="rounded border bg-background p-2">
+          <div className="flex items-center gap-2">
+            <div className="flex-1 min-w-0">
+              <div className="truncate text-xs font-medium">v{t.version} · {t.label ?? "Untitled"}</div>
+              <div className="text-[11px] text-muted-foreground">
+                {t.published_at ? new Date(t.published_at).toLocaleDateString() : ""}
+              </div>
+            </div>
+            <button
+              onClick={() => onDelete(t.id)}
+              className="text-muted-foreground hover:text-destructive"
+              aria-label="Delete version"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
+          {t.description ? (
+            <div className="mt-1 text-[11px] text-muted-foreground line-clamp-2">{t.description}</div>
+          ) : null}
+          <Button
+            size="sm" variant="outline" className="mt-2 h-7 w-full text-xs"
+            disabled={restoringId === t.id}
+            onClick={() => onRestore(t.id)}
+          >
+            {restoringId === t.id ? (
+              <><Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />Restoring...</>
+            ) : "Restore to canvas"}
+          </Button>
+        </div>
+      ))}
     </div>
   );
 }
