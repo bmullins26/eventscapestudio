@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { CalendarDays, Plus, MoreHorizontal, Copy, BookmarkPlus, Archive, ArchiveRestore, LayoutTemplate, Pencil, Trash2 } from "lucide-react";
+import { CalendarDays, Plus, MoreHorizontal, Copy, BookmarkPlus, Archive, ArchiveRestore, LayoutTemplate, Pencil, Trash2, Map } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { cloneEvent } from "@/lib/events.functions";
@@ -321,6 +321,13 @@ function EventList({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => onOpen(r)}><Pencil className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem>
+              {!r.is_template && r.venue_id ? (
+                <DropdownMenuItem asChild>
+                  <Link to="/studio/events/$eventId/venue" params={{ eventId: r.id }}>
+                    <Map className="mr-2 h-4 w-4" /> Venue map
+                  </Link>
+                </DropdownMenuItem>
+              ) : null}
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => onClone(r)}>
                 <Copy className="mr-2 h-4 w-4" /> Clone

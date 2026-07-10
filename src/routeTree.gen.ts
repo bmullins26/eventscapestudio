@@ -51,6 +51,7 @@ import { Route as AuthenticatedAdminOrganizationsRouteImport } from './routes/_a
 import { Route as AuthenticatedAdminLogsRouteImport } from './routes/_authenticated/admin.logs'
 import { Route as AuthenticatedAdminAnalyticsRouteImport } from './routes/_authenticated/admin.analytics'
 import { Route as AuthenticatedStudioVenuesVenueIdDesignerRouteImport } from './routes/_authenticated/studio.venues.$venueId.designer'
+import { Route as AuthenticatedStudioEventsEventIdVenueRouteImport } from './routes/_authenticated/studio.events.$eventId.venue'
 
 const PricingRoute = PricingRouteImport.update({
   id: '/pricing',
@@ -288,6 +289,12 @@ const AuthenticatedStudioVenuesVenueIdDesignerRoute =
     path: '/$venueId/designer',
     getParentRoute: () => AuthenticatedStudioVenuesRoute,
   } as any)
+const AuthenticatedStudioEventsEventIdVenueRoute =
+  AuthenticatedStudioEventsEventIdVenueRouteImport.update({
+    id: '/$eventId/venue',
+    path: '/$eventId/venue',
+    getParentRoute: () => AuthenticatedStudioEventsRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -318,7 +325,7 @@ export interface FileRoutesByFullPath {
   '/portal/profile': typeof AuthenticatedPortalProfileRoute
   '/studio/applications': typeof AuthenticatedStudioApplicationsRoute
   '/studio/booths': typeof AuthenticatedStudioBoothsRoute
-  '/studio/events': typeof AuthenticatedStudioEventsRoute
+  '/studio/events': typeof AuthenticatedStudioEventsRouteWithChildren
   '/studio/messaging': typeof AuthenticatedStudioMessagingRoute
   '/studio/payments': typeof AuthenticatedStudioPaymentsRoute
   '/studio/reports': typeof AuthenticatedStudioReportsRoute
@@ -330,6 +337,7 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/portal/': typeof AuthenticatedPortalIndexRoute
   '/studio/': typeof AuthenticatedStudioIndexRoute
+  '/studio/events/$eventId/venue': typeof AuthenticatedStudioEventsEventIdVenueRoute
   '/studio/venues/$venueId/designer': typeof AuthenticatedStudioVenuesVenueIdDesignerRoute
 }
 export interface FileRoutesByTo {
@@ -358,7 +366,7 @@ export interface FileRoutesByTo {
   '/portal/profile': typeof AuthenticatedPortalProfileRoute
   '/studio/applications': typeof AuthenticatedStudioApplicationsRoute
   '/studio/booths': typeof AuthenticatedStudioBoothsRoute
-  '/studio/events': typeof AuthenticatedStudioEventsRoute
+  '/studio/events': typeof AuthenticatedStudioEventsRouteWithChildren
   '/studio/messaging': typeof AuthenticatedStudioMessagingRoute
   '/studio/payments': typeof AuthenticatedStudioPaymentsRoute
   '/studio/reports': typeof AuthenticatedStudioReportsRoute
@@ -370,6 +378,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/portal': typeof AuthenticatedPortalIndexRoute
   '/studio': typeof AuthenticatedStudioIndexRoute
+  '/studio/events/$eventId/venue': typeof AuthenticatedStudioEventsEventIdVenueRoute
   '/studio/venues/$venueId/designer': typeof AuthenticatedStudioVenuesVenueIdDesignerRoute
 }
 export interface FileRoutesById {
@@ -403,7 +412,7 @@ export interface FileRoutesById {
   '/_authenticated/portal/profile': typeof AuthenticatedPortalProfileRoute
   '/_authenticated/studio/applications': typeof AuthenticatedStudioApplicationsRoute
   '/_authenticated/studio/booths': typeof AuthenticatedStudioBoothsRoute
-  '/_authenticated/studio/events': typeof AuthenticatedStudioEventsRoute
+  '/_authenticated/studio/events': typeof AuthenticatedStudioEventsRouteWithChildren
   '/_authenticated/studio/messaging': typeof AuthenticatedStudioMessagingRoute
   '/_authenticated/studio/payments': typeof AuthenticatedStudioPaymentsRoute
   '/_authenticated/studio/reports': typeof AuthenticatedStudioReportsRoute
@@ -415,6 +424,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/portal/': typeof AuthenticatedPortalIndexRoute
   '/_authenticated/studio/': typeof AuthenticatedStudioIndexRoute
+  '/_authenticated/studio/events/$eventId/venue': typeof AuthenticatedStudioEventsEventIdVenueRoute
   '/_authenticated/studio/venues/$venueId/designer': typeof AuthenticatedStudioVenuesVenueIdDesignerRoute
 }
 export interface FileRouteTypes {
@@ -460,6 +470,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/portal/'
     | '/studio/'
+    | '/studio/events/$eventId/venue'
     | '/studio/venues/$venueId/designer'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -500,6 +511,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/portal'
     | '/studio'
+    | '/studio/events/$eventId/venue'
     | '/studio/venues/$venueId/designer'
   id:
     | '__root__'
@@ -544,6 +556,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/'
     | '/_authenticated/portal/'
     | '/_authenticated/studio/'
+    | '/_authenticated/studio/events/$eventId/venue'
     | '/_authenticated/studio/venues/$venueId/designer'
   fileRoutesById: FileRoutesById
 }
@@ -854,6 +867,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedStudioVenuesVenueIdDesignerRouteImport
       parentRoute: typeof AuthenticatedStudioVenuesRoute
     }
+    '/_authenticated/studio/events/$eventId/venue': {
+      id: '/_authenticated/studio/events/$eventId/venue'
+      path: '/$eventId/venue'
+      fullPath: '/studio/events/$eventId/venue'
+      preLoaderRoute: typeof AuthenticatedStudioEventsEventIdVenueRouteImport
+      parentRoute: typeof AuthenticatedStudioEventsRoute
+    }
   }
 }
 
@@ -909,6 +929,21 @@ const AuthenticatedPortalRouteChildren: AuthenticatedPortalRouteChildren = {
 const AuthenticatedPortalRouteWithChildren =
   AuthenticatedPortalRoute._addFileChildren(AuthenticatedPortalRouteChildren)
 
+interface AuthenticatedStudioEventsRouteChildren {
+  AuthenticatedStudioEventsEventIdVenueRoute: typeof AuthenticatedStudioEventsEventIdVenueRoute
+}
+
+const AuthenticatedStudioEventsRouteChildren: AuthenticatedStudioEventsRouteChildren =
+  {
+    AuthenticatedStudioEventsEventIdVenueRoute:
+      AuthenticatedStudioEventsEventIdVenueRoute,
+  }
+
+const AuthenticatedStudioEventsRouteWithChildren =
+  AuthenticatedStudioEventsRoute._addFileChildren(
+    AuthenticatedStudioEventsRouteChildren,
+  )
+
 interface AuthenticatedStudioVenuesRouteChildren {
   AuthenticatedStudioVenuesVenueIdDesignerRoute: typeof AuthenticatedStudioVenuesVenueIdDesignerRoute
 }
@@ -927,7 +962,7 @@ const AuthenticatedStudioVenuesRouteWithChildren =
 interface AuthenticatedStudioRouteChildren {
   AuthenticatedStudioApplicationsRoute: typeof AuthenticatedStudioApplicationsRoute
   AuthenticatedStudioBoothsRoute: typeof AuthenticatedStudioBoothsRoute
-  AuthenticatedStudioEventsRoute: typeof AuthenticatedStudioEventsRoute
+  AuthenticatedStudioEventsRoute: typeof AuthenticatedStudioEventsRouteWithChildren
   AuthenticatedStudioMessagingRoute: typeof AuthenticatedStudioMessagingRoute
   AuthenticatedStudioPaymentsRoute: typeof AuthenticatedStudioPaymentsRoute
   AuthenticatedStudioReportsRoute: typeof AuthenticatedStudioReportsRoute
@@ -942,7 +977,7 @@ interface AuthenticatedStudioRouteChildren {
 const AuthenticatedStudioRouteChildren: AuthenticatedStudioRouteChildren = {
   AuthenticatedStudioApplicationsRoute: AuthenticatedStudioApplicationsRoute,
   AuthenticatedStudioBoothsRoute: AuthenticatedStudioBoothsRoute,
-  AuthenticatedStudioEventsRoute: AuthenticatedStudioEventsRoute,
+  AuthenticatedStudioEventsRoute: AuthenticatedStudioEventsRouteWithChildren,
   AuthenticatedStudioMessagingRoute: AuthenticatedStudioMessagingRoute,
   AuthenticatedStudioPaymentsRoute: AuthenticatedStudioPaymentsRoute,
   AuthenticatedStudioReportsRoute: AuthenticatedStudioReportsRoute,
