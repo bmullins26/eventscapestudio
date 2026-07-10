@@ -550,6 +550,13 @@ function VenueDesignerPage() {
             mapLocationSaved={centerLat != null}
           />
 
+          <MapSearch
+            getMap={() => mapRef.current}
+            onPicked={() => toast.info("Click ⋯ → Save map location to anchor this venue here")}
+          />
+
+
+
           <FloatingTools
             tool={tool}
             placingType={placingType}
