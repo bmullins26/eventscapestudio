@@ -39,6 +39,9 @@ export function Inspector({
             <Toggle label="Redact assignments" value={!!settings.redactAssignments} onChange={(v) => onSettings({ redactAssignments: v })} />
             <Toggle label="Hide unassigned IDs" value={!!settings.hideUnassignedIds} onChange={(v) => onSettings({ hideUnassignedIds: v })} />
           </div>
+          {background && onBackgroundChange && (
+            <BackgroundSection background={background} onChange={onBackgroundChange} />
+          )}
           <p className="text-[11px] text-muted-foreground">Select an object to edit its properties.</p>
         </div>
       </div>
