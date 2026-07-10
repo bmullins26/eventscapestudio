@@ -585,10 +585,19 @@ function VenueDesignerPage() {
               onCommitPatch={(patch) => updateMutation.mutate({ id: selected.id, patch })}
               onDelete={() => deleteMutation.mutate(selected.id)}
             />
+          ) : selectedRef ? (
+            <ReferenceInspector
+              key={selectedRef.id}
+              reference={selectedRef}
+              onPatch={(patch) => refUpdateMutation.mutate({ id: selectedRef.id, patch })}
+              onDelete={() => refDeleteMutation.mutate(selectedRef.id)}
+              onAiImport={() => handleAiImport(selectedRef.id)}
+              analyzing={analyzingRefId === selectedRef.id}
+            />
           ) : (
             <div className="p-4">
               <div className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Inspector</div>
-              <p className="text-sm text-muted-foreground">Select an object to edit its properties, or pick from the palette to add one.</p>
+              <p className="text-sm text-muted-foreground">Select an object or reference to edit its properties.</p>
             </div>
           )}
         </aside>
