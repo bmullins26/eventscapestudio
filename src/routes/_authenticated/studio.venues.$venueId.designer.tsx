@@ -108,6 +108,9 @@ function VenueDesignerPage() {
   const publishTemplate = useServerFn(publishVenueTemplate);
   const restoreTemplate = useServerFn(restoreVenueTemplate);
   const removeTemplate = useServerFn(deleteVenueTemplate);
+  const fetchLibrary = useServerFn(listOrgLibrary);
+  const saveToLibrary = useServerFn(saveObjectToLibrary);
+  const removeLibraryItem = useServerFn(deleteOrgLibraryItem);
 
   const queryKey = ["venue-design", venueId];
   const { data, isLoading } = useQuery({
