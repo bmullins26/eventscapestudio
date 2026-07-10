@@ -939,12 +939,14 @@ function ObjectShape({ obj, layerOpacity, selected, zoom, onPointerDown, onResiz
   );
 }
 
-function Inspector({ object, layers, onPatch, onCommitPatch, onDelete }: {
+function Inspector({ object, layers, onPatch, onCommitPatch, onDelete, onSaveToLibrary, savingLibrary }: {
   object: any;
   layers: any[];
   onPatch: (patch: any) => void;
   onCommitPatch: (patch: any) => void;
   onDelete: () => void;
+  onSaveToLibrary: () => void;
+  savingLibrary: boolean;
 }) {
   const g = object.geometry ?? {};
   const m = object.metadata ?? {};
