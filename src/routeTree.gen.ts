@@ -33,7 +33,6 @@ import { Route as AuthenticatedStudioReportsRouteImport } from './routes/_authen
 import { Route as AuthenticatedStudioPaymentsRouteImport } from './routes/_authenticated/studio.payments'
 import { Route as AuthenticatedStudioMessagingRouteImport } from './routes/_authenticated/studio.messaging'
 import { Route as AuthenticatedStudioEventsRouteImport } from './routes/_authenticated/studio.events'
-import { Route as AuthenticatedStudioBoothsRouteImport } from './routes/_authenticated/studio.booths'
 import { Route as AuthenticatedStudioApplicationsRouteImport } from './routes/_authenticated/studio.applications'
 import { Route as AuthenticatedPortalProfileRouteImport } from './routes/_authenticated/portal.profile'
 import { Route as AuthenticatedPortalPaymentsRouteImport } from './routes/_authenticated/portal.payments'
@@ -184,12 +183,6 @@ const AuthenticatedStudioEventsRoute =
     path: '/events',
     getParentRoute: () => AuthenticatedStudioRoute,
   } as any)
-const AuthenticatedStudioBoothsRoute =
-  AuthenticatedStudioBoothsRouteImport.update({
-    id: '/booths',
-    path: '/booths',
-    getParentRoute: () => AuthenticatedStudioRoute,
-  } as any)
 const AuthenticatedStudioApplicationsRoute =
   AuthenticatedStudioApplicationsRouteImport.update({
     id: '/applications',
@@ -331,7 +324,6 @@ export interface FileRoutesByFullPath {
   '/portal/payments': typeof AuthenticatedPortalPaymentsRoute
   '/portal/profile': typeof AuthenticatedPortalProfileRoute
   '/studio/applications': typeof AuthenticatedStudioApplicationsRoute
-  '/studio/booths': typeof AuthenticatedStudioBoothsRoute
   '/studio/events': typeof AuthenticatedStudioEventsRouteWithChildren
   '/studio/messaging': typeof AuthenticatedStudioMessagingRoute
   '/studio/payments': typeof AuthenticatedStudioPaymentsRoute
@@ -373,7 +365,6 @@ export interface FileRoutesByTo {
   '/portal/payments': typeof AuthenticatedPortalPaymentsRoute
   '/portal/profile': typeof AuthenticatedPortalProfileRoute
   '/studio/applications': typeof AuthenticatedStudioApplicationsRoute
-  '/studio/booths': typeof AuthenticatedStudioBoothsRoute
   '/studio/events': typeof AuthenticatedStudioEventsRouteWithChildren
   '/studio/messaging': typeof AuthenticatedStudioMessagingRoute
   '/studio/payments': typeof AuthenticatedStudioPaymentsRoute
@@ -419,7 +410,6 @@ export interface FileRoutesById {
   '/_authenticated/portal/payments': typeof AuthenticatedPortalPaymentsRoute
   '/_authenticated/portal/profile': typeof AuthenticatedPortalProfileRoute
   '/_authenticated/studio/applications': typeof AuthenticatedStudioApplicationsRoute
-  '/_authenticated/studio/booths': typeof AuthenticatedStudioBoothsRoute
   '/_authenticated/studio/events': typeof AuthenticatedStudioEventsRouteWithChildren
   '/_authenticated/studio/messaging': typeof AuthenticatedStudioMessagingRoute
   '/_authenticated/studio/payments': typeof AuthenticatedStudioPaymentsRoute
@@ -466,7 +456,6 @@ export interface FileRouteTypes {
     | '/portal/payments'
     | '/portal/profile'
     | '/studio/applications'
-    | '/studio/booths'
     | '/studio/events'
     | '/studio/messaging'
     | '/studio/payments'
@@ -508,7 +497,6 @@ export interface FileRouteTypes {
     | '/portal/payments'
     | '/portal/profile'
     | '/studio/applications'
-    | '/studio/booths'
     | '/studio/events'
     | '/studio/messaging'
     | '/studio/payments'
@@ -553,7 +541,6 @@ export interface FileRouteTypes {
     | '/_authenticated/portal/payments'
     | '/_authenticated/portal/profile'
     | '/_authenticated/studio/applications'
-    | '/_authenticated/studio/booths'
     | '/_authenticated/studio/events'
     | '/_authenticated/studio/messaging'
     | '/_authenticated/studio/payments'
@@ -750,13 +737,6 @@ declare module '@tanstack/react-router' {
       path: '/events'
       fullPath: '/studio/events'
       preLoaderRoute: typeof AuthenticatedStudioEventsRouteImport
-      parentRoute: typeof AuthenticatedStudioRoute
-    }
-    '/_authenticated/studio/booths': {
-      id: '/_authenticated/studio/booths'
-      path: '/booths'
-      fullPath: '/studio/booths'
-      preLoaderRoute: typeof AuthenticatedStudioBoothsRouteImport
       parentRoute: typeof AuthenticatedStudioRoute
     }
     '/_authenticated/studio/applications': {
@@ -981,7 +961,6 @@ const AuthenticatedStudioVenuesRouteWithChildren =
 
 interface AuthenticatedStudioRouteChildren {
   AuthenticatedStudioApplicationsRoute: typeof AuthenticatedStudioApplicationsRoute
-  AuthenticatedStudioBoothsRoute: typeof AuthenticatedStudioBoothsRoute
   AuthenticatedStudioEventsRoute: typeof AuthenticatedStudioEventsRouteWithChildren
   AuthenticatedStudioMessagingRoute: typeof AuthenticatedStudioMessagingRoute
   AuthenticatedStudioPaymentsRoute: typeof AuthenticatedStudioPaymentsRoute
@@ -996,7 +975,6 @@ interface AuthenticatedStudioRouteChildren {
 
 const AuthenticatedStudioRouteChildren: AuthenticatedStudioRouteChildren = {
   AuthenticatedStudioApplicationsRoute: AuthenticatedStudioApplicationsRoute,
-  AuthenticatedStudioBoothsRoute: AuthenticatedStudioBoothsRoute,
   AuthenticatedStudioEventsRoute: AuthenticatedStudioEventsRouteWithChildren,
   AuthenticatedStudioMessagingRoute: AuthenticatedStudioMessagingRoute,
   AuthenticatedStudioPaymentsRoute: AuthenticatedStudioPaymentsRoute,
@@ -1042,13 +1020,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

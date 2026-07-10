@@ -303,11 +303,10 @@ function VenueDetailSheet({ venueId, onClose }: { venueId: string | null; onClos
                 <div className="flex justify-end"><Button size="sm" variant="outline" onClick={addTemplate}><Plus className="mr-2 h-3 w-3" /> New template</Button></div>
                 {templates.length === 0 ? <EmptyState icon={LayoutTemplate} title="No layout templates" description="Save reusable booth layouts here. Every event picks a template as its starting point." /> :
                   templates.map((t) => (
-                    <a key={t.id} href={`/studio/booths?template=${t.id}`} className="card-soft flex items-center gap-3 px-4 py-3 transition hover:border-primary/40">
+                    <div key={t.id} className="card-soft flex items-center gap-3 px-4 py-3">
                       <LayoutTemplate className="h-5 w-5 text-muted-foreground" />
                       <div className="flex-1"><p className="font-medium">{t.name}</p>{t.description && <p className="text-xs text-muted-foreground">{t.description}</p>}</div>
-                      <span className="text-xs text-primary">Open builder →</span>
-                    </a>
+                    </div>
                   ))}
               </TabsContent>
 
