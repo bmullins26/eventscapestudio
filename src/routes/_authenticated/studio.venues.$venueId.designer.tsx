@@ -268,6 +268,28 @@ function VenueDesignerPage() {
     onError: (e: any) => toast.error(e?.message ?? "Delete failed"),
   });
 
+  // ------ Org Object Library ------
+  const libraryKey = ["org-library", venueId];
+  const { data: libraryItems } = useQuery({
+    queryKey: libraryKey,
+    queryFn: () => fetchLibrary({ data: { venueId } }),
+  });
+  const saveLibraryMutation = useMutation({
+    mutationFn: (input: any) => saveToLibrary({ data: { venueId, ...input } }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: libraryKey });
+      toast.success("Saved to library");
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Save failed"),
+  });
+  const deleteLibraryMutation = useMutation({
+    mutationFn: (id: string) => removeLibraryItem({ data: { id } }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: libraryKey }),
+    onError: (e: any) => toast.error(e?.message ?? "Delete failed"),
+  });
+
+
+
   // ------ Upload handler ------
 
   const handleFileUpload = async (file: File) => {
