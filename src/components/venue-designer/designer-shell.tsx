@@ -1,25 +1,36 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft, Undo2, Redo2, Save, MousePointer2, Square, Circle as CircleIcon, Triangle, Minus, Type, Store, Image as ImageIcon } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { ArrowLeft, Undo2, Redo2, Save, MousePointer2, Square, Circle as CircleIcon, Triangle, Minus, Type, Store, Image as ImageIcon, Layers, MapPin, Upload, Ruler, X, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { DesignerCanvas } from "./canvas";
+import type { CanvasTool } from "./canvas";
 import { ObjectExplorer } from "./object-explorer";
 import { Inspector } from "./inspector";
 import { useDesignerStore } from "./store";
-import type { AnyElement, Layout } from "./types";
+import type { AnyElement, Layout, BackgroundLayer } from "./types";
 import type { IconKey } from "./types";
 import { makeBooth, makeShape, makeText, makeIcon, ICONS, uid, resetBoothCounter } from "./factory";
 import { IconGlyph } from "./icon-glyph";
+import { uploadReferenceBackground, calibrateBackground } from "./background";
+import { detectRectanglesFromUrl } from "./detect-rects";
+import { fetchSatelliteBackground } from "@/lib/venue-designer.functions";
 
-type Tool = "select" | "booth" | "rect" | "circle" | "triangle" | "line" | "text" | "icon";
+type Tool = CanvasTool;
 
 interface DesignerShellProps {
   venueId: string;
+  organizationId: string;
   venueName: string;
   initial: Layout;
   onSave: (layout: Layout) => Promise<void>;
@@ -36,13 +47,22 @@ function installFactory() {
   };
 }
 
-export function DesignerShell({ venueId: _venueId, venueName, initial, onSave }: DesignerShellProps) {
+export function DesignerShell({ venueId, organizationId, venueName, initial, onSave }: DesignerShellProps) {
   const { state, actions } = useDesignerStore(initial);
   const [tool, setTool] = useState<Tool>("select");
   const [iconKey, setIconKey] = useState<IconKey>("tree");
   const [zoomPct, setZoomPct] = useState(100);
   const [saving, setSaving] = useState(false);
+  const [addressDialogOpen, setAddressDialogOpen] = useState(false);
+  const [addressValue, setAddressValue] = useState("");
+  const [addressLoading, setAddressLoading] = useState(false);
+  const [detectingRects, setDetectingRects] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const viewportRef = useRef({ x: -20, y: -20, scale: 4 });
+  const fetchSatFn = useServerFn(fetchSatelliteBackground);
+
+  const background = state.settings.background ?? null;
+  const setBackground = (bg: BackgroundLayer | null) => actions.setSettings({ background: bg });
 
   useEffect(() => { installFactory(); }, []);
 
@@ -135,6 +155,101 @@ export function DesignerShell({ venueId: _venueId, venueName, initial, onSave }:
     } finally { setSaving(false); }
   };
 
+  // Background actions ------------------------------------------------------
+  const onFilePicked = async (file: File | null) => {
+    if (!file) return;
+    if (!organizationId) { toast.error("Organization not resolved yet."); return; }
+    const t = toast.loading("Uploading reference…");
+    try {
+      const bg = await uploadReferenceBackground({ organizationId, venueId, file });
+      setBackground(bg);
+      toast.success("Reference added. Use Calibrate to set the true scale.", { id: t });
+    } catch (err: any) {
+      toast.error(err?.message ?? "Upload failed", { id: t });
+    }
+  };
+
+  const onFetchSatellite = async () => {
+    if (!addressValue.trim()) return;
+    setAddressLoading(true);
+    try {
+      const res = await fetchSatFn({ data: { venueId, address: addressValue.trim() } });
+      // res.widthFeet == res.heightFeet (square image)
+      const w = res.widthFeet;
+      const h = res.heightFeet;
+      setBackground({
+        kind: "satellite",
+        url: res.url,
+        x: -w / 2,
+        y: -h / 2,
+        w,
+        h,
+        rotation: 0,
+        opacity: 1,
+        locked: true,
+        calibrated: true,
+        attribution: "Imagery ©Google",
+        meta: res.meta,
+      });
+      setAddressDialogOpen(false);
+      setAddressValue("");
+      toast.success("Satellite imagery loaded");
+    } catch (err: any) {
+      toast.error(err?.message ?? "Failed to load satellite imagery");
+    } finally {
+      setAddressLoading(false);
+    }
+  };
+
+  const onCalibrate = (p1: { x: number; y: number }, p2: { x: number; y: number }) => {
+    if (!background) return;
+    const distStr = window.prompt("Real-world distance between the two points, in feet:");
+    if (!distStr) { setTool("select"); return; }
+    const dist = Number(distStr);
+    if (!Number.isFinite(dist) || dist <= 0) {
+      toast.error("Enter a positive number of feet.");
+      setTool("select");
+      return;
+    }
+    setBackground(calibrateBackground(background, p1, p2, dist));
+    setTool("select");
+    toast.success(`Calibrated: ${dist} ft reference set`);
+  };
+
+  const onDetectRects = async () => {
+    if (!background) return;
+    if (!background.calibrated) {
+      toast.error("Calibrate the background first so booth sizes are accurate.");
+      return;
+    }
+    if (!window.confirm("Detect rectangular booths from the background image? Results are approximate and will be added on top of your current layout.")) return;
+    setDetectingRects(true);
+    try {
+      const { rects, imageWidth, imageHeight } = await detectRectanglesFromUrl(background.url);
+      if (!rects.length) { toast.warning("No rectangles detected."); return; }
+      // Map pixel-space (in the original image) → world coords using the background's
+      // world transform. Rotation is not applied to detected rects (users can rotate the
+      // batch afterwards if needed).
+      const sx = background.w / imageWidth;
+      const sy = background.h / imageHeight;
+      const booths = rects.map((r) => {
+        const b = makeBooth(background.x + r.x * sx, background.y + r.y * sy);
+        b.w = r.w * sx;
+        b.h = r.h * sy;
+        return b;
+      });
+      booths.forEach((b) => actions.add(b));
+      toast.success(`Detected ${booths.length} rectangles`);
+    } catch (err: any) {
+      toast.error(err?.message ?? "Detection failed");
+    } finally {
+      setDetectingRects(false);
+    }
+  };
+
+  const removeBackground = () => setBackground(null);
+
+
   return (
     <div className="flex h-[calc(100vh-3.5rem)] w-full flex-col overflow-hidden bg-background">
       {/* Top bar */}
@@ -184,8 +299,46 @@ export function DesignerShell({ venueId: _venueId, venueName, initial, onSave }:
 
         <div className="mx-3 h-6 w-px bg-border" />
 
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              className={cn("flex h-8 items-center gap-1 rounded px-2 text-xs hover:bg-muted", background && "text-primary")}
+              title="Background reference"
+            >
+              <Layers className="h-4 w-4" />
+              <span>Background</span>
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-64">
+            <DropdownMenuLabel className="text-xs">Background reference</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => setAddressDialogOpen(true)}>
+              <MapPin className="mr-2 h-4 w-4" /> Add satellite from address…
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
+              <Upload className="mr-2 h-4 w-4" /> Upload image or PDF…
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem disabled={!background} onClick={() => setTool("calibrate")}>
+              <Ruler className="mr-2 h-4 w-4" /> Calibrate scale (2 points)
+            </DropdownMenuItem>
+            <DropdownMenuItem disabled={!background || detectingRects} onClick={onDetectRects}>
+              <Wand2 className="mr-2 h-4 w-4" /> Detect booths from image {detectingRects ? "…" : ""}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem disabled={!background} onClick={removeBackground}>
+              <X className="mr-2 h-4 w-4" /> Remove background
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
         <ToolBtn onClick={actions.undo} disabled={state.past.length === 0} title="Undo (⌘Z)"><Undo2 className="h-4 w-4" /></ToolBtn>
         <ToolBtn onClick={actions.redo} disabled={state.future.length === 0} title="Redo (⌘⇧Z)"><Redo2 className="h-4 w-4" /></ToolBtn>
+
+        {tool === "calibrate" && (
+          <span className="ml-2 rounded bg-primary/10 px-2 py-1 text-[11px] text-primary">Click two points on the background…</span>
+        )}
+
 
         <div className="ml-auto flex items-center gap-2">
           <span className="text-[11px] text-muted-foreground tabular-nums">{zoomPct}%</span>
@@ -211,6 +364,8 @@ export function DesignerShell({ venueId: _venueId, venueName, initial, onSave }:
             toolPayload={tool === "icon" ? { iconKey } : null}
             onZoomChange={setZoomPct}
             viewportRef={viewportRef}
+            background={background}
+            onCalibrate={onCalibrate}
           />
         </div>
         <div className="w-72 shrink-0">
@@ -222,9 +377,53 @@ export function DesignerShell({ venueId: _venueId, venueName, initial, onSave }:
             name={state.name}
             onName={actions.setName}
             onSettings={actions.setSettings}
+            background={background}
+            onBackgroundChange={setBackground}
           />
         </div>
       </div>
+
+      {/* Hidden file input for background upload */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*,application/pdf"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0] ?? null;
+          e.target.value = "";
+          onFilePicked(f);
+        }}
+      />
+
+      {/* Address dialog for satellite import */}
+      <Dialog open={addressDialogOpen} onOpenChange={setAddressDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add satellite background</DialogTitle>
+            <DialogDescription>
+              Enter an address or place name. We'll drop the satellite image in and match it to real-world feet.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="vd-address">Address or place</Label>
+            <Input
+              id="vd-address"
+              placeholder="1600 Amphitheatre Pkwy, Mountain View, CA"
+              value={addressValue}
+              onChange={(e) => setAddressValue(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") onFetchSatellite(); }}
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddressDialogOpen(false)}>Cancel</Button>
+            <Button onClick={onFetchSatellite} disabled={addressLoading || !addressValue.trim()}>
+              {addressLoading ? "Loading…" : "Load imagery"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

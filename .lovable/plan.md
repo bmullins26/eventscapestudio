@@ -1,123 +1,123 @@
 
-## Goal
+# Background layer + reference import for the Layout Designer
 
-Replace the current map/Leaflet-based venue designer with a fresh, grid-based **Layout Designer** for venues. Keep the URL (`/studio/venues/$venueId/designer`) but rebuild every UI, interaction, and data flow. Reverse-engineer the interaction model from Marketspread's Layout Designer, with an original visual design and code.
-
-## Interaction model (target UX, original implementation)
-
-- **Infinite grid canvas** drawn to scale — small square = 5 ft × 5 ft; major grid every 10 ft.
-- **Pan**: hold Space (or Alt/Option) + drag; **Zoom**: wheel / trackpad pinch, with cursor-anchored zoom; on-screen zoom % + fit-to-content button.
-- **Click-to-place from toolbar**: clicking a toolbar tool (e.g. Booth) drops one element at canvas center-ish (with slight offset per click, like Marketspread). Selecting the Select tool cancels placement.
-- **Selection**: click element → single-select; shift-click adds to selection; drag on empty canvas → marquee. Selected elements show 8 resize handles + a rotation handle on a leader line.
-- **Move**: drag body. Arrow keys nudge 1 grid unit; Shift+Arrow nudges 5 units. Hold Ctrl for 1 px.
-- **Resize**: drag handles; Shift preserves aspect. Corner values update the inspector live.
-- **Rotate**: drag rotation handle; Shift snaps to 15°/45°.
-- **Duplicate/Delete/Copy/Paste/Undo/Redo**: standard shortcuts (Cmd/Ctrl+D, Del, Cmd+C/V, Cmd+Z, Cmd+Shift+Z).
-- **Right-click context menu**: bring to front, send to back, forward/backward one, duplicate, lock, hide, delete.
-- **Object Explorer (left panel)**: flat list of every element with name, visibility toggle, lock toggle, and a "center on canvas" button; reorder = z-order.
-- **Inspector (right panel)**: element-specific fields when one item is selected; global layout settings when nothing is selected (name, add tax, render assignment names, redact, hide unassigned IDs).
-- **Booths are first-class**: metadata (id/label, width × depth in ft, price, amenities, orientation, fill, outline, outline width, outline style, outline radius, font size/weight).
-- **Other elements**: rectangle, circle, triangle, straight line, polyline path, freehand path, text label, and an icon set (tree, building, restroom, stage, food, parking, entrance, first aid, ATM, info, arrow).
-- **Auto-save + local undo/redo stack** (in-memory, at least 50 steps). Save & close returns to venues list.
-
-## Deletions
-
-Delete every current venue-designer file:
-
-- `src/components/venue-designer/` (whole directory)
-  - `bottom-drawer.tsx`, `client-map-canvas.tsx`, `floating-tools.tsx`, `floating-topbar.tsx`, `floating-zoom.tsx`, `map-canvas.tsx`, `map-search.tsx`, `menu-bar.tsx`, `object-catalog.ts`, `panels.tsx`, `properties-card.tsx`, `side-sheet.tsx`, `tool-strip.tsx`
-- `src/routes/_authenticated/studio.venues.$venueId.designer.tsx` — replaced with a new skeleton.
-- `src/lib/venue-designer.functions.ts` — replaced with a new file exposing only the server fns the new UI calls.
-
-Also drop the map-related deps from usage (no removal from package.json required — unused code is tree-shaken; leaving react-leaflet/leaflet installed is fine and avoids touching the lockfile in the same turn).
-
-## New file structure
-
-```text
-src/components/venue-designer/
-  designer-shell.tsx        // top bar + left panel + canvas + right panel layout
-  canvas/
-    grid-canvas.tsx         // SVG canvas, viewport (pan/zoom), grid, marquee
-    element-node.tsx        // renders one element (booth/shape/icon/text)
-    selection-frame.tsx     // 8 resize handles + rotation handle
-    use-viewport.ts         // pan/zoom state, screen<->canvas math
-    use-pointer-tools.ts    // click-place, drag-move, marquee, resize, rotate
-    use-keyboard.ts         // shortcuts: nudge, del, copy/paste, undo/redo
-  panels/
-    toolbar.tsx             // top toolbar: tools + undo/redo + save + name
-    object-explorer.tsx     // left: element list w/ lock/hide/center
-    inspector.tsx           // right: global or per-element props
-    inspector-booth.tsx
-    inspector-shape.tsx
-    inspector-text.tsx
-    inspector-icon.tsx
-  state/
-    types.ts                // Element, Booth, Shape, Icon, TextEl, Layout
-    store.ts                // Zustand store: elements, selection, history, dirty
-    history.ts              // undo/redo stack helper
-    catalog.ts              // available icons + default element factories
-  icons/                    // small SVG components for the icon set
-```
-
-Route: `src/routes/_authenticated/studio.venues.$venueId.designer.tsx` — thin wrapper that loads the layout, hydrates the store, renders `<DesignerShell />`.
-
-Server fns (`src/lib/venue-designer.functions.ts`):
-- `getVenueLayout({ venueId })` — returns `{ venue, layout: { name, elements, settings } }` (elements = JSON blob).
-- `saveVenueLayout({ venueId, name, settings, elements })` — protected by `requireSupabaseAuth`; upserts one row in `venue_layouts`.
+Add a persistent "background reference layer" to the designer canvas, sourced from either Google Static Maps (address search) or a user-uploaded image/PDF. Both flows share the same underlying reference model, opacity/lock controls, and a 2-point scale calibration so booths measured in feet snap to real-world dimensions.
 
 ## Data model
 
-Reuse the existing `venue_layouts` table if present; otherwise a new migration:
+Extend `LayoutSettings` (`src/components/venue-designer/types.ts`) with an optional `background` block:
 
-```sql
-create table if not exists public.venue_layouts (
-  id uuid primary key default gen_random_uuid(),
-  venue_id uuid not null references public.venues(id) on delete cascade,
-  name text not null default 'Untitled layout',
-  settings jsonb not null default '{}'::jsonb,
-  elements jsonb not null default '[]'::jsonb,
-  updated_at timestamptz not null default now(),
-  unique (venue_id)
-);
-grant select, insert, update, delete on public.venue_layouts to authenticated;
-grant all on public.venue_layouts to service_role;
-alter table public.venue_layouts enable row level security;
--- org-membership policy via existing helper
+```ts
+background?: {
+  kind: "satellite" | "image";
+  url: string;                // signed URL (image) or Google Static Maps URL
+  // world-space placement (feet):
+  x: number; y: number; w: number; h: number;
+  rotation: number;
+  opacity: number;            // 0..1
+  locked: boolean;
+  // Satellite-only metadata for re-fetch / attribution:
+  meta?: { lat: number; lng: number; zoom: number; address?: string };
+}
 ```
 
-(Exact policy wired to the existing `is_org_member` helper; only inserted if the table doesn't already exist.)
+Persisted through the existing `venue_layouts.settings` jsonb — no schema change.
 
-`Element` union in TS:
-```text
-Booth   { id, kind: 'booth',   x, y, w, h, rotation, label, price, amenities[], style{ fill, stroke, strokeWidth, strokeStyle, radius, fontSize, fontWeight } }
-Shape   { id, kind: 'rect'|'circle'|'triangle'|'line'|'path', ... geometry, style }
-Text    { id, kind: 'text',   x, y, text, fontSize, fontWeight, color, rotation }
-Icon    { id, kind: 'icon',   x, y, w, h, rotation, iconKey, tint }
-Common: locked?: boolean, hidden?: boolean, z: number
-```
+## Storage
 
-## Rendering & math
+Reuse the existing `venue-assets` bucket for uploads. Path: `venue-backgrounds/{venueId}/{uuid}.{ext}`. Signed URLs (1 year) written into `settings.background.url`. PDFs are rasterized in the browser via existing `src/lib/pdf-render.ts` (page 1 → PNG blob) then uploaded as PNG.
 
-- One SVG canvas, `viewBox` fixed, elements drawn in world coords.
-- Viewport is a `{ x, y, scale }` transform on the outer `<g>`; wheel zoom anchors on cursor position.
-- 1 world unit = 1 foot; grid drawn with two `<pattern>`s (5 ft minor, 10 ft major).
-- Screen↔world conversion helpers in `use-viewport.ts`.
-- Selection handles rendered in screen space (constant pixel size regardless of zoom) using an inverse-scale group.
+## Google Static Maps integration
 
-## Save flow
+- Ask user to store `GOOGLE_MAPS_API_KEY` as a runtime secret (via `add_secret`). Not exposed to the client.
+- New server function `fetchSatelliteBackground` in `src/lib/venue-designer.functions.ts`:
+  - input: `{ venueId, address }`
+  - geocode via Google Geocoding API → `{ lat, lng }`
+  - build Static Maps URL: `maptype=satellite`, `size=1280x1280`, `scale=2`, `zoom=19` (auto-fit heuristic based on viewport bounds returned by geocoder).
+  - fetch image, upload to `venue-assets`, return `{ url, meta: { lat, lng, zoom, address } }`.
+  - Compute world-space width/height in feet using Web Mercator meters-per-pixel at that lat/zoom → multiply by pixel size → convert meters→feet.
+- Attribution: render "Imagery ©Google" label on canvas near background.
 
-- Zustand store tracks a `dirty` flag.
-- Debounced auto-save (~1.2 s idle) calls `saveVenueLayout`.
-- Explicit "Save & Close" button in the toolbar.
-- Undo/redo local only.
+## Hand-drawn / PDF upload
 
-## Out of scope (for this turn)
+New server function `uploadReferenceBackground`:
+- input: `{ venueId, filename, contentType, base64 }` (small helper; large files go via signed upload URL — see below).
+- Actually: use direct client upload with the existing signed-upload pattern (a `getReferenceUploadUrl` server fn returns a signed upload URL, client PUTs, then calls `commitReferenceBackground` with the object path).
+- Client (in the designer):
+  - Accept `image/*` and `application/pdf`.
+  - For PDFs: `loadPdf` + `renderPdfPageToBlob(pdf, 1, 2)` from `src/lib/pdf-render.ts`.
+  - For images: use as-is; read natural size via `loadImageNaturalSize`.
+  - Initial world placement: default to 100 ft wide, aspect preserved, centered on origin (until calibrated).
 
-- Publishing versions, presenting mode, sharing, AI import, and Mapbox-style basemap — all removed with the old designer. They can be reintroduced later on top of the new foundation if the user wants.
-- Vendor assignment UI beyond a booth-inspector "price/label" surface. Assignment flow already lives elsewhere in the app.
+## Calibration (2-point scale)
 
-## Verification
+New "Calibrate scale" mode in the toolbar:
+1. User clicks two points on the background.
+2. Prompt for real-world distance in feet.
+3. Compute uniform scale factor = (target ft) / (current world distance between the two points), then scale background `w`/`h` around its center. Rotation is not adjusted (users can rotate the background from the Inspector).
 
-- `bun run build` (auto-run) passes.
-- Load `/studio/venues/<any>/designer`: canvas renders, tools place elements, selection/move/resize/rotate/undo/redo work, save writes to the DB, reload restores the layout.
+Store nothing extra — the background rect itself is the calibrated reference.
 
+## Auto-detect rectangles → booths
+
+Client-only image processing (no server cost). New util `src/components/venue-designer/detect-rects.ts`:
+- Draw the background image to an offscreen canvas at ~1200px wide.
+- Use a lightweight pure-JS pipeline (no OpenCV wasm to keep bundle small): grayscale → adaptive threshold → connected-components → bounding boxes → filter by min area / aspect / max count (cap 500).
+- Convert each pixel-space rect to world-space using the calibrated background transform.
+- Emit `BoothElement`s via `makeBooth`, sequentially numbered, added in a single `actions.add` batch to one history entry.
+
+Trigger: Inspector button "Detect booths from image" appears when a background is present AND calibration has been performed. Confirmation dialog warns results are approximate and appends to the current layout.
+
+## UI changes
+
+**Toolbar (`designer-shell.tsx`):**
+- Add a "Background" dropdown between icon picker and undo:
+  - "Add satellite from address…" → opens address dialog → calls `fetchSatelliteBackground`.
+  - "Upload image or PDF…" → opens file picker.
+  - "Calibrate scale (2 points)" (enabled when background present).
+  - "Remove background" (enabled when background present).
+
+**Canvas (`canvas.tsx`):**
+- New render pass BEFORE the grid: draw `settings.background` as a rotated, opacity-adjusted `<image>` in world coordinates. When `locked`, ignore pointer events; otherwise selectable with the same 8-handle transform frame as elements (special-cased since it lives in settings, not `elements`).
+- New pointer tool `"calibrate"` handled inline: two clicks → distance prompt → mutate `settings.background`.
+
+**Inspector (`inspector.tsx`):**
+- New "Background" section (visible when `settings.background` set):
+  - Opacity slider (0–100).
+  - Locked toggle.
+  - Rotation input.
+  - Width/height (feet) numeric inputs (kept aspect-linked by a chain toggle).
+  - "Detect booths from image" button.
+  - "Remove background".
+
+**Object Explorer:**
+- Add a pinned top row "Background (locked)" when present, with eye + lock toggles wired to `settings.background`.
+
+## Server functions
+
+Add to `src/lib/venue-designer.functions.ts`:
+- `fetchSatelliteBackground({ venueId, address })`
+- `getReferenceUploadUrl({ venueId, contentType })` → returns `{ path, uploadUrl }` (signed upload URL from `venue-assets`)
+- `commitReferenceBackground({ venueId, path })` → returns `{ url }` (long-lived signed URL)
+
+All three use `requireSupabaseAuth`, check `is_org_member` via the venue's `organization_id`, and cap file paths under `venue-backgrounds/{venueId}/`.
+
+## Secret to request
+
+`GOOGLE_MAPS_API_KEY` (server-only). Required for the satellite flow; upload/PDF flow works without it. Explain in chat before calling `add_secret`, and only if the user proceeds with satellite import.
+
+## Out of scope
+
+- Multiple stacked backgrounds (only one at a time).
+- Live/interactive Google Maps tiles (a static image is sufficient and cheaper).
+- Server-side OCR / hand-writing recognition.
+- OpenCV / heavy CV — the rectangle detector is intentionally simple and labeled "experimental" in the UI.
+
+## Phasing
+
+1. **Phase 1 – Reference layer core**: types, storage helpers, upload (image + PDF), canvas render, inspector controls, remove. Ships a working "trace on top of your sketch" flow.
+2. **Phase 2 – Calibration**: 2-point scale tool + inspector width/height sync.
+3. **Phase 3 – Satellite**: request `GOOGLE_MAPS_API_KEY`, add address search dialog, `fetchSatelliteBackground`, auto-fit sizing from Mercator math, attribution label.
+4. **Phase 4 – Auto-detect**: `detect-rects.ts` util + Inspector button + confirmation dialog + batched add.
+
+Each phase persists via existing `venue_layouts.settings` auto-save.

@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState, useCallback } from "react";
-import type { AnyElement, BoothElement, ShapeElement, TextElement, IconElement } from "./types";
+import { useEffect, useRef, useState } from "react";
+import type { AnyElement, BoothElement, ShapeElement, TextElement, IconElement, BackgroundLayer } from "./types";
 import type { DesignerActions } from "./store";
 import { IconGlyph } from "./icon-glyph";
 
@@ -9,14 +9,18 @@ interface Viewport {
   scale: number; // pixels per world unit (foot)
 }
 
+export type CanvasTool = "select" | "booth" | "rect" | "circle" | "triangle" | "line" | "text" | "icon" | "calibrate";
+
 export interface CanvasProps {
   elements: AnyElement[];
   selection: string[];
   actions: DesignerActions;
-  tool: "select" | "booth" | "rect" | "circle" | "triangle" | "line" | "text" | "icon";
+  tool: CanvasTool;
   toolPayload?: { iconKey?: string } | null;
   onZoomChange?: (pct: number) => void;
   viewportRef: React.MutableRefObject<Viewport>;
+  background?: BackgroundLayer | null;
+  onCalibrate?: (p1: { x: number; y: number }, p2: { x: number; y: number }) => void;
 }
 
 // Screen -> world
@@ -35,12 +39,13 @@ type DragState =
   | { kind: "marquee"; startX: number; startY: number; x1: number; y1: number }
   | null;
 
-export function DesignerCanvas({ elements, selection, actions, tool, toolPayload, onZoomChange, viewportRef }: CanvasProps) {
+export function DesignerCanvas({ elements, selection, actions, tool, toolPayload, onZoomChange, viewportRef, background, onCalibrate }: CanvasProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [vp, setVp] = useState<Viewport>(() => viewportRef.current);
   const [space, setSpace] = useState(false);
   const [drag, setDrag] = useState<DragState>(null);
   const [size, setSize] = useState({ w: 800, h: 600 });
+  const [calibratePt1, setCalibratePt1] = useState<{ x: number; y: number } | null>(null);
 
   useEffect(() => { viewportRef.current = vp; onZoomChange?.(Math.round(vp.scale * 100 / 4)); }, [vp, onZoomChange, viewportRef]);
 
@@ -101,6 +106,18 @@ export function DesignerCanvas({ elements, selection, actions, tool, toolPayload
     // Middle mouse or space: pan
     if (e.button === 1 || space || (e.button === 0 && (e.altKey))) {
       setDrag({ kind: "pan", startX: sx, startY: sy, vp0: vp });
+      return;
+    }
+
+    // Calibrate tool: record two clicks, then invoke onCalibrate.
+    if (tool === "calibrate" && e.button === 0) {
+      const w = s2w(sx, sy, vp);
+      if (!calibratePt1) {
+        setCalibratePt1({ x: w.x, y: w.y });
+      } else {
+        onCalibrate?.(calibratePt1, { x: w.x, y: w.y });
+        setCalibratePt1(null);
+      }
       return;
     }
 
@@ -227,11 +244,45 @@ export function DesignerCanvas({ elements, selection, actions, tool, toolPayload
         <rect x={0} y={0} width={size.w} height={size.h} fill="url(#vd-grid-minor)" />
         <rect x={0} y={0} width={size.w} height={size.h} fill="url(#vd-grid-major)" />
 
+        {/* Background reference layer (behind elements) */}
+        {background && (() => {
+          const bx = (background.x - vp.x) * vp.scale;
+          const by = (background.y - vp.y) * vp.scale;
+          const bw = background.w * vp.scale;
+          const bh = background.h * vp.scale;
+          const cx = bx + bw / 2;
+          const cy = by + bh / 2;
+          return (
+            <g transform={`rotate(${background.rotation} ${cx} ${cy})`} style={{ pointerEvents: "none" }}>
+              <image
+                href={background.url}
+                x={bx}
+                y={by}
+                width={bw}
+                height={bh}
+                opacity={background.opacity}
+                preserveAspectRatio="none"
+              />
+              {background.kind === "satellite" && (
+                <text x={bx + 6} y={by + bh - 6} fontSize={10} fill="#fff" stroke="#000" strokeWidth={0.3}
+                  style={{ pointerEvents: "none" }}>Imagery ©Google</text>
+              )}
+            </g>
+          );
+        })()}
+
         <g transform={`scale(${vp.scale}) translate(${-vp.x} ${-vp.y})`}>
           {elements.map((el) => el.hidden ? null : (
             <ElementNode key={el.id} el={el} selected={selection.includes(el.id)} vpScale={vp.scale} />
           ))}
         </g>
+
+        {/* Calibration guide overlay */}
+        {tool === "calibrate" && calibratePt1 && (() => {
+          const p1x = (calibratePt1.x - vp.x) * vp.scale;
+          const p1y = (calibratePt1.y - vp.y) * vp.scale;
+          return <circle cx={p1x} cy={p1y} r={5} fill="hsl(var(--primary))" />;
+        })()}
 
         {/* Selection handles overlay (screen space) */}
         {selection.length === 1 && (() => {

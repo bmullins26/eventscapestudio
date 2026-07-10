@@ -1,15 +1,17 @@
-import type { AnyElement, BoothElement, IconElement, LayoutSettings, ShapeElement, TextElement } from "./types";
+import type { AnyElement, BoothElement, IconElement, LayoutSettings, ShapeElement, TextElement, BackgroundLayer } from "./types";
 import type { DesignerActions } from "./store";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { ArrowUp, ArrowDown, ArrowUpToLine, ArrowDownToLine, Trash2, Copy } from "lucide-react";
+import { ArrowUp, ArrowDown, ArrowUpToLine, ArrowDownToLine, Trash2, Copy, X } from "lucide-react";
 import { describe, uid } from "./factory";
 
 export function Inspector({
   elements, selection, actions, settings, name, onName, onSettings,
+  background, onBackgroundChange,
 }: {
   elements: AnyElement[];
   selection: string[];
@@ -18,6 +20,8 @@ export function Inspector({
   name: string;
   onName: (v: string) => void;
   onSettings: (patch: Partial<LayoutSettings>) => void;
+  background?: BackgroundLayer | null;
+  onBackgroundChange?: (bg: BackgroundLayer | null) => void;
 }) {
   const sel = elements.filter((e) => selection.includes(e.id));
 
@@ -35,6 +39,9 @@ export function Inspector({
             <Toggle label="Redact assignments" value={!!settings.redactAssignments} onChange={(v) => onSettings({ redactAssignments: v })} />
             <Toggle label="Hide unassigned IDs" value={!!settings.hideUnassignedIds} onChange={(v) => onSettings({ hideUnassignedIds: v })} />
           </div>
+          {background && onBackgroundChange && (
+            <BackgroundSection background={background} onChange={onBackgroundChange} />
+          )}
           <p className="text-[11px] text-muted-foreground">Select an object to edit its properties.</p>
         </div>
       </div>
@@ -220,3 +227,47 @@ function colorish(v: string): string {
   if (/^#([0-9a-fA-F]{3}){1,2}$/.test(v)) return v;
   return "#4f46e5";
 }
+
+function BackgroundSection({ background, onChange }: { background: BackgroundLayer; onChange: (bg: BackgroundLayer | null) => void }) {
+  const s = (patch: Partial<BackgroundLayer>) => onChange({ ...background, ...patch });
+  return (
+    <div className="space-y-3 rounded border border-border p-3">
+      <div className="flex items-center justify-between">
+        <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Background</div>
+        <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => onChange(null)}>
+          <X className="mr-1 h-3 w-3" /> Remove
+        </Button>
+      </div>
+      <div className="text-[11px] text-muted-foreground">
+        {background.kind === "satellite" ? (background.meta?.address ?? "Satellite imagery") : "Uploaded reference"}
+        {background.calibrated ? " · calibrated" : " · not calibrated"}
+      </div>
+      <div>
+        <Label className="text-[11px] text-muted-foreground">Opacity ({Math.round(background.opacity * 100)}%)</Label>
+        <Slider
+          value={[Math.round(background.opacity * 100)]}
+          min={5} max={100} step={1}
+          onValueChange={(v) => s({ opacity: (v[0] ?? 100) / 100 })}
+          className="mt-2"
+        />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <Field label="Width (ft)">
+          <Input type="number" step="0.5" className="h-8" value={round(background.w)} onChange={(e) => {
+            const w = Number(e.target.value); if (!Number.isFinite(w) || w <= 0) return;
+            const aspect = background.h / background.w;
+            const h = w * aspect;
+            const cx = background.x + background.w / 2;
+            const cy = background.y + background.h / 2;
+            s({ w, h, x: cx - w / 2, y: cy - h / 2 });
+          }} />
+        </Field>
+        <Field label="Rotation°">
+          <Input type="number" step="1" className="h-8" value={round(background.rotation)} onChange={(e) => s({ rotation: Number(e.target.value) })} />
+        </Field>
+      </div>
+      <Toggle label="Lock background" value={background.locked} onChange={(v) => s({ locked: v })} />
+    </div>
+  );
+}
+

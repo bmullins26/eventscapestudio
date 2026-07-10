@@ -73,11 +73,28 @@ export interface IconElement extends BaseElement {
 
 export type AnyElement = BoothElement | ShapeElement | TextElement | IconElement;
 
+export interface BackgroundLayer {
+  kind: "satellite" | "image";
+  url: string;
+  /** World-space placement in feet. */
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  rotation: number;
+  opacity: number; // 0..1
+  locked: boolean;
+  calibrated?: boolean;
+  attribution?: string;
+  meta?: { lat?: number; lng?: number; zoom?: number; address?: string };
+}
+
 export interface LayoutSettings {
   addTax?: boolean;
   renderAssignments?: boolean;
   redactAssignments?: boolean;
   hideUnassignedIds?: boolean;
+  background?: BackgroundLayer | null;
 }
 
 export interface Layout {

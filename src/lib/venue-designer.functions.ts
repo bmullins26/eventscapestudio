@@ -13,6 +13,101 @@ const SaveLayoutInput = z.object({
   elements: z.array(ElementSchema),
 });
 
+const FetchSatelliteInput = z.object({
+  venueId: z.string().uuid(),
+  address: z.string().min(2).max(500),
+});
+
+/**
+ * Geocode an address via Google, fetch a Static Maps satellite image, upload
+ * it to venue-assets, and return a BackgroundLayer ready for the designer.
+ * Requires GOOGLE_MAPS_API_KEY (server-side secret).
+ */
+export const fetchSatelliteBackground = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => FetchSatelliteInput.parse(d))
+  .handler(async ({ data, context }) => {
+    const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+    if (!apiKey) throw new Error("GOOGLE_MAPS_API_KEY is not configured. Add it to enable satellite imagery.");
+
+    const { supabase, userId } = context;
+
+    // Authz: the caller must be a member of the venue's organization.
+    const { data: venue, error: vErr } = await supabase
+      .from("venues")
+      .select("id, organization_id")
+      .eq("id", data.venueId)
+      .maybeSingle();
+    if (vErr) throw vErr;
+    if (!venue) throw new Error("Venue not found");
+
+    const { data: isMember } = await supabase.rpc("is_org_member", {
+      _user_id: userId,
+      _org_id: venue.organization_id,
+    });
+    if (!isMember) throw new Error("Forbidden");
+
+    // Geocode
+    const geocodeUrl = new URL("https://maps.googleapis.com/maps/api/geocode/json");
+    geocodeUrl.searchParams.set("address", data.address);
+    geocodeUrl.searchParams.set("key", apiKey);
+    const geoRes = await fetch(geocodeUrl.toString());
+    if (!geoRes.ok) throw new Error(`Geocoding failed (${geoRes.status})`);
+    const geoJson = (await geoRes.json()) as {
+      status: string;
+      results: Array<{ geometry: { location: { lat: number; lng: number } }; formatted_address: string }>;
+    };
+    if (geoJson.status !== "OK" || !geoJson.results.length) {
+      throw new Error(`Address not found (${geoJson.status})`);
+    }
+    const { lat, lng } = geoJson.results[0].geometry.location;
+    const formatted = geoJson.results[0].formatted_address;
+
+    // Static Maps satellite image
+    const zoom = 19;
+    const sizePx = 640; // Google Static Maps free tier caps at 640
+    const scale = 2; // retina; effective pixel size = 1280
+    const mapUrl = new URL("https://maps.googleapis.com/maps/api/staticmap");
+    mapUrl.searchParams.set("center", `${lat},${lng}`);
+    mapUrl.searchParams.set("zoom", String(zoom));
+    mapUrl.searchParams.set("size", `${sizePx}x${sizePx}`);
+    mapUrl.searchParams.set("scale", String(scale));
+    mapUrl.searchParams.set("maptype", "satellite");
+    mapUrl.searchParams.set("key", apiKey);
+
+    const imgRes = await fetch(mapUrl.toString());
+    if (!imgRes.ok) throw new Error(`Static Maps failed (${imgRes.status})`);
+    const bytes = new Uint8Array(await imgRes.arrayBuffer());
+
+    // Upload to venue-assets under <org_id>/venue-backgrounds/<venue_id>/<uuid>.png
+    const filename = `${crypto.randomUUID()}.png`;
+    const path = `${venue.organization_id}/venue-backgrounds/${venue.id}/${filename}`;
+    const { error: upErr } = await supabase.storage
+      .from("venue-assets")
+      .upload(path, bytes, { contentType: "image/png", upsert: false });
+    if (upErr) throw upErr;
+
+    const { data: signed, error: signErr } = await supabase.storage
+      .from("venue-assets")
+      .createSignedUrl(path, 60 * 60 * 24 * 365);
+    if (signErr || !signed) throw signErr ?? new Error("Failed to sign background URL");
+
+    // Compute real-world dimensions using Web Mercator.
+    // meters/pixel at latitude & zoom: (156543.03392 * cos(lat)) / 2^zoom
+    // Static Maps `scale=2` doubles pixel density (same coverage, more pixels),
+    // so the ground coverage of the image in meters is (sizePx * mpp).
+    const mpp = (156543.03392 * Math.cos((lat * Math.PI) / 180)) / Math.pow(2, zoom);
+    const meters = sizePx * mpp;
+    const feet = meters * 3.28084;
+
+    return {
+      url: signed.signedUrl,
+      widthFeet: feet,
+      heightFeet: feet,
+      meta: { lat, lng, zoom, address: formatted },
+    };
+  });
+
 export const getVenueLayout = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => VenueIdInput.parse(d))
