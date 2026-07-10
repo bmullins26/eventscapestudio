@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   MousePointer2, Hand, Square, Circle as CircleIcon, Type as TypeIcon,
   Layers, Library, LayoutTemplate, Search, ChevronLeft, Ruler, Grid3x3, Magnet,
-  Eye, EyeOff, Lock, Unlock, Trash2, Plus, Store, Image as ImageIcon, Sparkles, Upload, Loader2,
+  Eye, EyeOff, Lock, Unlock, Trash2, Plus, Store, Image as ImageIcon, Sparkles, Upload, Loader2, BookmarkPlus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
