@@ -364,6 +364,8 @@ export function DesignerShell({ venueId, organizationId, venueName, initial, onS
             toolPayload={tool === "icon" ? { iconKey } : null}
             onZoomChange={setZoomPct}
             viewportRef={viewportRef}
+            background={background}
+            onCalibrate={onCalibrate}
           />
         </div>
         <div className="w-72 shrink-0">
@@ -375,9 +377,53 @@ export function DesignerShell({ venueId, organizationId, venueName, initial, onS
             name={state.name}
             onName={actions.setName}
             onSettings={actions.setSettings}
+            background={background}
+            onBackgroundChange={setBackground}
           />
         </div>
       </div>
+
+      {/* Hidden file input for background upload */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*,application/pdf"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0] ?? null;
+          e.target.value = "";
+          onFilePicked(f);
+        }}
+      />
+
+      {/* Address dialog for satellite import */}
+      <Dialog open={addressDialogOpen} onOpenChange={setAddressDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add satellite background</DialogTitle>
+            <DialogDescription>
+              Enter an address or place name. We'll drop the satellite image in and match it to real-world feet.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="vd-address">Address or place</Label>
+            <Input
+              id="vd-address"
+              placeholder="1600 Amphitheatre Pkwy, Mountain View, CA"
+              value={addressValue}
+              onChange={(e) => setAddressValue(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") onFetchSatellite(); }}
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddressDialogOpen(false)}>Cancel</Button>
+            <Button onClick={onFetchSatellite} disabled={addressLoading || !addressValue.trim()}>
+              {addressLoading ? "Loading…" : "Load imagery"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
