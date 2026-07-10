@@ -449,6 +449,30 @@ function VenueDesignerPage() {
                 }}
               />
             </TabsContent>
+            <TabsContent value="references" className="mt-0 flex-1 overflow-auto p-3">
+              <ReferencePanel
+                references={references}
+                uploading={uploading}
+                analyzingRefId={analyzingRefId}
+                onUploadClick={() => fileInputRef.current?.click()}
+                onSelect={(r) => { setSelectedRefId(r.id); setSelectedId(null); }}
+                onToggleVisible={(r) => refUpdateMutation.mutate({ id: r.id, patch: { visible: !r.visible } })}
+                onDelete={(r) => refDeleteMutation.mutate(r.id)}
+                onAiImport={handleAiImport}
+                selectedRefId={selectedRefId}
+              />
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) handleFileUpload(f);
+                  e.target.value = "";
+                }}
+              />
+            </TabsContent>
             <TabsContent value="templates" className="mt-0 flex-1 overflow-auto p-3">
               <EmptyState icon={LayoutTemplate} title="No published versions" description="Publish templates arrives in Phase 4 alongside event snapshots." />
             </TabsContent>
