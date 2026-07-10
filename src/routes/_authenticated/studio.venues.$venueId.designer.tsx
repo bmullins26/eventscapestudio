@@ -422,6 +422,9 @@ function VenueDesignerPage() {
               <TabsTrigger value="layers" className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary">
                 <Layers className="mr-1 h-3.5 w-3.5" />Layers
               </TabsTrigger>
+              <TabsTrigger value="references" className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary">
+                <ImageIcon className="mr-1 h-3.5 w-3.5" />Refs
+              </TabsTrigger>
               <TabsTrigger value="templates" className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary">
                 <LayoutTemplate className="mr-1 h-3.5 w-3.5" />Versions
               </TabsTrigger>
