@@ -321,7 +321,7 @@ export function DesignerShell({ venueId, organizationId, venueName, initial, onS
             <DropdownMenuItem disabled={!background} onClick={() => setTool("calibrate")}>
               <Ruler className="mr-2 h-4 w-4" /> Calibrate scale (2 points)
             </DropdownMenuItem>
-            <DropdownMenuItem disabled={!background || detectingRects} onClick={onDetectRects}>
+            <DropdownMenuItem disabled={!background || !background.url || detectingRects} onClick={onDetectRects}>
               <Wand2 className="mr-2 h-4 w-4" /> Detect booths from image {detectingRects ? "…" : ""}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
