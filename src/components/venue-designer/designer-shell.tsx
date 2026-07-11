@@ -174,12 +174,11 @@ export function DesignerShell({ venueId, organizationId, venueName, initial, onS
     setAddressLoading(true);
     try {
       const res = await fetchSatFn({ data: { venueId, address: addressValue.trim() } });
-      // res.widthFeet == res.heightFeet (square image)
       const w = res.widthFeet;
       const h = res.heightFeet;
       setBackground({
-        kind: "satellite",
-        url: res.url,
+        kind: "google-satellite",
+        url: "",
         x: -w / 2,
         y: -h / 2,
         w,
@@ -322,7 +321,7 @@ export function DesignerShell({ venueId, organizationId, venueName, initial, onS
             <DropdownMenuItem disabled={!background} onClick={() => setTool("calibrate")}>
               <Ruler className="mr-2 h-4 w-4" /> Calibrate scale (2 points)
             </DropdownMenuItem>
-            <DropdownMenuItem disabled={!background || detectingRects} onClick={onDetectRects}>
+            <DropdownMenuItem disabled={!background || !background.url || detectingRects} onClick={onDetectRects}>
               <Wand2 className="mr-2 h-4 w-4" /> Detect booths from image {detectingRects ? "…" : ""}
             </DropdownMenuItem>
             <DropdownMenuSeparator />

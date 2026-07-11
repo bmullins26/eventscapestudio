@@ -74,7 +74,14 @@ export interface IconElement extends BaseElement {
 export type AnyElement = BoothElement | ShapeElement | TextElement | IconElement;
 
 export interface BackgroundLayer {
-  kind: "satellite" | "image";
+  /**
+   * "image" - a raster/PDF uploaded to venue-assets (has `url`).
+   * "satellite" - legacy static satellite PNG (has `url`).
+   * "google-satellite" - live Google Maps JS satellite tile, rendered client-side.
+   *   No `url`; positioning uses lat/lng/zoom from `meta`.
+   */
+  kind: "satellite" | "image" | "google-satellite";
+  /** Image URL (empty string for "google-satellite"). */
   url: string;
   /** World-space placement in feet. */
   x: number;
