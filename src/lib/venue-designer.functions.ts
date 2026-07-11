@@ -80,47 +80,25 @@ export const fetchSatelliteBackground = createServerFn({ method: "POST" })
     const { lat, lng } = geoJson.results[0].geometry.location;
     const formatted = geoJson.results[0].formatted_address;
 
-    // Static Maps satellite image
-    const zoom = 19;
-    const sizePx = 640; // Google Static Maps free tier caps at 640
-    const scale = 2; // retina; effective pixel size = 1280
-    const mapUrl = new URL(`${GATEWAY}/maps/api/staticmap`);
-    mapUrl.searchParams.set("center", `${lat},${lng}`);
-    mapUrl.searchParams.set("zoom", String(zoom));
-    mapUrl.searchParams.set("size", `${sizePx}x${sizePx}`);
-    mapUrl.searchParams.set("scale", String(scale));
-    mapUrl.searchParams.set("maptype", "satellite");
-
-    const imgRes = await fetch(mapUrl.toString(), { headers: gwHeaders });
-    if (!imgRes.ok) throw new Error(`Static Maps failed (${imgRes.status}): ${await imgRes.text()}`);
-    const bytes = new Uint8Array(await imgRes.arrayBuffer());
-
-    // Upload to venue-assets under <org_id>/venue-backgrounds/<venue_id>/<uuid>.png
-    const filename = `${crypto.randomUUID()}.png`;
-    const path = `${venue.organization_id}/venue-backgrounds/${venue.id}/${filename}`;
-    const { error: upErr } = await supabase.storage
-      .from("venue-assets")
-      .upload(path, bytes, { contentType: "image/png", upsert: false });
-    if (upErr) throw upErr;
-
-    const { data: signed, error: signErr } = await supabase.storage
-      .from("venue-assets")
-      .createSignedUrl(path, 60 * 60 * 24 * 365);
-    if (signErr || !signed) throw signErr ?? new Error("Failed to sign background URL");
-
-    // Compute real-world dimensions using Web Mercator.
+    // Compute the ground area covered by a 1024×1024 CSS-pixel Google Map
+    // rendered at the chosen zoom, at this latitude, using Web Mercator.
     // meters/pixel at latitude & zoom: (156543.03392 * cos(lat)) / 2^zoom
-    // Static Maps `scale=2` doubles pixel density (same coverage, more pixels),
-    // so the ground coverage of the image in meters is (sizePx * mpp).
+    // The client renders the map at exactly this native size (1024×1024)
+    // so the returned widthFeet/heightFeet cover the same ground area, and
+    // CSS transforms handle any further visual scaling without reloading tiles.
+    const zoom = 19;
+    const mapPixelSize = 1024;
     const mpp = (156543.03392 * Math.cos((lat * Math.PI) / 180)) / Math.pow(2, zoom);
-    const meters = sizePx * mpp;
+    const meters = mapPixelSize * mpp;
     const feet = meters * 3.28084;
 
     return {
-      url: signed.signedUrl,
+      // No uploaded image — the client renders live Google Maps satellite tiles
+      // using the browser key. `url` is kept empty for shape compatibility.
+      url: "",
       widthFeet: feet,
       heightFeet: feet,
-      meta: { lat, lng, zoom, address: formatted },
+      meta: { lat, lng, zoom, address: formatted, mapPixelSize },
     };
   });
 
