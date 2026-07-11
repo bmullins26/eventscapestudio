@@ -25,9 +25,9 @@ interface Props {
 }
 
 // Load the Maps JS API once, module-scoped.
-let mapsLoadPromise: Promise<typeof google> | null = null;
+let mapsLoadPromise: Promise<any> | null = null;
 
-function loadMapsJs(): Promise<typeof google> {
+function loadMapsJs(): Promise<any> {
   if (typeof window === "undefined") return Promise.reject(new Error("SSR"));
   if ((window as any).google?.maps) return Promise.resolve((window as any).google);
   if (mapsLoadPromise) return mapsLoadPromise;
