@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { AnyElement, BoothElement, ShapeElement, TextElement, IconElement, BackgroundLayer } from "./types";
 import type { DesignerActions } from "./store";
 import { IconGlyph } from "./icon-glyph";
+import { SatelliteMapLayer } from "./satellite-map-layer";
 
 interface Viewport {
   x: number; // world coord at screen (0,0)
