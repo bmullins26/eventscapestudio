@@ -233,6 +233,32 @@ export function DesignerCanvas({ elements, selection, actions, tool, toolPayload
       style={{ cursor }}
       className="relative h-full w-full overflow-hidden bg-muted/40 touch-none select-none"
     >
+      {/* Live Google Maps satellite layer (behind SVG). Rendered when the
+          background is a "google-satellite" kind. Pointer-events disabled so
+          the SVG above handles all input. */}
+      {background && background.kind === "google-satellite" &&
+        typeof background.meta?.lat === "number" &&
+        typeof background.meta?.lng === "number" && (() => {
+        const bx = (background.x - vp.x) * vp.scale;
+        const by = (background.y - vp.y) * vp.scale;
+        const bw = background.w * vp.scale;
+        const bh = background.h * vp.scale;
+        return (
+          <SatelliteMapLayer
+            lat={background.meta.lat!}
+            lng={background.meta.lng!}
+            zoom={background.meta.zoom ?? 19}
+            pixelSize={1024}
+            screenX={bx}
+            screenY={by}
+            screenW={bw}
+            screenH={bh}
+            rotation={background.rotation}
+            opacity={background.opacity}
+          />
+        );
+      })()}
+
       <svg width={size.w} height={size.h} style={{ position: "absolute", inset: 0 }}>
         <defs>
           <pattern id="vd-grid-minor" x={0} y={0} width={gridMinor * vp.scale} height={gridMinor * vp.scale} patternUnits="userSpaceOnUse" patternTransform={`translate(${-vp.x * vp.scale % (gridMinor * vp.scale)}, ${-vp.y * vp.scale % (gridMinor * vp.scale)})`}>
@@ -245,8 +271,8 @@ export function DesignerCanvas({ elements, selection, actions, tool, toolPayload
         <rect x={0} y={0} width={size.w} height={size.h} fill="url(#vd-grid-minor)" />
         <rect x={0} y={0} width={size.w} height={size.h} fill="url(#vd-grid-major)" />
 
-        {/* Background reference layer (behind elements) */}
-        {background && (() => {
+        {/* Background reference layer (raster image kinds — behind elements) */}
+        {background && background.kind !== "google-satellite" && background.url && (() => {
           const bx = (background.x - vp.x) * vp.scale;
           const by = (background.y - vp.y) * vp.scale;
           const bw = background.w * vp.scale;
