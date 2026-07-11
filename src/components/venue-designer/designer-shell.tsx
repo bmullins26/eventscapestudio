@@ -174,12 +174,11 @@ export function DesignerShell({ venueId, organizationId, venueName, initial, onS
     setAddressLoading(true);
     try {
       const res = await fetchSatFn({ data: { venueId, address: addressValue.trim() } });
-      // res.widthFeet == res.heightFeet (square image)
       const w = res.widthFeet;
       const h = res.heightFeet;
       setBackground({
-        kind: "satellite",
-        url: res.url,
+        kind: "google-satellite",
+        url: "",
         x: -w / 2,
         y: -h / 2,
         w,
