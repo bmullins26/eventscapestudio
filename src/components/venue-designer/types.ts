@@ -18,7 +18,12 @@ export type IconKey =
   | "first_aid"
   | "atm"
   | "info"
-  | "arrow";
+  | "arrow"
+  | "booth_canopy"
+  | "table"
+  | "chair"
+  | "fence"
+  | "road";
 
 export interface BaseElement {
   id: string;
