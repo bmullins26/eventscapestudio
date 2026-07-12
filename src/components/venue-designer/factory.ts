@@ -75,11 +75,16 @@ export function makeIcon(iconKey: IconKey, x: number, y: number): AnyElement {
 }
 
 export const ICONS: Array<{ key: IconKey; label: string }> = [
+  { key: "booth_canopy", label: "Canopy booth" },
+  { key: "table", label: "Table" },
+  { key: "chair", label: "Chair" },
+  { key: "food", label: "Food truck" },
   { key: "tree", label: "Tree" },
+  { key: "fence", label: "Fence" },
+  { key: "road", label: "Road" },
   { key: "building", label: "Building" },
   { key: "restroom", label: "Restroom" },
   { key: "stage", label: "Stage" },
-  { key: "food", label: "Food" },
   { key: "parking", label: "Parking" },
   { key: "entrance", label: "Entrance" },
   { key: "first_aid", label: "First aid" },

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft, Undo2, Redo2, Save, MousePointer2, Square, Circle as CircleIcon, Triangle, Minus, Type, Store, Image as ImageIcon, Layers, MapPin, Upload, Ruler, X, Wand2 } from "lucide-react";
+import { ArrowLeft, Undo2, Redo2, Save, MousePointer2, Square, Circle as CircleIcon, Triangle, Minus, Type, Store, Image as ImageIcon, Layers, MapPin, Upload, Ruler, X, Wand2, Move } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -57,6 +57,7 @@ export function DesignerShell({ venueId, organizationId, venueName, initial, onS
   const [addressValue, setAddressValue] = useState("");
   const [addressLoading, setAddressLoading] = useState(false);
   const [detectingRects, setDetectingRects] = useState(false);
+  const [adjustingMap, setAdjustingMap] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const viewportRef = useRef({ x: -20, y: -20, scale: 4 });
   const fetchSatFn = useServerFn(fetchSatelliteBackground);
@@ -246,7 +247,47 @@ export function DesignerShell({ venueId, organizationId, venueName, initial, onS
     }
   };
 
-  const removeBackground = () => setBackground(null);
+  const removeBackground = () => { setAdjustingMap(false); setBackground(null); };
+
+  // Recompute world size (feet) at latitude+zoom for a 1024px Google Map tile.
+  const feetForMap = (lat: number, zoom: number) => {
+    const mpp = (156543.03392 * Math.cos((lat * Math.PI) / 180)) / Math.pow(2, zoom);
+    return 1024 * mpp * 3.28084;
+  };
+
+  const onMapViewportChange = (v: { lat: number; lng: number; zoom: number }) => {
+    if (!background || background.kind !== "google-satellite") return;
+    const currentZoom = background.meta?.zoom ?? 19;
+    const currentLat = background.meta?.lat ?? v.lat;
+    const currentLng = background.meta?.lng ?? v.lng;
+    // Skip no-op updates to avoid re-render loops with the map's idle event.
+    if (
+      Math.abs(currentLat - v.lat) < 1e-6 &&
+      Math.abs(currentLng - v.lng) < 1e-6 &&
+      currentZoom === v.zoom
+    ) return;
+    // If zoom changed, resize the world footprint but keep the center anchored
+    // so existing elements stay in the same place relative to the map.
+    let x = background.x;
+    let y = background.y;
+    let w = background.w;
+    let h = background.h;
+    if (v.zoom !== currentZoom) {
+      const cx = background.x + background.w / 2;
+      const cy = background.y + background.h / 2;
+      const newSize = feetForMap(v.lat, v.zoom);
+      w = newSize;
+      h = newSize;
+      x = cx - w / 2;
+      y = cy - h / 2;
+    }
+    setBackground({
+      ...background,
+      x, y, w, h,
+      meta: { ...(background.meta ?? {}), lat: v.lat, lng: v.lng, zoom: v.zoom },
+    });
+  };
+
 
 
   return (
@@ -331,12 +372,31 @@ export function DesignerShell({ venueId, organizationId, venueName, initial, onS
           </DropdownMenuContent>
         </DropdownMenu>
 
+        {background?.kind === "google-satellite" && (
+          <button
+            type="button"
+            onClick={() => setAdjustingMap((v) => !v)}
+            className={cn(
+              "flex h-8 items-center gap-1 rounded px-2 text-xs hover:bg-muted",
+              adjustingMap && "bg-primary/10 text-primary",
+            )}
+            title="Drag and zoom the satellite map to frame your venue"
+          >
+            <Move className="h-4 w-4" />
+            <span>{adjustingMap ? "Done adjusting" : "Adjust map"}</span>
+          </button>
+        )}
+
         <ToolBtn onClick={actions.undo} disabled={state.past.length === 0} title="Undo (⌘Z)"><Undo2 className="h-4 w-4" /></ToolBtn>
         <ToolBtn onClick={actions.redo} disabled={state.future.length === 0} title="Redo (⌘⇧Z)"><Redo2 className="h-4 w-4" /></ToolBtn>
 
         {tool === "calibrate" && (
           <span className="ml-2 rounded bg-primary/10 px-2 py-1 text-[11px] text-primary">Click two points on the background…</span>
         )}
+        {adjustingMap && (
+          <span className="ml-2 rounded bg-primary/10 px-2 py-1 text-[11px] text-primary">Drag to pan · scroll to zoom the satellite view</span>
+        )}
+
 
 
         <div className="ml-auto flex items-center gap-2">
@@ -365,6 +425,8 @@ export function DesignerShell({ venueId, organizationId, venueName, initial, onS
             viewportRef={viewportRef}
             background={background}
             onCalibrate={onCalibrate}
+            mapInteractive={adjustingMap}
+            onMapViewportChange={onMapViewportChange}
           />
         </div>
         <div className="w-72 shrink-0">

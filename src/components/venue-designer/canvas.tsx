@@ -22,6 +22,8 @@ export interface CanvasProps {
   viewportRef: React.MutableRefObject<Viewport>;
   background?: BackgroundLayer | null;
   onCalibrate?: (p1: { x: number; y: number }, p2: { x: number; y: number }) => void;
+  mapInteractive?: boolean;
+  onMapViewportChange?: (v: { lat: number; lng: number; zoom: number }) => void;
 }
 
 // Screen -> world
@@ -40,7 +42,7 @@ type DragState =
   | { kind: "marquee"; startX: number; startY: number; x1: number; y1: number }
   | null;
 
-export function DesignerCanvas({ elements, selection, actions, tool, toolPayload, onZoomChange, viewportRef, background, onCalibrate }: CanvasProps) {
+export function DesignerCanvas({ elements, selection, actions, tool, toolPayload, onZoomChange, viewportRef, background, onCalibrate, mapInteractive, onMapViewportChange }: CanvasProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [vp, setVp] = useState<Viewport>(() => viewportRef.current);
   const [space, setSpace] = useState(false);
@@ -255,6 +257,8 @@ export function DesignerCanvas({ elements, selection, actions, tool, toolPayload
             screenH={bh}
             rotation={background.rotation}
             opacity={background.opacity}
+            interactive={!!mapInteractive}
+            onViewportChange={onMapViewportChange}
           />
         );
       })()}

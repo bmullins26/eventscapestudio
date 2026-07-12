@@ -1,30 +1,28 @@
 import { useEffect, useRef, useState } from "react";
 
 /**
- * Renders a live Google Maps satellite view at a fixed native pixel size,
- * positioned/scaled/rotated via CSS transform to match a world-space
- * bounding box on the designer canvas. Because we never resize the map
- * container, Google's tile system stays stable — canvas zoom/pan is
- * purely a CSS transform of the already-loaded map.
+ * Renders a live Google Maps satellite view. Two modes:
+ *  - non-interactive: rendered at a fixed native pixel size, then CSS-scaled
+ *    to the world bounding box. Tiles never reload on canvas pan/zoom.
+ *  - interactive (adjust mode): the user drags/zooms the map itself; on idle
+ *    we report the new center/zoom to the parent so the background layer's
+ *    lat/lng/zoom (and world size in feet) can be updated.
  */
 interface Props {
   lat: number;
   lng: number;
   zoom: number;
-  /** Native CSS pixel size the map is rendered at (must match server's mapPixelSize). */
   pixelSize: number;
-  /** Screen-space placement of the layer's top-left corner. */
   screenX: number;
   screenY: number;
-  /** Screen-space dimensions to display the map at (after CSS scale). */
   screenW: number;
   screenH: number;
-  /** Degrees, clockwise. */
   rotation: number;
   opacity: number;
+  interactive?: boolean;
+  onViewportChange?: (v: { lat: number; lng: number; zoom: number }) => void;
 }
 
-// Load the Maps JS API once, module-scoped.
 let mapsLoadPromise: Promise<any> | null = null;
 
 function loadMapsJs(): Promise<any> {
@@ -42,36 +40,35 @@ function loadMapsJs(): Promise<any> {
       try { resolve((window as any).google); } finally { delete (window as any)[cbName]; }
     };
     const s = document.createElement("script");
-    const params = new URLSearchParams({
-      key,
-      loading: "async",
-      callback: cbName,
-      libraries: "",
-    });
+    const params = new URLSearchParams({ key, loading: "async", callback: cbName, libraries: "" });
     if (channel) params.set("channel", channel);
     s.src = `https://maps.googleapis.com/maps/api/js?${params.toString()}`;
     s.async = true;
-    s.onerror = () => {
-      mapsLoadPromise = null;
-      reject(new Error("Failed to load Google Maps JS"));
-    };
+    s.onerror = () => { mapsLoadPromise = null; reject(new Error("Failed to load Google Maps JS")); };
     document.head.appendChild(s);
   });
   return mapsLoadPromise;
 }
 
 export function SatelliteMapLayer(props: Props) {
-  const { lat, lng, zoom, pixelSize, screenX, screenY, screenW, screenH, rotation, opacity } = props;
+  const {
+    lat, lng, zoom, pixelSize, screenX, screenY, screenW, screenH,
+    rotation, opacity, interactive = false, onViewportChange,
+  } = props;
   const hostRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<any>(null);
+  const idleListenerRef = useRef<any>(null);
+  const onViewportRef = useRef(onViewportChange);
   const [error, setError] = useState<string | null>(null);
 
-  // One-time init.
+  useEffect(() => { onViewportRef.current = onViewportChange; }, [onViewportChange]);
+
+  // Initialize map once.
   useEffect(() => {
     let cancelled = false;
     loadMapsJs()
       .then((g) => {
-        if (cancelled || !hostRef.current) return;
+        if (cancelled || !hostRef.current || mapRef.current) return;
         const map = new g.maps.Map(hostRef.current, {
           center: { lat, lng },
           zoom,
@@ -90,15 +87,50 @@ export function SatelliteMapLayer(props: Props) {
       })
       .catch((err) => !cancelled && setError(err?.message ?? "Map failed to load"));
     return () => { cancelled = true; };
-    // Recreate on center/zoom change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lat, lng, zoom]);
+  }, []);
 
-  // Keep the map center/zoom current if props change without unmount.
+  // Toggle interactivity + attach/detach idle handler.
   useEffect(() => {
-    if (!mapRef.current) return;
-    mapRef.current.setCenter({ lat, lng });
-    mapRef.current.setZoom(zoom);
+    const map = mapRef.current;
+    if (!map) return;
+    map.setOptions({
+      draggable: interactive,
+      scrollwheel: interactive,
+      disableDoubleClickZoom: !interactive,
+      gestureHandling: interactive ? "greedy" : "none",
+    });
+    if (interactive && (window as any).google?.maps?.event) {
+      idleListenerRef.current = (window as any).google.maps.event.addListener(map, "idle", () => {
+        const c = map.getCenter();
+        const z = map.getZoom();
+        if (!c || typeof z !== "number") return;
+        onViewportRef.current?.({ lat: c.lat(), lng: c.lng(), zoom: z });
+      });
+    } else if (idleListenerRef.current && (window as any).google?.maps?.event) {
+      (window as any).google.maps.event.removeListener(idleListenerRef.current);
+      idleListenerRef.current = null;
+    }
+    return () => {
+      if (idleListenerRef.current && (window as any).google?.maps?.event) {
+        (window as any).google.maps.event.removeListener(idleListenerRef.current);
+        idleListenerRef.current = null;
+      }
+    };
+  }, [interactive]);
+
+  // Sync external changes to center/zoom (e.g. loading a new address). Skip
+  // when values already match to avoid feedback loops with the idle handler.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const c = map.getCenter();
+    const z = map.getZoom();
+    const eps = 1e-6;
+    if (!c || Math.abs(c.lat() - lat) > eps || Math.abs(c.lng() - lng) > eps) {
+      map.setCenter({ lat, lng });
+    }
+    if (z !== zoom) map.setZoom(zoom);
   }, [lat, lng, zoom]);
 
   const scaleX = screenW / pixelSize;
@@ -108,22 +140,11 @@ export function SatelliteMapLayer(props: Props) {
     return (
       <div
         style={{
-          position: "absolute",
-          left: screenX,
-          top: screenY,
-          width: screenW,
-          height: screenH,
-          transform: `rotate(${rotation}deg)`,
-          transformOrigin: "center",
-          pointerEvents: "none",
-          opacity,
-          background: "hsl(var(--muted))",
-          border: "1px dashed hsl(var(--destructive))",
-          color: "hsl(var(--destructive))",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: 12,
+          position: "absolute", left: screenX, top: screenY, width: screenW, height: screenH,
+          transform: `rotate(${rotation}deg)`, transformOrigin: "center",
+          pointerEvents: "none", opacity,
+          background: "hsl(var(--muted))", border: "1px dashed hsl(var(--destructive))",
+          color: "hsl(var(--destructive))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12,
         }}
       >
         Satellite failed: {error}
@@ -134,26 +155,18 @@ export function SatelliteMapLayer(props: Props) {
   return (
     <div
       style={{
-        position: "absolute",
-        left: screenX,
-        top: screenY,
-        width: screenW,
-        height: screenH,
-        transform: `rotate(${rotation}deg)`,
-        transformOrigin: "center",
-        pointerEvents: "none",
-        opacity,
-        overflow: "hidden",
+        position: "absolute", left: screenX, top: screenY, width: screenW, height: screenH,
+        transform: `rotate(${rotation}deg)`, transformOrigin: "center",
+        pointerEvents: interactive ? "auto" : "none",
+        opacity, overflow: "hidden",
+        outline: interactive ? "2px solid hsl(var(--primary))" : undefined,
       }}
     >
       <div
         ref={hostRef}
         style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          width: pixelSize,
-          height: pixelSize,
+          position: "absolute", top: 0, left: 0,
+          width: pixelSize, height: pixelSize,
           transform: `scale(${scaleX}, ${scaleY})`,
           transformOrigin: "top left",
         }}
