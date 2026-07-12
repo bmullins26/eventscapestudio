@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft, Undo2, Redo2, Save, MousePointer2, Square, Circle as CircleIcon, Triangle, Minus, Type, Store, Image as ImageIcon, Layers, MapPin, Upload, Ruler, X, Wand2 } from "lucide-react";
+import { ArrowLeft, Undo2, Redo2, Save, MousePointer2, Square, Circle as CircleIcon, Triangle, Minus, Type, Store, Image as ImageIcon, Layers, MapPin, Upload, Ruler, X, Wand2, Move } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
