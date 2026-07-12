@@ -425,6 +425,8 @@ export function DesignerShell({ venueId, organizationId, venueName, initial, onS
             viewportRef={viewportRef}
             background={background}
             onCalibrate={onCalibrate}
+            mapInteractive={adjustingMap}
+            onMapViewportChange={onMapViewportChange}
           />
         </div>
         <div className="w-72 shrink-0">
