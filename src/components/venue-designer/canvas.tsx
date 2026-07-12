@@ -22,6 +22,8 @@ export interface CanvasProps {
   viewportRef: React.MutableRefObject<Viewport>;
   background?: BackgroundLayer | null;
   onCalibrate?: (p1: { x: number; y: number }, p2: { x: number; y: number }) => void;
+  mapInteractive?: boolean;
+  onMapViewportChange?: (v: { lat: number; lng: number; zoom: number }) => void;
 }
 
 // Screen -> world
