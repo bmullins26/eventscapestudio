@@ -372,12 +372,31 @@ export function DesignerShell({ venueId, organizationId, venueName, initial, onS
           </DropdownMenuContent>
         </DropdownMenu>
 
+        {background?.kind === "google-satellite" && (
+          <button
+            type="button"
+            onClick={() => setAdjustingMap((v) => !v)}
+            className={cn(
+              "flex h-8 items-center gap-1 rounded px-2 text-xs hover:bg-muted",
+              adjustingMap && "bg-primary/10 text-primary",
+            )}
+            title="Drag and zoom the satellite map to frame your venue"
+          >
+            <Move className="h-4 w-4" />
+            <span>{adjustingMap ? "Done adjusting" : "Adjust map"}</span>
+          </button>
+        )}
+
         <ToolBtn onClick={actions.undo} disabled={state.past.length === 0} title="Undo (⌘Z)"><Undo2 className="h-4 w-4" /></ToolBtn>
         <ToolBtn onClick={actions.redo} disabled={state.future.length === 0} title="Redo (⌘⇧Z)"><Redo2 className="h-4 w-4" /></ToolBtn>
 
         {tool === "calibrate" && (
           <span className="ml-2 rounded bg-primary/10 px-2 py-1 text-[11px] text-primary">Click two points on the background…</span>
         )}
+        {adjustingMap && (
+          <span className="ml-2 rounded bg-primary/10 px-2 py-1 text-[11px] text-primary">Drag to pan · scroll to zoom the satellite view</span>
+        )}
+
 
 
         <div className="ml-auto flex items-center gap-2">
