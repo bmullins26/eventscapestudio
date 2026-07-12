@@ -257,6 +257,8 @@ export function DesignerCanvas({ elements, selection, actions, tool, toolPayload
             screenH={bh}
             rotation={background.rotation}
             opacity={background.opacity}
+            interactive={!!mapInteractive}
+            onViewportChange={onMapViewportChange}
           />
         );
       })()}
