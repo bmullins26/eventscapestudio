@@ -93,7 +93,7 @@ const glyphs: Record<IconKey, (p: GlyphProps) => React.ReactNode> = {
       <text x="32" y="46" fontSize="36" fontWeight="800" textAnchor="middle" fill="#ffffff" fontFamily="sans-serif">P</text>
     </Svg>
   ),
-  entrance: ({ size, color = "#1f2937" }) => (
+  entrance: ({ size, color = "#1f2937" }: GlyphProps) => (
     <Svg size={size}>
       <rect x="16" y="6" width="32" height="52" rx="2" fill="#43a047" stroke={color} strokeWidth="1" />
       <rect x="20" y="10" width="24" height="44" fill="#2e7d32" />
