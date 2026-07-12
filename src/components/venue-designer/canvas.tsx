@@ -42,7 +42,7 @@ type DragState =
   | { kind: "marquee"; startX: number; startY: number; x1: number; y1: number }
   | null;
 
-export function DesignerCanvas({ elements, selection, actions, tool, toolPayload, onZoomChange, viewportRef, background, onCalibrate }: CanvasProps) {
+export function DesignerCanvas({ elements, selection, actions, tool, toolPayload, onZoomChange, viewportRef, background, onCalibrate, mapInteractive, onMapViewportChange }: CanvasProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [vp, setVp] = useState<Viewport>(() => viewportRef.current);
   const [space, setSpace] = useState(false);
