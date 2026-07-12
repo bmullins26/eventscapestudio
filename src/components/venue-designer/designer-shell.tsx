@@ -57,6 +57,7 @@ export function DesignerShell({ venueId, organizationId, venueName, initial, onS
   const [addressValue, setAddressValue] = useState("");
   const [addressLoading, setAddressLoading] = useState(false);
   const [detectingRects, setDetectingRects] = useState(false);
+  const [adjustingMap, setAdjustingMap] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const viewportRef = useRef({ x: -20, y: -20, scale: 4 });
   const fetchSatFn = useServerFn(fetchSatelliteBackground);
