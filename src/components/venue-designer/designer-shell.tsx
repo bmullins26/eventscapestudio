@@ -247,7 +247,47 @@ export function DesignerShell({ venueId, organizationId, venueName, initial, onS
     }
   };
 
-  const removeBackground = () => setBackground(null);
+  const removeBackground = () => { setAdjustingMap(false); setBackground(null); };
+
+  // Recompute world size (feet) at latitude+zoom for a 1024px Google Map tile.
+  const feetForMap = (lat: number, zoom: number) => {
+    const mpp = (156543.03392 * Math.cos((lat * Math.PI) / 180)) / Math.pow(2, zoom);
+    return 1024 * mpp * 3.28084;
+  };
+
+  const onMapViewportChange = (v: { lat: number; lng: number; zoom: number }) => {
+    if (!background || background.kind !== "google-satellite") return;
+    const currentZoom = background.meta?.zoom ?? 19;
+    const currentLat = background.meta?.lat ?? v.lat;
+    const currentLng = background.meta?.lng ?? v.lng;
+    // Skip no-op updates to avoid re-render loops with the map's idle event.
+    if (
+      Math.abs(currentLat - v.lat) < 1e-6 &&
+      Math.abs(currentLng - v.lng) < 1e-6 &&
+      currentZoom === v.zoom
+    ) return;
+    // If zoom changed, resize the world footprint but keep the center anchored
+    // so existing elements stay in the same place relative to the map.
+    let x = background.x;
+    let y = background.y;
+    let w = background.w;
+    let h = background.h;
+    if (v.zoom !== currentZoom) {
+      const cx = background.x + background.w / 2;
+      const cy = background.y + background.h / 2;
+      const newSize = feetForMap(v.lat, v.zoom);
+      w = newSize;
+      h = newSize;
+      x = cx - w / 2;
+      y = cy - h / 2;
+    }
+    setBackground({
+      ...background,
+      x, y, w, h,
+      meta: { ...(background.meta ?? {}), lat: v.lat, lng: v.lng, zoom: v.zoom },
+    });
+  };
+
 
 
   return (
