@@ -45,5 +45,5 @@ function VenueDesignerPage() {
       }
     : { name: data.venue.name ?? "Untitled layout", settings: {}, elements: [] };
 
-  return <DesignerShell venueId={venueId} organizationId={data.venue.organization_id} venueName={data.venue.name} initial={initial} onSave={onSave} />;
+  return <VenueDesignerV2 venueId={venueId} organizationId={data.venue.organization_id} venueName={data.venue.name} initial={initial} onSave={onSave} />;
 }
