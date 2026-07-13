@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useCallback } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getVenueLayout, saveVenueLayout } from "@/lib/venue-designer.functions";
-import { DesignerShell } from "@/components/venue-designer/designer-shell";
+import { VenueDesignerV2 } from "@/components/venue-designer-v2/designer";
 import type { AnyElement, Layout, LayoutSettings } from "@/components/venue-designer/types";
 
 export const Route = createFileRoute("/_authenticated/studio/venues/$venueId/designer")({
@@ -45,5 +45,5 @@ function VenueDesignerPage() {
       }
     : { name: data.venue.name ?? "Untitled layout", settings: {}, elements: [] };
 
-  return <DesignerShell venueId={venueId} organizationId={data.venue.organization_id} venueName={data.venue.name} initial={initial} onSave={onSave} />;
+  return <VenueDesignerV2 venueId={venueId} organizationId={data.venue.organization_id} venueName={data.venue.name} initial={initial} onSave={onSave} />;
 }
