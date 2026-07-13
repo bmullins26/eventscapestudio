@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useCallback } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getVenueLayout, saveVenueLayout } from "@/lib/venue-designer.functions";
-import { DesignerShell } from "@/components/venue-designer/designer-shell";
+import { VenueDesignerV2 } from "@/components/venue-designer-v2/designer";
 import type { AnyElement, Layout, LayoutSettings } from "@/components/venue-designer/types";
 
 export const Route = createFileRoute("/_authenticated/studio/venues/$venueId/designer")({
