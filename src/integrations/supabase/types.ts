@@ -337,6 +337,54 @@ export type Database = {
           },
         ]
       }
+      event_booth_reservations: {
+        Row: {
+          booth_element_id: string
+          created_at: string
+          event_id: string
+          id: string
+          reserved_at: string | null
+          status: string
+          updated_at: string
+          vendor_profile_id: string | null
+        }
+        Insert: {
+          booth_element_id: string
+          created_at?: string
+          event_id: string
+          id?: string
+          reserved_at?: string | null
+          status?: string
+          updated_at?: string
+          vendor_profile_id?: string | null
+        }
+        Update: {
+          booth_element_id?: string
+          created_at?: string
+          event_id?: string
+          id?: string
+          reserved_at?: string | null
+          status?: string
+          updated_at?: string
+          vendor_profile_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_booth_reservations_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_booth_reservations_vendor_profile_id_fkey"
+            columns: ["vendor_profile_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_booths: {
         Row: {
           assigned_application_id: string | null
@@ -877,6 +925,7 @@ export type Database = {
           default_style: Json
           icon_url: string | null
           id: string
+          is_favorite: boolean
           name: string
           organization_id: string
           shape: Database["public"]["Enums"]["venue_object_shape"]
@@ -892,6 +941,7 @@ export type Database = {
           default_style?: Json
           icon_url?: string | null
           id?: string
+          is_favorite?: boolean
           name: string
           organization_id: string
           shape?: Database["public"]["Enums"]["venue_object_shape"]
@@ -907,6 +957,7 @@ export type Database = {
           default_style?: Json
           icon_url?: string | null
           id?: string
+          is_favorite?: boolean
           name?: string
           organization_id?: string
           shape?: Database["public"]["Enums"]["venue_object_shape"]
@@ -1721,6 +1772,7 @@ export type Database = {
       }
       venue_layers: {
         Row: {
+          color: string | null
           created_at: string
           id: string
           kind: Database["public"]["Enums"]["venue_layer_kind"]
@@ -1733,6 +1785,7 @@ export type Database = {
           visible: boolean
         }
         Insert: {
+          color?: string | null
           created_at?: string
           id?: string
           kind?: Database["public"]["Enums"]["venue_layer_kind"]
@@ -1745,6 +1798,7 @@ export type Database = {
           visible?: boolean
         }
         Update: {
+          color?: string | null
           created_at?: string
           id?: string
           kind?: Database["public"]["Enums"]["venue_layer_kind"]
@@ -2310,6 +2364,9 @@ export type Database = {
         | "booths"
         | "labels"
         | "custom"
+        | "parking"
+        | "landscape"
+        | "sponsors"
       venue_object_shape:
         | "rect"
         | "polygon"
@@ -2552,6 +2609,9 @@ export const Constants = {
         "booths",
         "labels",
         "custom",
+        "parking",
+        "landscape",
+        "sponsors",
       ],
       venue_object_shape: ["rect", "polygon", "line", "circle", "text", "path"],
       venue_object_type: [
