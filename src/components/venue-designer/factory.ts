@@ -74,6 +74,39 @@ export function makeIcon(iconKey: IconKey, x: number, y: number): AnyElement {
   };
 }
 
+type PresetKind = "road" | "walkway" | "building" | "parking" | "measure" | "table" | "chair" | "fence";
+
+const PRESETS: Record<PresetKind, { kind: "rect" | "line"; w: number; h: number; fill: string; stroke: string; strokeWidth: number; strokeStyle: "solid" | "dashed"; name: string }> = {
+  road:     { kind: "rect", w: 60, h: 12, fill: "hsl(0 0% 30%)",  stroke: "hsl(0 0% 90%)", strokeWidth: 0.4, strokeStyle: "dashed", name: "Road" },
+  walkway:  { kind: "rect", w: 40, h: 6,  fill: "hsl(30 25% 75%)", stroke: "hsl(30 25% 55%)", strokeWidth: 0.3, strokeStyle: "solid", name: "Walkway" },
+  building: { kind: "rect", w: 30, h: 20, fill: "hsl(210 15% 55%)", stroke: "hsl(210 20% 30%)", strokeWidth: 0.6, strokeStyle: "solid", name: "Building" },
+  parking:  { kind: "rect", w: 40, h: 20, fill: "hsl(0 0% 45%)",  stroke: "hsl(0 0% 90%)",  strokeWidth: 0.4, strokeStyle: "dashed", name: "Parking" },
+  measure:  { kind: "line", w: 20, h: 0,  fill: "transparent",     stroke: "hsl(var(--primary))", strokeWidth: 0.4, strokeStyle: "solid", name: "Measurement" },
+  table:    { kind: "rect", w: 6,  h: 3,  fill: "hsl(30 40% 65%)", stroke: "hsl(30 40% 35%)", strokeWidth: 0.3, strokeStyle: "solid", name: "Table" },
+  chair:    { kind: "rect", w: 2,  h: 2,  fill: "hsl(210 15% 70%)", stroke: "hsl(210 15% 40%)", strokeWidth: 0.2, strokeStyle: "solid", name: "Chair" },
+  fence:    { kind: "line", w: 30, h: 0,  fill: "transparent",     stroke: "hsl(30 25% 30%)", strokeWidth: 0.5, strokeStyle: "dashed", name: "Fence" },
+};
+
+export function makePreset(kind: PresetKind, x: number, y: number): AnyElement {
+  const p = PRESETS[kind];
+  return {
+    id: uid(),
+    kind: p.kind,
+    x: x - p.w / 2,
+    y: y - Math.max(p.h, 1) / 2,
+    w: p.w,
+    h: p.h,
+    rotation: 0,
+    fill: p.fill,
+    stroke: p.stroke,
+    strokeWidth: p.strokeWidth,
+    strokeStyle: p.strokeStyle,
+    name: p.name,
+  } as AnyElement;
+}
+
+
+
 export const ICONS: Array<{ key: IconKey; label: string }> = [
   { key: "booth_canopy", label: "Canopy booth" },
   { key: "table", label: "Table" },

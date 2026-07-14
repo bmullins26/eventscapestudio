@@ -10,7 +10,24 @@ interface Viewport {
   scale: number; // pixels per world unit (foot)
 }
 
-export type CanvasTool = "select" | "booth" | "rect" | "circle" | "triangle" | "line" | "text" | "icon" | "calibrate";
+export type CanvasTool =
+  | "select"
+  | "booth"
+  | "rect"
+  | "circle"
+  | "triangle"
+  | "line"
+  | "text"
+  | "icon"
+  | "calibrate"
+  | "road"
+  | "walkway"
+  | "building"
+  | "parking"
+  | "measure"
+  | "table"
+  | "chair"
+  | "fence";
 
 export interface CanvasProps {
   elements: AnyElement[];
@@ -127,8 +144,11 @@ export function DesignerCanvas({ elements, selection, actions, tool, toolPayload
     // Placement tool: create element at cursor
     if (tool !== "select" && e.button === 0) {
       const w = s2w(sx, sy, vp);
+      const step = e.altKey ? 0 : e.shiftKey ? 5 : 1;
+      const wx = step > 0 ? snap(w.x, step) : w.x;
+      const wy = step > 0 ? snap(w.y, step) : w.y;
       const factory = (globalThis as any).__vdFactory as ((tool: string, x: number, y: number, extra?: any) => AnyElement) | undefined;
-      const el = factory ? factory(tool, w.x, w.y, toolPayload) : null;
+      const el = factory ? factory(tool, wx, wy, toolPayload) : null;
       if (el) actions.add(el);
       return;
     }

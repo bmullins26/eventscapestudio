@@ -5,6 +5,7 @@ import {
   ArrowLeft, Save, Undo2, Redo2, MousePointer2, Store, Square, Circle as CircleIcon,
   Triangle, Minus, Type, Image as ImageIcon, Package, Layers as LayersIcon, Search,
   ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Maximize2, PanelRightClose, PanelRightOpen,
+  Route as RouteIcon, Footprints, Building2, ParkingSquare, Ruler, Armchair, Fence as FenceIcon, Table2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -13,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { DesignerCanvas, type CanvasTool } from "@/components/venue-designer/canvas";
 import { Inspector } from "@/components/venue-designer/inspector";
 import { useDesignerStore } from "@/components/venue-designer/store";
-import { makeBooth, makeShape, makeText, makeIcon, ICONS, uid, resetBoothCounter } from "@/components/venue-designer/factory";
+import { makeBooth, makeShape, makeText, makeIcon, makePreset, ICONS, uid, resetBoothCounter } from "@/components/venue-designer/factory";
 import { IconGlyph } from "@/components/venue-designer/icon-glyph";
 import type { AnyElement, IconKey, Layout } from "@/components/venue-designer/types";
 
@@ -34,6 +35,11 @@ function installFactory() {
       return makeShape(tool as any, x - 6, y - 6);
     if (tool === "text") return makeText(x, y - 3);
     if (tool === "icon" && extra?.iconKey) return makeIcon(extra.iconKey as IconKey, x - 4, y - 4);
+    if (
+      tool === "road" || tool === "walkway" || tool === "building" ||
+      tool === "parking" || tool === "measure" || tool === "table" ||
+      tool === "chair" || tool === "fence"
+    ) return makePreset(tool as any, x, y);
     return null;
   };
 }
@@ -106,7 +112,7 @@ export function VenueDesignerV2({ venueId: _venueId, organizationId: _organizati
         });
         return;
       }
-      const map: Record<string, CanvasTool> = { v: "select", b: "booth", r: "rect", c: "circle", t: "text", l: "line" };
+      const map: Record<string, CanvasTool> = { v: "select", b: "booth", r: "rect", c: "circle", t: "text", l: "line", m: "measure", f: "fence" };
       const t = map[e.key.toLowerCase()];
       if (t) setTool(t);
       if (e.key === "Escape") { setTool("select"); setLeftTab(null); }
@@ -226,6 +232,15 @@ export function VenueDesignerV2({ venueId: _venueId, organizationId: _organizati
           <ToolBtn active={tool === "triangle"} onClick={() => setTool("triangle")} title="Triangle"><Triangle className="h-4 w-4" /></ToolBtn>
           <ToolBtn active={tool === "line"} onClick={() => setTool("line")} title="Line (L)"><Minus className="h-4 w-4" /></ToolBtn>
           <ToolBtn active={tool === "text"} onClick={() => setTool("text")} title="Text (T)"><Type className="h-4 w-4" /></ToolBtn>
+          <div className="mx-1 h-5 w-px bg-border" />
+          <ToolBtn active={tool === "road"} onClick={() => setTool("road" as CanvasTool)} title="Road"><RouteIcon className="h-4 w-4" /></ToolBtn>
+          <ToolBtn active={tool === "walkway"} onClick={() => setTool("walkway" as CanvasTool)} title="Walkway"><Footprints className="h-4 w-4" /></ToolBtn>
+          <ToolBtn active={tool === "building"} onClick={() => setTool("building" as CanvasTool)} title="Building"><Building2 className="h-4 w-4" /></ToolBtn>
+          <ToolBtn active={tool === "parking"} onClick={() => setTool("parking" as CanvasTool)} title="Parking"><ParkingSquare className="h-4 w-4" /></ToolBtn>
+          <ToolBtn active={tool === "measure"} onClick={() => setTool("measure" as CanvasTool)} title="Measurement (M)"><Ruler className="h-4 w-4" /></ToolBtn>
+          <ToolBtn active={tool === "table"} onClick={() => setTool("table" as CanvasTool)} title="Table"><Table2 className="h-4 w-4" /></ToolBtn>
+          <ToolBtn active={tool === "chair"} onClick={() => setTool("chair" as CanvasTool)} title="Chair"><Armchair className="h-4 w-4" /></ToolBtn>
+          <ToolBtn active={tool === "fence"} onClick={() => setTool("fence" as CanvasTool)} title="Fence (F)"><FenceIcon className="h-4 w-4" /></ToolBtn>
           <div className="mx-1 h-5 w-px bg-border" />
           <ToolBtn onClick={actions.undo} disabled={state.past.length === 0} title="Undo (⌘Z)"><Undo2 className="h-4 w-4" /></ToolBtn>
           <ToolBtn onClick={actions.redo} disabled={state.future.length === 0} title="Redo (⌘⇧Z)"><Redo2 className="h-4 w-4" /></ToolBtn>
@@ -395,6 +410,14 @@ function ObjectLibraryPanel({ onPick, activeTool, activeIconKey }: {
     { key: "triangle", label: "Triangle", icon: <Triangle className="h-4 w-4" /> },
     { key: "line", label: "Line", icon: <Minus className="h-4 w-4" /> },
     { key: "text", label: "Text", icon: <Type className="h-4 w-4" /> },
+    { key: "road" as CanvasTool, label: "Road", icon: <RouteIcon className="h-4 w-4" /> },
+    { key: "walkway" as CanvasTool, label: "Walkway", icon: <Footprints className="h-4 w-4" /> },
+    { key: "building" as CanvasTool, label: "Building", icon: <Building2 className="h-4 w-4" /> },
+    { key: "parking" as CanvasTool, label: "Parking", icon: <ParkingSquare className="h-4 w-4" /> },
+    { key: "measure" as CanvasTool, label: "Measure", icon: <Ruler className="h-4 w-4" /> },
+    { key: "table" as CanvasTool, label: "Table", icon: <Table2 className="h-4 w-4" /> },
+    { key: "chair" as CanvasTool, label: "Chair", icon: <Armchair className="h-4 w-4" /> },
+    { key: "fence" as CanvasTool, label: "Fence", icon: <FenceIcon className="h-4 w-4" /> },
   ];
   return (
     <div className="space-y-4">
