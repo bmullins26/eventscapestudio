@@ -233,6 +233,15 @@ export function VenueDesignerV2({ venueId: _venueId, organizationId: _organizati
           <ToolBtn active={tool === "line"} onClick={() => setTool("line")} title="Line (L)"><Minus className="h-4 w-4" /></ToolBtn>
           <ToolBtn active={tool === "text"} onClick={() => setTool("text")} title="Text (T)"><Type className="h-4 w-4" /></ToolBtn>
           <div className="mx-1 h-5 w-px bg-border" />
+          <ToolBtn active={tool === "road"} onClick={() => setTool("road" as CanvasTool)} title="Road"><RouteIcon className="h-4 w-4" /></ToolBtn>
+          <ToolBtn active={tool === "walkway"} onClick={() => setTool("walkway" as CanvasTool)} title="Walkway"><Footprints className="h-4 w-4" /></ToolBtn>
+          <ToolBtn active={tool === "building"} onClick={() => setTool("building" as CanvasTool)} title="Building"><Building2 className="h-4 w-4" /></ToolBtn>
+          <ToolBtn active={tool === "parking"} onClick={() => setTool("parking" as CanvasTool)} title="Parking"><ParkingSquare className="h-4 w-4" /></ToolBtn>
+          <ToolBtn active={tool === "measure"} onClick={() => setTool("measure" as CanvasTool)} title="Measurement (M)"><Ruler className="h-4 w-4" /></ToolBtn>
+          <ToolBtn active={tool === "table"} onClick={() => setTool("table" as CanvasTool)} title="Table"><Table2 className="h-4 w-4" /></ToolBtn>
+          <ToolBtn active={tool === "chair"} onClick={() => setTool("chair" as CanvasTool)} title="Chair"><Armchair className="h-4 w-4" /></ToolBtn>
+          <ToolBtn active={tool === "fence"} onClick={() => setTool("fence" as CanvasTool)} title="Fence (F)"><FenceIcon className="h-4 w-4" /></ToolBtn>
+          <div className="mx-1 h-5 w-px bg-border" />
           <ToolBtn onClick={actions.undo} disabled={state.past.length === 0} title="Undo (⌘Z)"><Undo2 className="h-4 w-4" /></ToolBtn>
           <ToolBtn onClick={actions.redo} disabled={state.future.length === 0} title="Redo (⌘⇧Z)"><Redo2 className="h-4 w-4" /></ToolBtn>
         </div>
