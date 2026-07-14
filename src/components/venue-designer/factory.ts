@@ -103,6 +103,9 @@ export function makePreset(kind: PresetKind, x: number, y: number): AnyElement {
     strokeStyle: p.strokeStyle,
     name: p.name,
   } as AnyElement;
+}
+
+
 
 export const ICONS: Array<{ key: IconKey; label: string }> = [
   { key: "booth_canopy", label: "Canopy booth" },
