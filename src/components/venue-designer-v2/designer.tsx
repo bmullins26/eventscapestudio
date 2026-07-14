@@ -35,6 +35,11 @@ function installFactory() {
       return makeShape(tool as any, x - 6, y - 6);
     if (tool === "text") return makeText(x, y - 3);
     if (tool === "icon" && extra?.iconKey) return makeIcon(extra.iconKey as IconKey, x - 4, y - 4);
+    if (
+      tool === "road" || tool === "walkway" || tool === "building" ||
+      tool === "parking" || tool === "measure" || tool === "table" ||
+      tool === "chair" || tool === "fence"
+    ) return makePreset(tool as any, x, y);
     return null;
   };
 }
