@@ -5,6 +5,7 @@ import {
   ArrowLeft, Save, Undo2, Redo2, MousePointer2, Store, Square, Circle as CircleIcon,
   Triangle, Minus, Type, Image as ImageIcon, Package, Layers as LayersIcon, Search,
   ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Maximize2, PanelRightClose, PanelRightOpen,
+  Route as RouteIcon, Footprints, Building2, ParkingSquare, Ruler, Armchair, Fence as FenceIcon, Table2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -13,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { DesignerCanvas, type CanvasTool } from "@/components/venue-designer/canvas";
 import { Inspector } from "@/components/venue-designer/inspector";
 import { useDesignerStore } from "@/components/venue-designer/store";
-import { makeBooth, makeShape, makeText, makeIcon, ICONS, uid, resetBoothCounter } from "@/components/venue-designer/factory";
+import { makeBooth, makeShape, makeText, makeIcon, makePreset, ICONS, uid, resetBoothCounter } from "@/components/venue-designer/factory";
 import { IconGlyph } from "@/components/venue-designer/icon-glyph";
 import type { AnyElement, IconKey, Layout } from "@/components/venue-designer/types";
 
