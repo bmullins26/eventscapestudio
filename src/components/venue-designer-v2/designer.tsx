@@ -410,6 +410,14 @@ function ObjectLibraryPanel({ onPick, activeTool, activeIconKey }: {
     { key: "triangle", label: "Triangle", icon: <Triangle className="h-4 w-4" /> },
     { key: "line", label: "Line", icon: <Minus className="h-4 w-4" /> },
     { key: "text", label: "Text", icon: <Type className="h-4 w-4" /> },
+    { key: "road" as CanvasTool, label: "Road", icon: <RouteIcon className="h-4 w-4" /> },
+    { key: "walkway" as CanvasTool, label: "Walkway", icon: <Footprints className="h-4 w-4" /> },
+    { key: "building" as CanvasTool, label: "Building", icon: <Building2 className="h-4 w-4" /> },
+    { key: "parking" as CanvasTool, label: "Parking", icon: <ParkingSquare className="h-4 w-4" /> },
+    { key: "measure" as CanvasTool, label: "Measure", icon: <Ruler className="h-4 w-4" /> },
+    { key: "table" as CanvasTool, label: "Table", icon: <Table2 className="h-4 w-4" /> },
+    { key: "chair" as CanvasTool, label: "Chair", icon: <Armchair className="h-4 w-4" /> },
+    { key: "fence" as CanvasTool, label: "Fence", icon: <FenceIcon className="h-4 w-4" /> },
   ];
   return (
     <div className="space-y-4">
