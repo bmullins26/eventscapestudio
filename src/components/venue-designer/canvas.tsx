@@ -10,7 +10,24 @@ interface Viewport {
   scale: number; // pixels per world unit (foot)
 }
 
-export type CanvasTool = "select" | "booth" | "rect" | "circle" | "triangle" | "line" | "text" | "icon" | "calibrate";
+export type CanvasTool =
+  | "select"
+  | "booth"
+  | "rect"
+  | "circle"
+  | "triangle"
+  | "line"
+  | "text"
+  | "icon"
+  | "calibrate"
+  | "road"
+  | "walkway"
+  | "building"
+  | "parking"
+  | "measure"
+  | "table"
+  | "chair"
+  | "fence";
 
 export interface CanvasProps {
   elements: AnyElement[];
