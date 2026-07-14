@@ -112,7 +112,7 @@ export function VenueDesignerV2({ venueId: _venueId, organizationId: _organizati
         });
         return;
       }
-      const map: Record<string, CanvasTool> = { v: "select", b: "booth", r: "rect", c: "circle", t: "text", l: "line" };
+      const map: Record<string, CanvasTool> = { v: "select", b: "booth", r: "rect", c: "circle", t: "text", l: "line", m: "measure", f: "fence" };
       const t = map[e.key.toLowerCase()];
       if (t) setTool(t);
       if (e.key === "Escape") { setTool("select"); setLeftTab(null); }
