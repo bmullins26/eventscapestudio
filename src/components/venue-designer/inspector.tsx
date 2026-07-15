@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { AnyElement, BoothElement, IconElement, LayoutSettings, ShapeElement, TextElement, BackgroundLayer } from "./types";
 import type { DesignerActions } from "./store";
 import { Input } from "@/components/ui/input";
@@ -6,12 +7,13 @@ import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { ArrowUp, ArrowDown, ArrowUpToLine, ArrowDownToLine, Trash2, Copy, X } from "lucide-react";
+import { ArrowUp, ArrowDown, ArrowUpToLine, ArrowDownToLine, Trash2, Copy, X, MapPin } from "lucide-react";
 import { describe, uid } from "./factory";
+import { AddBackgroundDialog } from "./add-background-dialog";
 
 export function Inspector({
   elements, selection, actions, settings, name, onName, onSettings,
-  background, onBackgroundChange,
+  background, onBackgroundChange, venueId, organizationId,
 }: {
   elements: AnyElement[];
   selection: string[];
@@ -22,8 +24,11 @@ export function Inspector({
   onSettings: (patch: Partial<LayoutSettings>) => void;
   background?: BackgroundLayer | null;
   onBackgroundChange?: (bg: BackgroundLayer | null) => void;
+  venueId?: string;
+  organizationId?: string;
 }) {
   const sel = elements.filter((e) => selection.includes(e.id));
+  const [addOpen, setAddOpen] = useState(false);
 
   if (sel.length === 0) {
     return (
@@ -41,6 +46,24 @@ export function Inspector({
           </div>
           {background && onBackgroundChange && (
             <BackgroundSection background={background} onChange={onBackgroundChange} />
+          )}
+          {!background && onBackgroundChange && venueId && organizationId && (
+            <div className="space-y-2 rounded border border-dashed border-border p-3">
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Background</div>
+              <p className="text-[11px] text-muted-foreground">
+                Ground your layout with a satellite map or reference image.
+              </p>
+              <Button size="sm" variant="outline" className="w-full" onClick={() => setAddOpen(true)}>
+                <MapPin className="mr-1.5 h-3.5 w-3.5" /> Add background
+              </Button>
+              <AddBackgroundDialog
+                open={addOpen}
+                onOpenChange={setAddOpen}
+                venueId={venueId}
+                organizationId={organizationId}
+                onBackground={(bg) => onBackgroundChange(bg)}
+              />
+            </div>
           )}
           <p className="text-[11px] text-muted-foreground">Select an object to edit its properties.</p>
         </div>
