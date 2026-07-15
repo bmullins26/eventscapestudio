@@ -70,7 +70,7 @@ export const fetchSatelliteBackground = createServerFn({ method: "POST" })
         throw new Error(`No match for "${data.address}". Try a more specific address (street, city, state).`);
       }
       if (geoJson.status === "REQUEST_DENIED") {
-        throw new Error(`Google denied the request${detail}. Enable the Geocoding API and Static Maps API on the API key, and check key restrictions.`);
+        throw new Error(`Google denied the request${detail}. Enable the Geocoding API on the API key, and check key restrictions.`);
       }
       if (geoJson.status === "OVER_QUERY_LIMIT" || geoJson.status === "OVER_DAILY_LIMIT") {
         throw new Error(`Google API quota exceeded${detail}. Enable billing on the Google Cloud project.`);

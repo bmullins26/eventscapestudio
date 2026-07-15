@@ -6,6 +6,7 @@ import {
   Triangle, Minus, Type, Image as ImageIcon, Package, Layers as LayersIcon, Search,
   ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Maximize2, PanelRightClose, PanelRightOpen,
   Route as RouteIcon, Footprints, Building2, ParkingSquare, Ruler, Armchair, Fence as FenceIcon, Table2,
+  MapPin,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,7 @@ import { Inspector } from "@/components/venue-designer/inspector";
 import { useDesignerStore } from "@/components/venue-designer/store";
 import { makeBooth, makeShape, makeText, makeIcon, makePreset, ICONS, uid, resetBoothCounter } from "@/components/venue-designer/factory";
 import { IconGlyph } from "@/components/venue-designer/icon-glyph";
+import { AddBackgroundDialog } from "@/components/venue-designer/add-background-dialog";
 import type { AnyElement, IconKey, Layout } from "@/components/venue-designer/types";
 
 interface DesignerV2Props {
@@ -44,7 +46,7 @@ function installFactory() {
   };
 }
 
-export function VenueDesignerV2({ venueId: _venueId, organizationId: _organizationId, venueName, initial, onSave }: DesignerV2Props) {
+export function VenueDesignerV2({ venueId, organizationId, venueName, initial, onSave }: DesignerV2Props) {
   const { state, actions } = useDesignerStore(initial);
   const [tool, setTool] = useState<CanvasTool>("select");
   const [iconKey, setIconKey] = useState<IconKey>("tree");
@@ -52,6 +54,7 @@ export function VenueDesignerV2({ venueId: _venueId, organizationId: _organizati
   const [saving, setSaving] = useState(false);
   const [leftTab, setLeftTab] = useState<LeftTab>(null);
   const [rightOpen, setRightOpen] = useState(true);
+  const [bgDialogOpen, setBgDialogOpen] = useState(false);
   const viewportRef = useRef({ x: -20, y: -20, scale: 4 });
 
   useEffect(() => { installFactory(); }, []);
@@ -242,6 +245,8 @@ export function VenueDesignerV2({ venueId: _venueId, organizationId: _organizati
           <ToolBtn active={tool === "chair"} onClick={() => setTool("chair" as CanvasTool)} title="Chair"><Armchair className="h-4 w-4" /></ToolBtn>
           <ToolBtn active={tool === "fence"} onClick={() => setTool("fence" as CanvasTool)} title="Fence (F)"><FenceIcon className="h-4 w-4" /></ToolBtn>
           <div className="mx-1 h-5 w-px bg-border" />
+          <ToolBtn onClick={() => setBgDialogOpen(true)} title="Add background / satellite map"><MapPin className="h-4 w-4" /></ToolBtn>
+          <div className="mx-1 h-5 w-px bg-border" />
           <ToolBtn onClick={actions.undo} disabled={state.past.length === 0} title="Undo (⌘Z)"><Undo2 className="h-4 w-4" /></ToolBtn>
           <ToolBtn onClick={actions.redo} disabled={state.future.length === 0} title="Redo (⌘⇧Z)"><Redo2 className="h-4 w-4" /></ToolBtn>
         </div>
@@ -333,10 +338,20 @@ export function VenueDesignerV2({ venueId: _venueId, organizationId: _organizati
               onSettings={actions.setSettings}
               background={state.settings.background ?? null}
               onBackgroundChange={(bg) => actions.setSettings({ background: bg })}
+              venueId={venueId}
+              organizationId={organizationId}
             />
           </div>
         </div>
       )}
+
+      <AddBackgroundDialog
+        open={bgDialogOpen}
+        onOpenChange={setBgDialogOpen}
+        venueId={venueId}
+        organizationId={organizationId}
+        onBackground={(bg) => actions.setSettings({ background: bg })}
+      />
 
       {/* Bottom status bar */}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30 flex justify-center p-3">
