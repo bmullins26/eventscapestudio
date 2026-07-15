@@ -6,6 +6,7 @@ import {
   Triangle, Minus, Type, Image as ImageIcon, Package, Layers as LayersIcon, Search,
   ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Maximize2, PanelRightClose, PanelRightOpen,
   Route as RouteIcon, Footprints, Building2, ParkingSquare, Ruler, Armchair, Fence as FenceIcon, Table2,
+  MapPin,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
