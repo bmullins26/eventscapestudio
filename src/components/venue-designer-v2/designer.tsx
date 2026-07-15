@@ -245,6 +245,8 @@ export function VenueDesignerV2({ venueId, organizationId, venueName, initial, o
           <ToolBtn active={tool === "chair"} onClick={() => setTool("chair" as CanvasTool)} title="Chair"><Armchair className="h-4 w-4" /></ToolBtn>
           <ToolBtn active={tool === "fence"} onClick={() => setTool("fence" as CanvasTool)} title="Fence (F)"><FenceIcon className="h-4 w-4" /></ToolBtn>
           <div className="mx-1 h-5 w-px bg-border" />
+          <ToolBtn onClick={() => setBgDialogOpen(true)} title="Add background / satellite map"><MapPin className="h-4 w-4" /></ToolBtn>
+          <div className="mx-1 h-5 w-px bg-border" />
           <ToolBtn onClick={actions.undo} disabled={state.past.length === 0} title="Undo (⌘Z)"><Undo2 className="h-4 w-4" /></ToolBtn>
           <ToolBtn onClick={actions.redo} disabled={state.future.length === 0} title="Redo (⌘⇧Z)"><Redo2 className="h-4 w-4" /></ToolBtn>
         </div>
