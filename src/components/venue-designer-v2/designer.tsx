@@ -46,7 +46,7 @@ function installFactory() {
   };
 }
 
-export function VenueDesignerV2({ venueId: _venueId, organizationId: _organizationId, venueName, initial, onSave }: DesignerV2Props) {
+export function VenueDesignerV2({ venueId, organizationId, venueName, initial, onSave }: DesignerV2Props) {
   const { state, actions } = useDesignerStore(initial);
   const [tool, setTool] = useState<CanvasTool>("select");
   const [iconKey, setIconKey] = useState<IconKey>("tree");
@@ -54,6 +54,7 @@ export function VenueDesignerV2({ venueId: _venueId, organizationId: _organizati
   const [saving, setSaving] = useState(false);
   const [leftTab, setLeftTab] = useState<LeftTab>(null);
   const [rightOpen, setRightOpen] = useState(true);
+  const [bgDialogOpen, setBgDialogOpen] = useState(false);
   const viewportRef = useRef({ x: -20, y: -20, scale: 4 });
 
   useEffect(() => { installFactory(); }, []);
