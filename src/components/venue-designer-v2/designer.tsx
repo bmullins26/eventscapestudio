@@ -338,10 +338,20 @@ export function VenueDesignerV2({ venueId, organizationId, venueName, initial, o
               onSettings={actions.setSettings}
               background={state.settings.background ?? null}
               onBackgroundChange={(bg) => actions.setSettings({ background: bg })}
+              venueId={venueId}
+              organizationId={organizationId}
             />
           </div>
         </div>
       )}
+
+      <AddBackgroundDialog
+        open={bgDialogOpen}
+        onOpenChange={setBgDialogOpen}
+        venueId={venueId}
+        organizationId={organizationId}
+        onBackground={(bg) => actions.setSettings({ background: bg })}
+      />
 
       {/* Bottom status bar */}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30 flex justify-center p-3">
