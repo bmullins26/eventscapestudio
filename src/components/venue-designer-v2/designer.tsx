@@ -290,10 +290,6 @@ export function VenueDesignerV2({ venueId, organizationId, venueName, initial, o
         <div className="pointer-events-auto flex items-center gap-1 rounded-xl border border-border/60 bg-card/95 p-1 shadow-lg backdrop-blur">
           <ToolBtn active={tool === "select"} onClick={() => setTool("select")} title="Select (V)"><MousePointer2 className="h-4 w-4" /></ToolBtn>
           <ToolBtn active={tool === "booth"} onClick={() => setTool("booth")} title="Booth (B)"><Store className="h-4 w-4" /></ToolBtn>
-          <ToolBtn active={tool === "rect"} onClick={() => setTool("rect")} title="Rectangle (R)"><Square className="h-4 w-4" /></ToolBtn>
-          <ToolBtn active={tool === "circle"} onClick={() => setTool("circle")} title="Circle (C)"><CircleIcon className="h-4 w-4" /></ToolBtn>
-          <ToolBtn active={tool === "triangle"} onClick={() => setTool("triangle")} title="Triangle"><Triangle className="h-4 w-4" /></ToolBtn>
-          <ToolBtn active={tool === "line"} onClick={() => setTool("line")} title="Line (L)"><Minus className="h-4 w-4" /></ToolBtn>
           <ToolBtn active={tool === "text"} onClick={() => setTool("text")} title="Text (T)"><Type className="h-4 w-4" /></ToolBtn>
           <div className="mx-1 h-5 w-px bg-border" />
           <ToolBtn active={tool === "road"} onClick={() => setTool("road" as CanvasTool)} title="Road"><RouteIcon className="h-4 w-4" /></ToolBtn>
