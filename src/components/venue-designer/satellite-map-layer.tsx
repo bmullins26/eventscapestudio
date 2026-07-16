@@ -21,6 +21,8 @@ interface Props {
   opacity: number;
   interactive?: boolean;
   onViewportChange?: (v: { lat: number; lng: number; zoom: number }) => void;
+  /** Optional visual clip in fractions 0..1 of the layer's own box. */
+  crop?: { x: number; y: number; w: number; h: number } | null;
 }
 
 let mapsLoadPromise: Promise<any> | null = null;
