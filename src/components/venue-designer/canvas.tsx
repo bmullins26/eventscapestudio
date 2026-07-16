@@ -363,6 +363,53 @@ export function DesignerCanvas({ elements, selection, actions, tool, toolPayload
 
   const cursor = drag?.kind === "pan" ? "grabbing" : space ? "grab" : tool !== "select" ? "crosshair" : "default";
 
+  const startEditing = (id: string) => {
+    const el = elements.find((e) => e.id === id);
+    if (!el || el.locked) return;
+    const current = el.kind === "text" ? el.text : (el.name ?? (el.kind === "booth" ? el.label : ""));
+    setEditingId(id);
+    setEditingValue(current);
+  };
+  const commitEdit = () => {
+    if (!editingId) return;
+    const el = elements.find((e) => e.id === editingId);
+    if (el) {
+      const v = editingValue.trim();
+      if (el.kind === "text") actions.update(el.id, { text: v || "Label" } as Partial<AnyElement>);
+      else actions.update(el.id, { name: v } as Partial<AnyElement>);
+    }
+    setEditingId(null);
+  };
+  const cancelEdit = () => setEditingId(null);
+
+  // F2 keyboard shortcut for renaming the current selection
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      const inEditable = t && (["INPUT", "TEXTAREA", "SELECT"].includes(t.tagName) || t.isContentEditable);
+      if (inEditable) return;
+      if (e.key === "F2" && selection.length === 1) {
+        e.preventDefault();
+        startEditing(selection[0]);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selection, elements]);
+
+  useLayoutEffect(() => {
+    if (editingId && editingInputRef.current) {
+      editingInputRef.current.focus();
+      editingInputRef.current.select();
+    }
+  }, [editingId]);
+
+  const onDoubleClick: React.MouseEventHandler<HTMLDivElement> = (e) => {
+    const idAttr = (e.target as Element).closest("[data-el-id]")?.getAttribute("data-el-id");
+    if (idAttr) startEditing(idAttr);
+  };
+
   return (
     <div
       ref={containerRef}
@@ -370,6 +417,7 @@ export function DesignerCanvas({ elements, selection, actions, tool, toolPayload
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
+      onDoubleClick={onDoubleClick}
       onContextMenu={(e) => e.preventDefault()}
       style={{ cursor }}
       className="relative h-full w-full overflow-hidden bg-muted/40 touch-none select-none"
