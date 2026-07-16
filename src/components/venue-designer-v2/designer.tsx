@@ -222,9 +222,18 @@ export function VenueDesignerV2({ venueId, organizationId, venueName, initial, o
   }, [selectedCount, state.selection, state.elements]);
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-background overflow-hidden">
-      {/* Full-bleed canvas fills the entire viewport */}
-      <div className="absolute inset-0">
+    <div className="fixed inset-0 flex flex-col overflow-hidden designer-desk">
+      {/* Framed workspace — a centered "sheet on a desk" that clips the canvas */}
+      <div
+        ref={workspaceRef}
+        className={cn(
+          "absolute rounded-2xl border border-border/70 bg-card overflow-hidden",
+          "shadow-[0_20px_60px_-20px_hsl(var(--foreground)/0.28),0_2px_6px_-2px_hsl(var(--foreground)/0.08)]",
+          "transition-[right,left,top,bottom] duration-200 ease-out",
+          "top-[68px] bottom-[60px] left-[68px]",
+          rightOpen ? "right-[340px]" : "right-4",
+        )}
+      >
         <DesignerCanvas
           elements={state.elements}
           selection={state.selection}
@@ -239,23 +248,24 @@ export function VenueDesignerV2({ venueId, organizationId, venueName, initial, o
           mapInteractive={bgMode === "adjust" && bg?.kind === "google-satellite"}
           onMapViewportChange={onMapViewport}
         />
+
+        {bgMode !== "idle" && (
+          <div className="pointer-events-none absolute inset-x-0 top-2 z-20 flex justify-center px-3">
+            <div className="pointer-events-auto rounded-md border border-border/60 bg-card/95 px-3 py-1.5 text-xs shadow-lg backdrop-blur">
+              {bgMode === "adjust"
+                ? (bg?.kind === "google-satellite"
+                    ? "Drag the map to pan · scroll to zoom · use the frame handle to rotate"
+                    : "Drag to move · handles to resize · top handle to rotate")
+                : "Drag the crop handles — click Apply on Crop to keep, or click Adjust/Crop again to exit"}
+              <button
+                className="ml-3 rounded px-2 py-0.5 text-[11px] font-medium text-primary hover:bg-muted"
+                onClick={() => setBgMode("idle")}
+              >Done</button>
+            </div>
+          </div>
+        )}
       </div>
 
-      {bgMode !== "idle" && (
-        <div className="pointer-events-none absolute inset-x-0 top-16 z-40 flex justify-center">
-          <div className="pointer-events-auto rounded-md border border-border/60 bg-card/95 px-3 py-1.5 text-xs shadow-lg backdrop-blur">
-            {bgMode === "adjust"
-              ? (bg?.kind === "google-satellite"
-                  ? "Drag the map to pan · scroll to zoom · use the frame handle to rotate"
-                  : "Drag to move · handles to resize · top handle to rotate")
-              : "Drag the crop handles — click Apply on Crop to keep, or click Adjust/Crop again to exit"}
-            <button
-              className="ml-3 rounded px-2 py-0.5 text-[11px] font-medium text-primary hover:bg-muted"
-              onClick={() => setBgMode("idle")}
-            >Done</button>
-          </div>
-        </div>
-      )}
 
       {/* Top floating toolbar */}
       <div className="pointer-events-none absolute inset-x-0 top-0 z-30 flex items-start justify-between gap-3 p-3">
