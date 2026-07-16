@@ -7,9 +7,11 @@ import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { ArrowUp, ArrowDown, ArrowUpToLine, ArrowDownToLine, Trash2, Copy, X, MapPin } from "lucide-react";
+import { ArrowUp, ArrowDown, ArrowUpToLine, ArrowDownToLine, Trash2, Copy, X, MapPin, Move, Crop, RotateCcw } from "lucide-react";
 import { describe, uid } from "./factory";
 import { AddBackgroundDialog } from "./add-background-dialog";
+
+export type BgEditMode = "idle" | "adjust" | "crop";
 
 export function Inspector({
   elements, selection, actions, settings, name, onName, onSettings,
