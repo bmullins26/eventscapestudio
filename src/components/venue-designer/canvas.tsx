@@ -231,6 +231,7 @@ export function DesignerCanvas({ elements, selection, actions, tool, toolPayload
       if (el) { setDrag({ kind: "resize", id: el.id, handle: handleAttr, startX: sx, startY: sy, orig: { ...el } }); return; }
     }
     if (idAttr) {
+      if (bgSelected) onBgSelect?.(false);
       const already = selection.includes(idAttr);
       if (!already) actions.select(e.shiftKey ? [...selection, idAttr] : [idAttr]);
       const ids = already ? selection : e.shiftKey ? [...selection, idAttr] : [idAttr];
@@ -242,7 +243,25 @@ export function DesignerCanvas({ elements, selection, actions, tool, toolPayload
       return;
     }
 
-    // Empty: marquee or clear selection
+    // Empty click. If background exists, is unlocked, and cursor is inside its
+    // rotated bounds, select the base map as the active layer. Otherwise clear.
+    if (background && !background.hidden && !background.locked && !cropMode) {
+      const w = s2w(sx, sy, vp);
+      const cx = background.x + background.w / 2;
+      const cy = background.y + background.h / 2;
+      const rad = -(background.rotation * Math.PI) / 180;
+      const rx = Math.cos(rad) * (w.x - cx) - Math.sin(rad) * (w.y - cy) + cx;
+      const ry = Math.sin(rad) * (w.x - cx) + Math.cos(rad) * (w.y - cy) + cy;
+      if (rx >= background.x && rx <= background.x + background.w && ry >= background.y && ry <= background.y + background.h) {
+        actions.select([]);
+        if (!bgSelected) onBgSelect?.(true);
+        if (!mapInteractive) {
+          setDrag({ kind: "bg-move", startX: sx, startY: sy, orig: { ...background } });
+        }
+        return;
+      }
+    }
+    if (bgSelected) onBgSelect?.(false);
     actions.select([]);
     setDrag({ kind: "marquee", startX: sx, startY: sy, x1: sx, y1: sy });
   };
