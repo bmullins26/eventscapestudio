@@ -119,7 +119,18 @@ export function Inspector({
             }}
           />
         </Field>
+        {(el.kind === "booth" || el.kind === "icon") && (
+          <Field label="Label color">
+            <Input
+              type="color"
+              className="h-8 p-1"
+              value={colorish(el.labelColor ?? "#111827")}
+              onChange={(e) => actions.update(el.id, { labelColor: e.target.value } as Partial<AnyElement>)}
+            />
+          </Field>
+        )}
         <NumRow el={el} actions={actions} />
+
         {el.kind === "booth" && <BoothFields el={el as BoothElement} actions={actions} />}
         {el.kind === "text" && <TextFields el={el as TextElement} actions={actions} />}
         {el.kind === "icon" && <IconFields el={el as IconElement} actions={actions} />}

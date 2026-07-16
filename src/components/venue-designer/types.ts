@@ -37,6 +37,9 @@ export interface BaseElement {
   hidden?: boolean;
   /** Human-readable label rendered under/on the element. Editable in-place. */
   name?: string;
+  /** Optional label color (hex). Falls back to theme foreground. */
+  labelColor?: string;
+
 }
 
 export interface BoothElement extends BaseElement {
