@@ -7,7 +7,12 @@ import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { ArrowUp, ArrowDown, ArrowUpToLine, ArrowDownToLine, Trash2, Copy, X, MapPin, Crop, RotateCcw, Move, Eye, EyeOff, Lock, Unlock } from "lucide-react";
+import {
+  ArrowUp, ArrowDown, ArrowUpToLine, ArrowDownToLine, Trash2, Copy, X, MapPin, Crop, RotateCcw, Move, Eye, EyeOff, Lock, Unlock,
+  AlignStartVertical, AlignCenterVertical, AlignEndVertical,
+  AlignStartHorizontal, AlignCenterHorizontal, AlignEndHorizontal,
+  AlignHorizontalDistributeCenter, AlignVerticalDistributeCenter,
+} from "lucide-react";
 import { describe, uid } from "./factory";
 import { AddBackgroundDialog } from "./add-background-dialog";
 
