@@ -57,6 +57,8 @@ export function VenueDesignerV2({ venueId, organizationId, venueName, initial, o
   const [bgDialogOpen, setBgDialogOpen] = useState(false);
   const [bgMode, setBgMode] = useState<"idle" | "adjust" | "crop">("idle");
   const viewportRef = useRef({ x: -20, y: -20, scale: 4 });
+  const workspaceRef = useRef<HTMLDivElement | null>(null);
+
 
   const bg = state.settings.background ?? null;
   const patchBg = (patch: Partial<NonNullable<typeof bg>>) => {
