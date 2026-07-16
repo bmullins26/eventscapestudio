@@ -154,6 +154,12 @@ export function SatelliteMapLayer(props: Props) {
     );
   }
 
+  const clipStyle = crop
+    ? {
+        clipPath: `inset(${crop.y * 100}% ${(1 - crop.x - crop.w) * 100}% ${(1 - crop.y - crop.h) * 100}% ${crop.x * 100}%)`,
+      }
+    : {};
+
   return (
     <div
       style={{
@@ -162,6 +168,7 @@ export function SatelliteMapLayer(props: Props) {
         pointerEvents: interactive ? "auto" : "none",
         opacity, overflow: "hidden",
         outline: interactive ? "2px solid hsl(var(--primary))" : undefined,
+        ...clipStyle,
       }}
     >
       <div
