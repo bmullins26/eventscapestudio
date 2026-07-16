@@ -29,8 +29,6 @@ export type CanvasTool =
   | "chair"
   | "fence";
 
-export type BgMode = "idle" | "adjust" | "crop";
-
 export interface CanvasProps {
   elements: AnyElement[];
   selection: string[];
@@ -43,8 +41,12 @@ export interface CanvasProps {
   onCalibrate?: (p1: { x: number; y: number }, p2: { x: number; y: number }) => void;
   mapInteractive?: boolean;
   onMapViewportChange?: (v: { lat: number; lng: number; zoom: number }) => void;
-  bgMode?: BgMode;
+  /** Base map treated as the currently selected layer. */
+  bgSelected?: boolean;
+  /** Crop editing overlay is active. */
+  cropMode?: boolean;
   onBgChange?: (patch: Partial<BackgroundLayer>) => void;
+  onBgSelect?: (selected: boolean) => void;
 }
 
 // Screen -> world
