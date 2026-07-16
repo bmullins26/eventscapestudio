@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { DesignerCanvas, type CanvasTool } from "@/components/venue-designer/canvas";
 import { Inspector } from "@/components/venue-designer/inspector";
 import { useDesignerStore } from "@/components/venue-designer/store";
-import { makeBooth, makeShape, makeText, makeIcon, makePreset, ICONS, uid, resetBoothCounter } from "@/components/venue-designer/factory";
+import { makeBooth, makeText, makeIcon, makePreset, ICONS, uid, resetBoothCounter } from "@/components/venue-designer/factory";
 import { IconGlyph } from "@/components/venue-designer/icon-glyph";
 import { AddBackgroundDialog } from "@/components/venue-designer/add-background-dialog";
 import type { AnyElement, IconKey, Layout } from "@/components/venue-designer/types";
