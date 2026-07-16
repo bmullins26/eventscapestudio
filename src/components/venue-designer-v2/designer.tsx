@@ -393,11 +393,15 @@ export function VenueDesignerV2({ venueId, organizationId, venueName, initial, o
               onName={actions.setName}
               onSettings={actions.setSettings}
               background={state.settings.background ?? null}
-              onBackgroundChange={(bg) => { actions.setSettings({ background: bg }); if (!bg) setBgMode("idle"); }}
+              onBackgroundChange={(bg) => { actions.setSettings({ background: bg }); if (!bg) { setBgSelected(false); setCropMode(false); setMapAdjust(false); } }}
               venueId={venueId}
               organizationId={organizationId}
-              bgMode={bgMode}
-              onBgModeChange={setBgMode}
+              bgSelected={bgSelected}
+              onBgSelectChange={setBgSelected}
+              cropMode={cropMode}
+              onCropModeChange={setCropMode}
+              mapAdjust={mapAdjust}
+              onMapAdjustChange={setMapAdjust}
             />
           </div>
         </div>
