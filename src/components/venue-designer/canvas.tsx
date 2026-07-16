@@ -138,6 +138,49 @@ export function DesignerCanvas({ elements, selection, actions, tool, toolPayload
       return;
     }
 
+    // Background adjust/crop mode intercepts everything except pan.
+    if (bgMode !== "idle" && background) {
+      const target = e.target as Element;
+      const bgHandle = target.closest("[data-bg-handle]")?.getAttribute("data-bg-handle");
+      const bgRotate = target.closest("[data-bg-rotate]")?.getAttribute("data-bg-rotate");
+      const bgBody = target.closest("[data-bg-body]")?.getAttribute("data-bg-body");
+      const cropHandle = target.closest("[data-crop-handle]")?.getAttribute("data-crop-handle");
+      const cropBody = target.closest("[data-crop-body]")?.getAttribute("data-crop-body");
+
+      if (bgMode === "adjust") {
+        if (bgRotate) {
+          const cx = background.x + background.w / 2;
+          const cy = background.y + background.h / 2;
+          const w = s2w(sx, sy, vp);
+          const startAngle = Math.atan2(w.y - cy, w.x - cx) * 180 / Math.PI;
+          setDrag({ kind: "bg-rotate", cx, cy, startAngle, origRot: background.rotation });
+          return;
+        }
+        if (bgHandle) {
+          setDrag({ kind: "bg-resize", handle: bgHandle, startX: sx, startY: sy, orig: { ...background } });
+          return;
+        }
+        if (bgBody && background.kind !== "google-satellite") {
+          setDrag({ kind: "bg-move", startX: sx, startY: sy, orig: { ...background } });
+          return;
+        }
+        // Fall through: let map (satellite) receive events via its own DOM.
+        return;
+      }
+      if (bgMode === "crop") {
+        const crop = background.crop ?? { x: 0, y: 0, w: 1, h: 1 };
+        if (cropHandle) {
+          setDrag({ kind: "crop-resize", handle: cropHandle, startX: sx, startY: sy, orig: { ...crop }, bg: background });
+          return;
+        }
+        if (cropBody) {
+          setDrag({ kind: "crop-move", startX: sx, startY: sy, orig: { ...crop }, bg: background });
+          return;
+        }
+        return;
+      }
+    }
+
     // Calibrate tool: record two clicks, then invoke onCalibrate.
     if (tool === "calibrate" && e.button === 0) {
       const w = s2w(sx, sy, vp);
