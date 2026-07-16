@@ -215,18 +215,6 @@ function BoothFields({ el, actions }: { el: BoothElement; actions: DesignerActio
   );
 }
 
-function ShapeFields({ el, actions }: { el: ShapeElement; actions: DesignerActions }) {
-  const s = (patch: Partial<ShapeElement>) => actions.update(el.id, patch);
-  return (
-    <div className="space-y-3">
-      <div className="grid grid-cols-2 gap-2">
-        <Field label="Fill"><Input type="color" className="h-8 p-1" value={colorish(el.fill)} onChange={(e) => s({ fill: e.target.value })} /></Field>
-        <Field label="Stroke"><Input type="color" className="h-8 p-1" value={colorish(el.stroke)} onChange={(e) => s({ stroke: e.target.value })} /></Field>
-      </div>
-      <Field label="Stroke width"><Input type="number" step="0.25" className="h-8" value={el.strokeWidth} onChange={(e) => s({ strokeWidth: Number(e.target.value) })} /></Field>
-    </div>
-  );
-}
 
 function TextFields({ el, actions }: { el: TextElement; actions: DesignerActions }) {
   const s = (patch: Partial<TextElement>) => actions.update(el.id, patch);
