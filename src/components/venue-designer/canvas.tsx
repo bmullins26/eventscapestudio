@@ -73,6 +73,9 @@ export function DesignerCanvas({ elements, selection, actions, tool, toolPayload
   const [drag, setDrag] = useState<DragState>(null);
   const [size, setSize] = useState({ w: 800, h: 600 });
   const [calibratePt1, setCalibratePt1] = useState<{ x: number; y: number } | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingValue, setEditingValue] = useState("");
+  const editingInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => { viewportRef.current = vp; onZoomChange?.(Math.round(vp.scale * 100 / 4)); }, [vp, onZoomChange, viewportRef]);
 
