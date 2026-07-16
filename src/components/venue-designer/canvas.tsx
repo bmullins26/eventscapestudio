@@ -630,6 +630,36 @@ export function DesignerCanvas({ elements, selection, actions, tool, toolPayload
           />
         )}
       </svg>
+
+      {/* Inline rename overlay (HTML input positioned over the element) */}
+      {editingId && (() => {
+        const el = elements.find((e) => e.id === editingId);
+        if (!el) return null;
+        const sx = (el.x - vp.x) * vp.scale;
+        const sy = (el.y - vp.y) * vp.scale;
+        const sw = Math.max(80, el.w * vp.scale);
+        const sh = el.h * vp.scale;
+        // Place the input just below the element (or centered inside a booth).
+        const top = el.kind === "booth" ? sy + sh / 2 - 12 : sy + sh + 4;
+        return (
+          <input
+            ref={editingInputRef}
+            value={editingValue}
+            onChange={(e) => setEditingValue(e.target.value)}
+            onBlur={commitEdit}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") { e.preventDefault(); commitEdit(); }
+              else if (e.key === "Escape") { e.preventDefault(); cancelEdit(); }
+              e.stopPropagation();
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+            onDoubleClick={(e) => e.stopPropagation()}
+            placeholder={el.kind === "booth" ? "Booth name (e.g. Kate's Pretzels)" : "Name"}
+            className="absolute z-30 rounded-md border border-primary/70 bg-card px-2 py-1 text-xs font-medium shadow-lg outline-none focus:ring-2 focus:ring-primary"
+            style={{ left: sx, top, width: sw, minWidth: 120 }}
+          />
+        );
+      })()}
     </div>
   );
 }
