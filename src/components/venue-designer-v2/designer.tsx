@@ -6,7 +6,7 @@ import {
   Type, Package, Layers as LayersIcon, Search,
   ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Maximize2, PanelRightClose, PanelRightOpen,
   Route as RouteIcon, Footprints, Building2, ParkingSquare, Ruler, Armchair, Fence as FenceIcon, Table2,
-  MapPin, Eye, EyeOff, Lock, Unlock, Move as MoveIcon,
+  MapPin, Eye, EyeOff, Lock, Unlock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
