@@ -1,51 +1,50 @@
+# Remove primitives + editable names on every object
 
-# Map as a layer + prune primitives (OnePlan-style)
+## 1. Purge primitive tools/shapes end-to-end
 
-Two focused changes to the Venue Designer, no data-model churn.
+Currently primitive shapes (`rect`, `circle`, `triangle`, `line`) still live in the type union and factory, and the semantic presets (Road/Walkway/Building/Parking/Measure/Table/Chair/Fence) internally create `rect`/`line` shapes. Result: users can still end up with generic shapes. We remove them cleanly and go icon/preset-only.
 
-## 1. Map/background becomes a first-class movable layer
+- `types.ts` — drop `rect | circle | triangle | line` from `ElementKind`, delete `ShapeElement`, narrow `AnyElement` to `BoothElement | TextElement | IconElement`.
+- `factory.ts` — delete `makeShape`; rebuild `makePreset` so every preset returns an `IconElement` (or a `BoothElement` for the "Table" preset if we want the labelable behavior). Realistic icons: Road/Walkway/Building/Parking/Table/Chair/Fence/Measure all map to existing `IconKey`s (`road`, `building`, `parking`, `table`, `chair`, `fence`, plus we add `walkway` and `measure` icons — simple line/dashed glyphs) so they render as scaled realistic glyphs, not filled rectangles.
+- `canvas.tsx` — narrow `CanvasTool` union, remove all `rect|circle|triangle|line` branches in hit-test, render, drag-create, and resize code paths. Any legacy saved element whose `kind` is one of the primitives is filtered out at load time with a one-time console warning (kept simple; matches user intent to "get rid of").
+- `designer.tsx` — `installFactory` already skips primitives; no toolbar buttons for them (already removed). Keyboard shortcuts `R/C/L` remain unbound.
+- `object-explorer.tsx` / `inspector.tsx` — remove any UI branches that reference the removed kinds.
 
-Today the background lives in `settings.background` and only becomes movable when you enter "Adjust" mode. OnePlan treats the plan/map as a base layer you can freely position on the canvas at any time (and lock when done). We match that:
+## 2. Every object has an editable, on-canvas label
 
-- **Layers panel promotion** — in the left "Layers" tab (`ObjectExplorer`), add a pinned top row "Base map" when `settings.background` exists, with:
-  - visibility toggle (drives a new `background.hidden` flag)
-  - lock toggle (uses existing `background.locked`)
-  - opacity slider (existing `background.opacity`)
-  - "Select" action that puts the background into a **selected** state (new `bgSelected` state on the designer, not part of element selection so it doesn't conflict with elements)
-  - "Remove" action
-- **Direct manipulation on canvas** — when the base map is selected and unlocked:
-  - drag anywhere on the map body to move it (updates `background.x/y`)
-  - 8 resize handles + 1 rotate handle (already exist for image backgrounds in adjust mode) — reuse that overlay for both `image` and `google-satellite` kinds
-  - for `google-satellite`, dragging the layer moves the whole tile block in world space (translating `x/y`); the internal Google pan/zoom stays under "Adjust map view" sub-mode toggled from the inspector, so the two gestures don't fight
-- **Click-to-select** — clicking on empty canvas with the `select` tool now hit-tests the background rect too. Clicking an element still selects the element (elements take priority). Escape or clicking outside deselects.
-- **Retire `bgMode` "adjust"/"crop" modal states** — replace with the always-on selection model above. Keep "Crop" as an inspector button on the selected base map that toggles a transient crop overlay (existing SVG crop UI); "Apply" writes to `background.crop` and exits. Removes the current modal-hint bar.
-- **Inspector panel for base map** — when the base map is the selected thing, right inspector shows: opacity, rotation, x/y/w/h numeric fields, calibrate button (existing), crop toggle, lock, remove. Mirrors OnePlan's "Base plan" panel.
+Booths already render `label`. Icons and text don't. We unify around a single `name` field that's:
+- Editable in the Inspector (single "Name" input for all kinds).
+- Editable directly on the canvas via double-click (opens an inline `contentEditable`/`<input>` overlay positioned at the element).
+- Rendered under (or on, for booths) the element with auto-fitting text.
 
-Types change: add `hidden?: boolean` to `BackgroundLayer` in `src/components/venue-designer/types.ts`. Everything else is state on the designer component.
+Details:
 
-## 2. Prune primitive tools
+- **Types** — keep `BaseElement.name?: string`. For `BoothElement`, `label` stays as the "booth number" (unique id shown big); add `name?` (already inherited) for the human name ("Kate's Pretzels"). Icons and text elements use `name` as the display label.
+- **Auto-fit label rendering** (`canvas.tsx`):
+  - New helper `<ElementLabel>` that renders an SVG `<text>` centered under the element bbox, with `textLength` + `lengthAdjust="spacingAndGlyphs"` capped by the element width so long names shrink to fit; wraps to 2 lines via `<tspan>` when the natural length exceeds width and vertical room allows.
+  - Booths: keep the big centered `label` (booth number). If `name` is set, render it as a smaller second line inside the booth (or below if the booth is too small — threshold on `w*scale`).
+  - Icons: render `name` in a chip below the glyph (background pill using `--card` token so it stays legible on satellite/map backgrounds). Auto-hide when zoomed out below a threshold to reduce clutter.
+  - Text elements: unchanged (the element IS the label); Inspector "Name" edits `text` for these to keep one control.
+- **Inline rename**:
+  - Double-click an element on the canvas → overlay HTML `<input>` positioned over the label area, autofocused, Enter/blur commits via `actions.update(id, { name })` (or `{ label }` for booth number if double-click hits the number area — simplest: always edit `name`, booth number stays editable in inspector).
+  - Escape cancels.
+- **Inspector**:
+  - Add a top "Name" field visible for all kinds (`booth`, `icon`, `text`). For booths, also keep the existing "Booth #" (`label`) and "Price" fields.
+  - Multi-select: name field disabled with placeholder "Multiple selected".
+- **Defaults on create**: `makeBooth` no longer sets `name`; the auto-incremented number stays in `label`. `makeIcon` sets `name` to the icon's human label (e.g. "Food truck") so a newly placed food truck immediately reads "Food truck" under it. `makePreset` sets `name` from `PRESETS[kind].name` ("Road", "Table", etc.). User can then rename each independently — placing 5 food trucks and renaming to "Kate's Pretzels", "Ben's BBQ", etc. works as expected.
+- **Object Explorer** — row label already uses `describe(el)`; update `describe` to prefer `name` over kind fallbacks so renames show immediately in the layer list.
 
-Remove from the top toolbar and factory dispatch: Rectangle, Circle, Triangle, Line. Keep Select, Booth, Text, Icon, plus the semantic presets (Road, Walkway, Building, Parking, Measure, Table, Chair, Fence) and Background.
+## 3. Files touched
 
-- Toolbar buttons removed in `designer.tsx`.
-- Keyboard shortcuts `R / C / L` unbound; `B / T / M / F / V` retained.
-- `installFactory` no longer dispatches to `makeShape` for `rect/circle/triangle/line`. `makeShape` stays in the codebase so existing saved layouts still render — we only stop creating new ones. Old primitives already in a layout continue to display and remain editable via the Layers panel/inspector, matching OnePlan's "we don't offer generic shapes, but respect what's there."
-- `CanvasTool` union in `canvas.tsx` narrows accordingly; the drag-to-create branches for those four kinds are dead code paths but left in place for safety in this pass.
+- `src/components/venue-designer/types.ts`
+- `src/components/venue-designer/factory.ts`
+- `src/components/venue-designer/canvas.tsx` (label rendering, inline rename overlay, narrow `CanvasTool`, drop shape render/hit/resize branches)
+- `src/components/venue-designer/inspector.tsx` (unified Name field, drop shape-only sections)
+- `src/components/venue-designer/object-explorer.tsx` (describe prefers `name`)
+- `src/components/venue-designer-v2/designer.tsx` (filter out legacy primitive kinds on hydrate; keyboard `F2` to rename selection)
 
-## Files touched
+## Out of scope
 
-- `src/components/venue-designer/types.ts` — add `BackgroundLayer.hidden`
-- `src/components/venue-designer-v2/designer.tsx` — new `bgSelected` state, remove `bgMode` modal flow, drop primitive tool buttons + shortcuts, pass base-map selection to canvas + inspector
-- `src/components/venue-designer/canvas.tsx` — always-on background overlay when `bgSelected && !bg.locked`, hit-test background on background-plane click, render nothing for `hidden`, remove modal `bgMode` prop
-- `src/components/venue-designer/inspector.tsx` — new "Base map" panel branch driven by `bgSelected`; retire the "Adjust / Crop" toggle buttons
-- `src/components/venue-designer/object-explorer.tsx` — pinned "Base map" row with vis/lock/opacity/select/remove
-- `src/components/venue-designer/factory.ts` — `installFactory` in designer stops routing to primitives (no code change here; done in designer)
-
-Not touched: `store.ts`, `satellite-map-layer.tsx` (already accepts `crop`), server functions, data schema, saved-layout compatibility.
-
-## Out of scope (say the word and I'll add)
-
-- Multiple stacked base maps / layer groups
-- Snap-to-map-edge for elements
-- OnePlan-style "sheets" (multi-page plans)
-- Reworking the left rail into an OnePlan category tree
+- Rich text formatting on labels (bold/italic per-element beyond existing text-element controls).
+- Per-element label font-family override — inherits designer font.
+- Migration of legacy `rect/circle/triangle/line` elements into icons (they're dropped, not converted). Say the word if you want auto-conversion instead of drop.
