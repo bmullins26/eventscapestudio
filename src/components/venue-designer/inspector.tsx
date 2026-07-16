@@ -99,6 +99,7 @@ export function Inspector({
       <div className="flex h-full flex-col border-l border-border bg-card">
         <PanelHeader title={`${sel.length} objects selected`} />
         <div className="flex-1 space-y-3 overflow-auto p-3">
+          <AlignButtons sel={sel} actions={actions} />
           <ZButtons ids={sel.map((s) => s.id)} actions={actions} />
           <Button variant="destructive" size="sm" onClick={() => actions.remove(sel.map((s) => s.id))} className="w-full">
             <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Delete
