@@ -470,6 +470,81 @@ export function DesignerCanvas({ elements, selection, actions, tool, toolPayload
           );
         })()}
 
+        {/* Background adjust frame (screen space, rotates with bg) */}
+        {bgMode === "adjust" && background && (() => {
+          const bx = (background.x - vp.x) * vp.scale;
+          const by = (background.y - vp.y) * vp.scale;
+          const bw = background.w * vp.scale;
+          const bh = background.h * vp.scale;
+          const cx = bx + bw / 2; const cy = by + bh / 2;
+          const isSat = background.kind === "google-satellite";
+          const handles = [
+            ["nw", bx, by], ["n", bx + bw / 2, by], ["ne", bx + bw, by],
+            ["e", bx + bw, by + bh / 2], ["se", bx + bw, by + bh],
+            ["s", bx + bw / 2, by + bh], ["sw", bx, by + bh], ["w", bx, by + bh / 2],
+          ] as const;
+          return (
+            <g transform={`rotate(${background.rotation} ${cx} ${cy})`} pointerEvents="all">
+              {!isSat && (
+                <rect data-bg-body="1" x={bx} y={by} width={bw} height={bh}
+                  fill="transparent" style={{ cursor: "move" }} />
+              )}
+              <rect x={bx} y={by} width={bw} height={bh}
+                fill="none" stroke="hsl(var(--primary))" strokeWidth={1.5} strokeDasharray="6 4"
+                pointerEvents="none" />
+              <line x1={cx} y1={by} x2={cx} y2={by - 24} stroke="hsl(var(--primary))" strokeWidth={1.5} pointerEvents="none" />
+              <circle data-bg-rotate="1" cx={cx} cy={by - 28} r={7} fill="hsl(var(--primary))" style={{ cursor: "grab" }} />
+              {!isSat && handles.map(([k, hx, hy]) => (
+                <rect key={k} data-bg-handle={k} x={hx - HANDLE_SIZE / 2} y={hy - HANDLE_SIZE / 2}
+                  width={HANDLE_SIZE} height={HANDLE_SIZE}
+                  fill="hsl(var(--background))" stroke="hsl(var(--primary))" strokeWidth={1.5}
+                  style={{ cursor: cursorForHandle(k as string) }} />
+              ))}
+            </g>
+          );
+        })()}
+
+        {/* Crop overlay (screen space, rotates with bg) */}
+        {bgMode === "crop" && background && (() => {
+          const bx = (background.x - vp.x) * vp.scale;
+          const by = (background.y - vp.y) * vp.scale;
+          const bw = background.w * vp.scale;
+          const bh = background.h * vp.scale;
+          const cx = bx + bw / 2; const cy = by + bh / 2;
+          const crop = background.crop ?? { x: 0, y: 0, w: 1, h: 1 };
+          const cx0 = bx + crop.x * bw;
+          const cy0 = by + crop.y * bh;
+          const cw = crop.w * bw;
+          const ch = crop.h * bh;
+          const maskId = `vd-crop-mask-${Math.round(bx)}-${Math.round(by)}`;
+          const handles = [
+            ["nw", cx0, cy0], ["n", cx0 + cw / 2, cy0], ["ne", cx0 + cw, cy0],
+            ["e", cx0 + cw, cy0 + ch / 2], ["se", cx0 + cw, cy0 + ch],
+            ["s", cx0 + cw / 2, cy0 + ch], ["sw", cx0, cy0 + ch], ["w", cx0, cy0 + ch / 2],
+          ] as const;
+          return (
+            <g transform={`rotate(${background.rotation} ${cx} ${cy})`} pointerEvents="all">
+              <defs>
+                <mask id={maskId}>
+                  <rect x={bx} y={by} width={bw} height={bh} fill="white" />
+                  <rect x={cx0} y={cy0} width={cw} height={ch} fill="black" />
+                </mask>
+              </defs>
+              <rect x={bx} y={by} width={bw} height={bh}
+                fill="hsl(var(--background) / 0.6)" mask={`url(#${maskId})`} pointerEvents="none" />
+              <rect data-crop-body="1" x={cx0} y={cy0} width={cw} height={ch}
+                fill="transparent" stroke="hsl(var(--primary))" strokeWidth={1.5} strokeDasharray="6 4"
+                style={{ cursor: "move" }} />
+              {handles.map(([k, hx, hy]) => (
+                <rect key={k} data-crop-handle={k} x={hx - HANDLE_SIZE / 2} y={hy - HANDLE_SIZE / 2}
+                  width={HANDLE_SIZE} height={HANDLE_SIZE}
+                  fill="hsl(var(--background))" stroke="hsl(var(--primary))" strokeWidth={1.5}
+                  style={{ cursor: cursorForHandle(k as string) }} />
+              ))}
+            </g>
+          );
+        })()}
+
         {/* Marquee */}
         {drag?.kind === "marquee" && (
           <rect
