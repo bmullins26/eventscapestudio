@@ -187,9 +187,13 @@ export function VenueDesignerV2({ venueId, organizationId, venueName, initial, o
   };
 
   const zoomToFit = () => {
+    const rect = workspaceRef.current?.getBoundingClientRect();
+    const winW = Math.max(200, (rect?.width ?? window.innerWidth) - 60);
+    const winH = Math.max(200, (rect?.height ?? window.innerHeight) - 60);
     if (state.elements.length === 0) {
-      viewportRef.current = { x: -20, y: -20, scale: 4 };
-      setZoomPct(100);
+      const scale = Math.max(1, Math.min(60, Math.min(winW / 120, winH / 90)));
+      viewportRef.current = { x: -10, y: -10, scale };
+      setZoomPct(Math.round(scale * 100 / 4));
       setTool((t) => t);
       return;
     }
@@ -200,13 +204,12 @@ export function VenueDesignerV2({ venueId, organizationId, venueName, initial, o
     const w = Math.max(1, maxX - minX);
     const h = Math.max(1, maxY - minY);
     const pad = 0.1;
-    const winW = window.innerWidth - 120;
-    const winH = window.innerHeight - 120;
     const scale = Math.max(1, Math.min(60, Math.min(winW / (w * (1 + pad)), winH / (h * (1 + pad)))));
     viewportRef.current = { x: minX - w * pad / 2, y: minY - h * pad / 2, scale };
     setZoomPct(Math.round(scale * 100 / 4));
     setTool((t) => t);
   };
+
 
   const selectedCount = state.selection.length;
   const selectedName = useMemo(() => {
