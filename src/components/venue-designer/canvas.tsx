@@ -681,7 +681,7 @@ function ElementNode({ el, selected, vpScale }: { el: AnyElement; selected: bool
   const commonProps: any = { "data-el-id": el.id, transform, style: { cursor: el.locked ? "not-allowed" : "move" } };
   const highlight = selected ? { filter: "drop-shadow(0 0 2px hsl(var(--primary)))" } : {};
 
-  if (el.kind === "booth") return renderBooth(el, commonProps, highlight);
+  if (el.kind === "booth") return renderBooth(el, commonProps, highlight, vpScale);
   if (el.kind === "text") return renderText(el, commonProps, highlight);
   if (el.kind === "icon") return renderIcon(el, commonProps, highlight, vpScale);
   return null;
@@ -696,35 +696,38 @@ function ElementLabel({ el, vpScale }: { el: AnyElement; vpScale: number }) {
   const name = el.name?.trim();
   if (!name) return null;
   const screenW = el.w * vpScale;
-  if (screenW < 24) return null; // too small on screen — hide
-  // Label sits just below the element, in world units.
-  const worldFont = Math.max(1.4, Math.min(3.5, el.w * 0.14));
-  const padX = el.w * 0.06;
-  const boxW = el.w - padX * 2;
-  const y = el.y + el.h + worldFont * 1.2;
+  if (screenW < 24) return null;
+  // Screen-space font (~12px on screen regardless of zoom), converted to world units.
+  const worldFont = 12 / Math.max(vpScale, 0.0001);
+  const padX = worldFont * 0.5;
+  const maxBoxW = el.w;
+  const naturalW = name.length * worldFont * 0.55;
+  const fits = naturalW + padX * 2 <= maxBoxW;
+  const boxW = fits ? naturalW + padX * 2 : maxBoxW;
+  const boxH = worldFont * 1.5;
+  const boxX = el.x + el.w / 2 - boxW / 2;
+  const boxY = el.y + el.h + worldFont * 0.35;
   return (
     <g style={{ pointerEvents: "none" }}>
-      {/* Pill background for legibility over maps/photos */}
       <rect
-        x={el.x + padX}
-        y={y - worldFont * 0.95}
+        x={boxX}
+        y={boxY}
         width={boxW}
-        height={worldFont * 1.35}
-        rx={worldFont * 0.35}
-        fill="hsl(var(--card) / 0.9)"
+        height={boxH}
+        rx={boxH * 0.25}
+        fill="hsl(var(--card) / 0.92)"
         stroke="hsl(var(--border))"
-        strokeWidth={worldFont * 0.05}
+        strokeWidth={worldFont * 0.06}
       />
       <text
         x={el.x + el.w / 2}
-        y={y}
+        y={boxY + boxH / 2}
         fontSize={worldFont}
         fontWeight={600}
         textAnchor="middle"
         dominantBaseline="central"
         fill="hsl(var(--foreground))"
-        textLength={boxW * 0.94}
-        lengthAdjust="spacingAndGlyphs"
+        {...(fits ? {} : { textLength: boxW - padX * 2, lengthAdjust: "spacingAndGlyphs" as const })}
       >
         {name}
       </text>
@@ -732,12 +735,14 @@ function ElementLabel({ el, vpScale }: { el: AnyElement; vpScale: number }) {
   );
 }
 
-function renderBooth(el: BoothElement, common: any, hl: any) {
+function renderBooth(el: BoothElement, common: any, hl: any, vpScale: number) {
   const dash = el.strokeStyle === "dashed" ? "1 0.6" : undefined;
   const name = el.name?.trim();
-  // If a name is set and the booth is tall enough, split the interior into
-  // booth # (top) and name (bottom); otherwise just the number.
   const canFitName = name && el.h >= el.fontSize * 2.2;
+  const nameFont = Math.min(el.fontSize * 0.7, 10 / Math.max(vpScale, 0.0001));
+  const innerW = el.w * 0.88;
+  const naturalW = name ? name.length * nameFont * 0.55 : 0;
+  const nameFits = naturalW <= innerW;
   return (
     <g {...common}>
       <rect x={el.x} y={el.y} width={el.w} height={el.h} rx={el.radius} ry={el.radius}
@@ -752,23 +757,22 @@ function renderBooth(el: BoothElement, common: any, hl: any) {
         <text
           x={el.x + el.w / 2}
           y={el.y + el.h * 0.72}
-          fontSize={el.fontSize * 0.7}
+          fontSize={nameFont}
           fontWeight={500}
           textAnchor="middle"
           dominantBaseline="central"
           fill="hsl(var(--foreground))"
-          textLength={(el.w - el.w * 0.12) * 0.95}
-          lengthAdjust="spacingAndGlyphs"
           style={{ pointerEvents: "none" }}
+          {...(nameFits ? {} : { textLength: innerW, lengthAdjust: "spacingAndGlyphs" as const })}
         >
           {name}
         </text>
       )}
-      {/* When too short/narrow to fit inside, show the name below the booth. */}
-      {name && !canFitName && <ElementLabel el={el} vpScale={1 /* handled via world units */} />}
+      {name && !canFitName && <ElementLabel el={el} vpScale={vpScale} />}
     </g>
   );
 }
+
 
 function renderText(el: TextElement, common: any, hl: any) {
   return (
