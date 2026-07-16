@@ -681,7 +681,7 @@ function ElementNode({ el, selected, vpScale }: { el: AnyElement; selected: bool
   const commonProps: any = { "data-el-id": el.id, transform, style: { cursor: el.locked ? "not-allowed" : "move" } };
   const highlight = selected ? { filter: "drop-shadow(0 0 2px hsl(var(--primary)))" } : {};
 
-  if (el.kind === "booth") return renderBooth(el, commonProps, highlight);
+  if (el.kind === "booth") return renderBooth(el, commonProps, highlight, vpScale);
   if (el.kind === "text") return renderText(el, commonProps, highlight);
   if (el.kind === "icon") return renderIcon(el, commonProps, highlight, vpScale);
   return null;
