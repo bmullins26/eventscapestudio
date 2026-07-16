@@ -16,6 +16,7 @@ export type BgEditMode = "idle" | "adjust" | "crop";
 export function Inspector({
   elements, selection, actions, settings, name, onName, onSettings,
   background, onBackgroundChange, venueId, organizationId,
+  bgMode = "idle", onBgModeChange,
 }: {
   elements: AnyElement[];
   selection: string[];
@@ -28,6 +29,8 @@ export function Inspector({
   onBackgroundChange?: (bg: BackgroundLayer | null) => void;
   venueId?: string;
   organizationId?: string;
+  bgMode?: BgEditMode;
+  onBgModeChange?: (mode: BgEditMode) => void;
 }) {
   const sel = elements.filter((e) => selection.includes(e.id));
   const [addOpen, setAddOpen] = useState(false);
