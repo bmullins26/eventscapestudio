@@ -70,7 +70,7 @@ type DragState =
   | { kind: "crop-resize"; handle: string; startX: number; startY: number; orig: { x: number; y: number; w: number; h: number }; bg: BackgroundLayer }
   | null;
 
-export function DesignerCanvas({ elements, selection, actions, tool, toolPayload, onZoomChange, viewportRef, background, onCalibrate, mapInteractive, onMapViewportChange, bgMode = "idle", onBgChange }: CanvasProps) {
+export function DesignerCanvas({ elements, selection, actions, tool, toolPayload, onZoomChange, viewportRef, background, onCalibrate, mapInteractive, onMapViewportChange, bgSelected = false, cropMode = false, onBgChange, onBgSelect }: CanvasProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [vp, setVp] = useState<Viewport>(() => viewportRef.current);
   const [space, setSpace] = useState(false);
