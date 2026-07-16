@@ -697,38 +697,31 @@ function ElementLabel({ el, vpScale }: { el: AnyElement; vpScale: number }) {
   if (!name) return null;
   const screenW = el.w * vpScale;
   if (screenW < 24) return null;
-  // Screen-space font (~12px on screen regardless of zoom), converted to world units.
-  const worldFont = 12 / Math.max(vpScale, 0.0001);
-  const padX = worldFont * 0.5;
-  const maxBoxW = el.w;
-  const naturalW = name.length * worldFont * 0.55;
-  const fits = naturalW + padX * 2 <= maxBoxW;
-  const boxW = fits ? naturalW + padX * 2 : maxBoxW;
-  const boxH = worldFont * 1.5;
-  const boxX = el.x + el.w / 2 - boxW / 2;
-  const boxY = el.y + el.h + worldFont * 0.35;
+  const worldFont = 14 / Math.max(vpScale, 0.0001);
+  const y = el.y + el.h + worldFont * 0.9;
+  const fill = (el as { labelColor?: string }).labelColor ?? "hsl(var(--foreground))";
+  const commonText = {
+    x: el.x + el.w / 2,
+    y,
+    fontSize: worldFont,
+    fontWeight: 700,
+    textAnchor: "middle" as const,
+    dominantBaseline: "central" as const,
+  };
   return (
     <g style={{ pointerEvents: "none" }}>
-      <rect
-        x={boxX}
-        y={boxY}
-        width={boxW}
-        height={boxH}
-        rx={boxH * 0.25}
-        fill="hsl(var(--card) / 0.92)"
-        stroke="hsl(var(--border))"
-        strokeWidth={worldFont * 0.06}
-      />
+      {/* Halo outline for legibility over map imagery */}
       <text
-        x={el.x + el.w / 2}
-        y={boxY + boxH / 2}
-        fontSize={worldFont}
-        fontWeight={600}
-        textAnchor="middle"
-        dominantBaseline="central"
-        fill="hsl(var(--foreground))"
-        {...(fits ? {} : { textLength: boxW - padX * 2, lengthAdjust: "spacingAndGlyphs" as const })}
+        {...commonText}
+        fill="none"
+        stroke="hsl(var(--background))"
+        strokeWidth={worldFont * 0.35}
+        strokeLinejoin="round"
+        style={{ paintOrder: "stroke" }}
       >
+        {name}
+      </text>
+      <text {...commonText} fill={fill}>
         {name}
       </text>
     </g>
@@ -738,40 +731,55 @@ function ElementLabel({ el, vpScale }: { el: AnyElement; vpScale: number }) {
 function renderBooth(el: BoothElement, common: any, hl: any, vpScale: number) {
   const dash = el.strokeStyle === "dashed" ? "1 0.6" : undefined;
   const name = el.name?.trim();
-  const canFitName = name && el.h >= el.fontSize * 2.2;
+  const canFitName = !!name && el.h >= el.fontSize * 2.2;
   const nameFont = Math.min(el.fontSize * 0.7, 10 / Math.max(vpScale, 0.0001));
-  const innerW = el.w * 0.88;
-  const naturalW = name ? name.length * nameFont * 0.55 : 0;
-  const nameFits = naturalW <= innerW;
+  const labelFill = (el as { labelColor?: string }).labelColor ?? "hsl(var(--foreground))";
   return (
     <g {...common}>
       <rect x={el.x} y={el.y} width={el.w} height={el.h} rx={el.radius} ry={el.radius}
         fill={el.fill} stroke={el.stroke} strokeWidth={el.strokeWidth} strokeDasharray={dash} style={hl} />
       <text x={el.x + el.w / 2} y={canFitName ? el.y + el.h * 0.38 : el.y + el.h / 2}
         fontSize={el.fontSize} fontWeight={el.fontWeight}
-        textAnchor="middle" dominantBaseline="central" fill="hsl(var(--foreground))"
+        textAnchor="middle" dominantBaseline="central" fill={labelFill}
         style={{ pointerEvents: "none" }}>
         {el.label}
       </text>
       {canFitName && (
-        <text
-          x={el.x + el.w / 2}
-          y={el.y + el.h * 0.72}
-          fontSize={nameFont}
-          fontWeight={500}
-          textAnchor="middle"
-          dominantBaseline="central"
-          fill="hsl(var(--foreground))"
-          style={{ pointerEvents: "none" }}
-          {...(nameFits ? {} : { textLength: innerW, lengthAdjust: "spacingAndGlyphs" as const })}
-        >
-          {name}
-        </text>
+        <>
+          <text
+            x={el.x + el.w / 2}
+            y={el.y + el.h * 0.72}
+            fontSize={nameFont}
+            fontWeight={600}
+            textAnchor="middle"
+            dominantBaseline="central"
+            fill="none"
+            stroke="hsl(var(--background))"
+            strokeWidth={nameFont * 0.35}
+            strokeLinejoin="round"
+            style={{ pointerEvents: "none", paintOrder: "stroke" }}
+          >
+            {name}
+          </text>
+          <text
+            x={el.x + el.w / 2}
+            y={el.y + el.h * 0.72}
+            fontSize={nameFont}
+            fontWeight={600}
+            textAnchor="middle"
+            dominantBaseline="central"
+            fill={labelFill}
+            style={{ pointerEvents: "none" }}
+          >
+            {name}
+          </text>
+        </>
       )}
       {name && !canFitName && <ElementLabel el={el} vpScale={vpScale} />}
     </g>
   );
 }
+
 
 
 function renderText(el: TextElement, common: any, hl: any) {
