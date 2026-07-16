@@ -29,6 +29,8 @@ export type CanvasTool =
   | "chair"
   | "fence";
 
+export type BgMode = "idle" | "adjust" | "crop";
+
 export interface CanvasProps {
   elements: AnyElement[];
   selection: string[];
@@ -41,6 +43,8 @@ export interface CanvasProps {
   onCalibrate?: (p1: { x: number; y: number }, p2: { x: number; y: number }) => void;
   mapInteractive?: boolean;
   onMapViewportChange?: (v: { lat: number; lng: number; zoom: number }) => void;
+  bgMode?: BgMode;
+  onBgChange?: (patch: Partial<BackgroundLayer>) => void;
 }
 
 // Screen -> world
@@ -57,6 +61,11 @@ type DragState =
   | { kind: "resize"; id: string; handle: string; startX: number; startY: number; orig: AnyElement }
   | { kind: "rotate"; id: string; cx: number; cy: number; startAngle: number; origRot: number }
   | { kind: "marquee"; startX: number; startY: number; x1: number; y1: number }
+  | { kind: "bg-move"; startX: number; startY: number; orig: BackgroundLayer }
+  | { kind: "bg-resize"; handle: string; startX: number; startY: number; orig: BackgroundLayer }
+  | { kind: "bg-rotate"; cx: number; cy: number; startAngle: number; origRot: number }
+  | { kind: "crop-move"; startX: number; startY: number; orig: { x: number; y: number; w: number; h: number }; bg: BackgroundLayer }
+  | { kind: "crop-resize"; handle: string; startX: number; startY: number; orig: { x: number; y: number; w: number; h: number }; bg: BackgroundLayer }
   | null;
 
 export function DesignerCanvas({ elements, selection, actions, tool, toolPayload, onZoomChange, viewportRef, background, onCalibrate, mapInteractive, onMapViewportChange }: CanvasProps) {
