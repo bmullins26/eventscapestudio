@@ -273,6 +273,49 @@ export function DesignerCanvas({ elements, selection, actions, tool, toolPayload
       let next = drag.origRot + (angle - drag.startAngle);
       if (e.shiftKey) next = Math.round(next / 15) * 15;
       actions.update(drag.id, { rotation: next } as Partial<AnyElement>);
+    } else if (drag.kind === "bg-move") {
+      const dx = (sx - drag.startX) / vp.scale;
+      const dy = (sy - drag.startY) / vp.scale;
+      onBgChange?.({ x: drag.orig.x + dx, y: drag.orig.y + dy });
+    } else if (drag.kind === "bg-resize") {
+      const dx = (sx - drag.startX) / vp.scale;
+      const dy = (sy - drag.startY) / vp.scale;
+      const o = drag.orig;
+      let { x, y, w, h } = o;
+      if (drag.handle.includes("e")) w = Math.max(1, o.w + dx);
+      if (drag.handle.includes("s")) h = Math.max(1, o.h + dy);
+      if (drag.handle.includes("w")) { w = Math.max(1, o.w - dx); x = o.x + (o.w - w); }
+      if (drag.handle.includes("n")) { h = Math.max(1, o.h - dy); y = o.y + (o.h - h); }
+      onBgChange?.({ x, y, w, h });
+    } else if (drag.kind === "bg-rotate") {
+      const w = s2w(sx, sy, vp);
+      const angle = Math.atan2(w.y - drag.cy, w.x - drag.cx) * 180 / Math.PI;
+      let next = drag.origRot + (angle - drag.startAngle);
+      if (e.shiftKey) next = Math.round(next / 15) * 15;
+      onBgChange?.({ rotation: next });
+    } else if (drag.kind === "crop-move") {
+      const dxF = (sx - drag.startX) / vp.scale / drag.bg.w;
+      const dyF = (sy - drag.startY) / vp.scale / drag.bg.h;
+      const nx = Math.min(1 - drag.orig.w, Math.max(0, drag.orig.x + dxF));
+      const ny = Math.min(1 - drag.orig.h, Math.max(0, drag.orig.y + dyF));
+      onBgChange?.({ crop: { x: nx, y: ny, w: drag.orig.w, h: drag.orig.h } });
+    } else if (drag.kind === "crop-resize") {
+      const dxF = (sx - drag.startX) / vp.scale / drag.bg.w;
+      const dyF = (sy - drag.startY) / vp.scale / drag.bg.h;
+      const o = drag.orig;
+      let { x, y, w, h } = o;
+      const min = 0.02;
+      if (drag.handle.includes("e")) w = Math.min(1 - o.x, Math.max(min, o.w + dxF));
+      if (drag.handle.includes("s")) h = Math.min(1 - o.y, Math.max(min, o.h + dyF));
+      if (drag.handle.includes("w")) {
+        const nx = Math.max(0, Math.min(o.x + o.w - min, o.x + dxF));
+        w = o.x + o.w - nx; x = nx;
+      }
+      if (drag.handle.includes("n")) {
+        const ny = Math.max(0, Math.min(o.y + o.h - min, o.y + dyF));
+        h = o.y + o.h - ny; y = ny;
+      }
+      onBgChange?.({ crop: { x, y, w, h } });
     } else if (drag.kind === "marquee") {
       setDrag({ ...drag, x1: sx, y1: sy });
     }
