@@ -540,18 +540,51 @@ function ObjectLibraryPanel({ onPick, activeTool, activeIconKey }: {
 
 function ElementsListPanel({
   elements, selection, onSelect, onToggleHidden, onToggleLocked,
+  background, bgSelected, onBgSelect, onBgToggleHidden, onBgToggleLocked,
 }: {
   elements: AnyElement[];
   selection: string[];
   onSelect: (id: string) => void;
   onToggleHidden: (id: string, hidden: boolean) => void;
   onToggleLocked: (id: string, locked: boolean) => void;
+  background?: ReturnType<typeof Object> | any;
+  bgSelected?: boolean;
+  onBgSelect?: () => void;
+  onBgToggleHidden?: () => void;
+  onBgToggleLocked?: () => void;
 }) {
-  if (elements.length === 0) {
+  const hasBg = !!background;
+  if (elements.length === 0 && !hasBg) {
     return <div className="text-xs text-muted-foreground">No elements yet. Pick a tool and click on the canvas to add one.</div>;
   }
   return (
     <div className="space-y-1">
+      {hasBg && (
+        <div
+          className={cn(
+            "flex items-center gap-2 rounded-md border px-2 py-1 text-xs",
+            bgSelected ? "border-primary/40 bg-primary/10 text-primary" : "border-border/60 hover:bg-muted",
+          )}
+        >
+          <button className="min-w-0 flex-1 truncate text-left font-medium" onClick={() => onBgSelect?.()}>
+            <MapPin className="mr-1 inline-block h-3 w-3" /> Base map
+          </button>
+          <button
+            onClick={() => onBgToggleHidden?.()}
+            className={cn("rounded px-1", background?.hidden ? "text-muted-foreground" : "text-foreground")}
+            title={background?.hidden ? "Show" : "Hide"}
+          >
+            {background?.hidden ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+          </button>
+          <button
+            onClick={() => onBgToggleLocked?.()}
+            className={cn("rounded px-1", background?.locked ? "text-primary" : "text-muted-foreground")}
+            title={background?.locked ? "Unlock" : "Lock"}
+          >
+            {background?.locked ? <Lock className="h-3.5 w-3.5" /> : <Unlock className="h-3.5 w-3.5" />}
+          </button>
+        </div>
+      )}
       {[...elements].reverse().map((el) => {
         const label = el.kind === "booth" ? `Booth ${(el as any).label}` : el.name ?? el.kind;
         const isSel = selection.includes(el.id);
@@ -568,17 +601,17 @@ function ElementsListPanel({
             </button>
             <button
               onClick={() => onToggleHidden(el.id, !el.hidden)}
-              className={cn("rounded px-1 text-[10px]", el.hidden ? "text-muted-foreground" : "text-foreground")}
+              className={cn("rounded px-1", el.hidden ? "text-muted-foreground" : "text-foreground")}
               title={el.hidden ? "Show" : "Hide"}
             >
-              {el.hidden ? "◌" : "●"}
+              {el.hidden ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
             </button>
             <button
               onClick={() => onToggleLocked(el.id, !el.locked)}
-              className={cn("rounded px-1 text-[10px]", el.locked ? "text-primary" : "text-muted-foreground")}
+              className={cn("rounded px-1", el.locked ? "text-primary" : "text-muted-foreground")}
               title={el.locked ? "Unlock" : "Lock"}
             >
-              {el.locked ? "🔒" : "🔓"}
+              {el.locked ? <Lock className="h-3.5 w-3.5" /> : <Unlock className="h-3.5 w-3.5" />}
             </button>
           </div>
         );
