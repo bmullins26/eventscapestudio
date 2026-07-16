@@ -1,9 +1,5 @@
 export type ElementKind =
   | "booth"
-  | "rect"
-  | "circle"
-  | "triangle"
-  | "line"
   | "text"
   | "icon";
 
@@ -23,7 +19,9 @@ export type IconKey =
   | "table"
   | "chair"
   | "fence"
-  | "road";
+  | "road"
+  | "walkway"
+  | "measure";
 
 export interface BaseElement {
   id: string;
@@ -37,6 +35,7 @@ export interface BaseElement {
   rotation: number; // degrees
   locked?: boolean;
   hidden?: boolean;
+  /** Human-readable label rendered under/on the element. Editable in-place. */
   name?: string;
 }
 
@@ -54,14 +53,6 @@ export interface BoothElement extends BaseElement {
   fontWeight: 400 | 500 | 600 | 700;
 }
 
-export interface ShapeElement extends BaseElement {
-  kind: "rect" | "circle" | "triangle" | "line";
-  fill: string;
-  stroke: string;
-  strokeWidth: number;
-  strokeStyle: "solid" | "dashed";
-}
-
 export interface TextElement extends BaseElement {
   kind: "text";
   text: string;
@@ -76,7 +67,7 @@ export interface IconElement extends BaseElement {
   tint: string;
 }
 
-export type AnyElement = BoothElement | ShapeElement | TextElement | IconElement;
+export type AnyElement = BoothElement | TextElement | IconElement;
 
 export interface BackgroundLayer {
   /**
