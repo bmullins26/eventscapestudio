@@ -399,17 +399,28 @@ export function DesignerCanvas({ elements, selection, actions, tool, toolPayload
           const bh = background.h * vp.scale;
           const cx = bx + bw / 2;
           const cy = by + bh / 2;
+          const crop = background.crop;
+          const clipId = crop ? `vd-bg-clip-${Math.round(bx)}-${Math.round(by)}` : null;
           return (
             <g transform={`rotate(${background.rotation} ${cx} ${cy})`} style={{ pointerEvents: "none" }}>
-              <image
-                href={background.url}
-                x={bx}
-                y={by}
-                width={bw}
-                height={bh}
-                opacity={background.opacity}
-                preserveAspectRatio="none"
-              />
+              {crop && clipId && (
+                <defs>
+                  <clipPath id={clipId} clipPathUnits="userSpaceOnUse">
+                    <rect x={bx + crop.x * bw} y={by + crop.y * bh} width={crop.w * bw} height={crop.h * bh} />
+                  </clipPath>
+                </defs>
+              )}
+              <g clipPath={clipId ? `url(#${clipId})` : undefined}>
+                <image
+                  href={background.url}
+                  x={bx}
+                  y={by}
+                  width={bw}
+                  height={bh}
+                  opacity={background.opacity}
+                  preserveAspectRatio="none"
+                />
+              </g>
               {background.kind === "satellite" && (
                 <text x={bx + 6} y={by + bh - 6} fontSize={10} fill="#fff" stroke="#000" strokeWidth={0.3}
                   style={{ pointerEvents: "none" }}>Imagery ©Google</text>
