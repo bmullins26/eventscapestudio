@@ -698,7 +698,9 @@ function ElementLabel({ el, vpScale }: { el: AnyElement; vpScale: number }) {
   const screenW = el.w * vpScale;
   if (screenW < 24) return null;
   const worldFont = 14 / Math.max(vpScale, 0.0001);
-  const y = el.y + el.h + worldFont * 0.9;
+  // Sit the label right up against the element (small screen-space gap ~2px).
+  const gap = 2 / Math.max(vpScale, 0.0001);
+  const y = el.y + el.h + gap;
   const fill = (el as { labelColor?: string }).labelColor ?? "hsl(var(--foreground))";
   const commonText = {
     x: el.x + el.w / 2,
@@ -706,7 +708,7 @@ function ElementLabel({ el, vpScale }: { el: AnyElement; vpScale: number }) {
     fontSize: worldFont,
     fontWeight: 700,
     textAnchor: "middle" as const,
-    dominantBaseline: "central" as const,
+    dominantBaseline: "hanging" as const,
   };
   return (
     <g style={{ pointerEvents: "none" }}>

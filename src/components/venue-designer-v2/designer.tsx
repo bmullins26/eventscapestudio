@@ -103,7 +103,11 @@ export function VenueDesignerV2({ venueId, organizationId, venueName, initial, o
     if (state.selection.length > 0) setRightOpen(true);
   }, [state.selection.length]);
 
-  // Keyboard shortcuts (V/B/R/C/T/L/M, arrows, delete, cmd+z, cmd+d)
+  // Clipboard for copy/cut/paste
+  const clipboardRef = useRef<AnyElement[]>([]);
+  const pasteOffsetRef = useRef(0);
+
+  // Keyboard shortcuts
   useEffect(() => {
     const isEditable = (t: EventTarget | null) => {
       const el = t as HTMLElement | null;
@@ -119,6 +123,38 @@ export function VenueDesignerV2({ venueId, organizationId, venueName, initial, o
         return;
       }
       if (meta && e.key.toLowerCase() === "y") { e.preventDefault(); actions.redo(); return; }
+      if (meta && e.key.toLowerCase() === "a") {
+        e.preventDefault();
+        actions.select(state.elements.filter((el) => !el.locked && !el.hidden).map((el) => el.id));
+        return;
+      }
+      if (meta && e.key.toLowerCase() === "c" && state.selection.length) {
+        e.preventDefault();
+        clipboardRef.current = state.elements.filter((el) => state.selection.includes(el.id));
+        pasteOffsetRef.current = 0;
+        return;
+      }
+      if (meta && e.key.toLowerCase() === "x" && state.selection.length) {
+        e.preventDefault();
+        clipboardRef.current = state.elements.filter((el) => state.selection.includes(el.id));
+        pasteOffsetRef.current = 0;
+        actions.remove(state.selection);
+        return;
+      }
+      if (meta && e.key.toLowerCase() === "v" && clipboardRef.current.length) {
+        e.preventDefault();
+        pasteOffsetRef.current += 5;
+        const off = pasteOffsetRef.current;
+        const newIds: string[] = [];
+        clipboardRef.current.forEach((el) => {
+          const id = uid();
+          newIds.push(id);
+          actions.add({ ...el, id, x: el.x + off, y: el.y + off } as AnyElement);
+        });
+        // select newly pasted
+        setTimeout(() => actions.select(newIds), 0);
+        return;
+      }
       if (meta && e.key.toLowerCase() === "d" && state.selection.length) {
         e.preventDefault();
         state.selection.forEach((id) => {

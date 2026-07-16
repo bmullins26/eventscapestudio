@@ -7,7 +7,12 @@ import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { ArrowUp, ArrowDown, ArrowUpToLine, ArrowDownToLine, Trash2, Copy, X, MapPin, Crop, RotateCcw, Move, Eye, EyeOff, Lock, Unlock } from "lucide-react";
+import {
+  ArrowUp, ArrowDown, ArrowUpToLine, ArrowDownToLine, Trash2, Copy, X, MapPin, Crop, RotateCcw, Move, Eye, EyeOff, Lock, Unlock,
+  AlignStartVertical, AlignCenterVertical, AlignEndVertical,
+  AlignStartHorizontal, AlignCenterHorizontal, AlignEndHorizontal,
+  AlignHorizontalDistributeCenter, AlignVerticalDistributeCenter,
+} from "lucide-react";
 import { describe, uid } from "./factory";
 import { AddBackgroundDialog } from "./add-background-dialog";
 
@@ -94,6 +99,7 @@ export function Inspector({
       <div className="flex h-full flex-col border-l border-border bg-card">
         <PanelHeader title={`${sel.length} objects selected`} />
         <div className="flex-1 space-y-3 overflow-auto p-3">
+          <AlignButtons sel={sel} actions={actions} />
           <ZButtons ids={sel.map((s) => s.id)} actions={actions} />
           <Button variant="destructive" size="sm" onClick={() => actions.remove(sel.map((s) => s.id))} className="w-full">
             <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Delete
@@ -225,6 +231,63 @@ function BoothFields({ el, actions }: { el: BoothElement; actions: DesignerActio
     </div>
   );
 }
+
+function AlignButtons({ sel, actions }: { sel: AnyElement[]; actions: DesignerActions }) {
+  if (sel.length < 2) return null;
+  const minX = Math.min(...sel.map((e) => e.x));
+  const maxX = Math.max(...sel.map((e) => e.x + e.w));
+  const minY = Math.min(...sel.map((e) => e.y));
+  const maxY = Math.max(...sel.map((e) => e.y + e.h));
+  const midX = (minX + maxX) / 2;
+  const midY = (minY + maxY) / 2;
+
+  const apply = (fn: (e: AnyElement) => Partial<AnyElement>) => {
+    sel.forEach((e) => actions.update(e.id, fn(e) as Partial<AnyElement>));
+  };
+  const distribute = (axis: "x" | "y") => {
+    if (sel.length < 3) return;
+    const sorted = [...sel].sort((a, b) => (axis === "x" ? a.x - b.x : a.y - b.y));
+    const first = sorted[0];
+    const last = sorted[sorted.length - 1];
+    const firstC = axis === "x" ? first.x + first.w / 2 : first.y + first.h / 2;
+    const lastC = axis === "x" ? last.x + last.w / 2 : last.y + last.h / 2;
+    const step = (lastC - firstC) / (sorted.length - 1);
+    sorted.forEach((el, i) => {
+      if (i === 0 || i === sorted.length - 1) return;
+      const target = firstC + step * i;
+      if (axis === "x") actions.update(el.id, { x: target - el.w / 2 } as Partial<AnyElement>);
+      else actions.update(el.id, { y: target - el.h / 2 } as Partial<AnyElement>);
+    });
+  };
+
+  const btn = (title: string, onClick: () => void, Icon: any) => (
+    <Button variant="outline" size="sm" title={title} onClick={onClick} className="h-8 w-full px-0">
+      <Icon className="h-3.5 w-3.5" />
+    </Button>
+  );
+
+  return (
+    <div className="space-y-2 rounded border border-border p-2">
+      <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Align</div>
+      <div className="grid grid-cols-6 gap-1">
+        {btn("Align left", () => apply((e) => ({ x: minX })), AlignStartVertical)}
+        {btn("Center horizontally", () => apply((e) => ({ x: midX - e.w / 2 })), AlignCenterVertical)}
+        {btn("Align right", () => apply((e) => ({ x: maxX - e.w })), AlignEndVertical)}
+        {btn("Align top", () => apply((e) => ({ y: minY })), AlignStartHorizontal)}
+        {btn("Center vertically", () => apply((e) => ({ y: midY - e.h / 2 })), AlignCenterHorizontal)}
+        {btn("Align bottom", () => apply((e) => ({ y: maxY - e.h })), AlignEndHorizontal)}
+      </div>
+      {sel.length >= 3 && (
+        <div className="grid grid-cols-2 gap-1">
+          {btn("Distribute horizontally", () => distribute("x"), AlignHorizontalDistributeCenter)}
+          {btn("Distribute vertically", () => distribute("y"), AlignVerticalDistributeCenter)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
 
 
 function TextFields({ el, actions }: { el: TextElement; actions: DesignerActions }) {
