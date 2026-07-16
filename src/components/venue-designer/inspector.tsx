@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { AnyElement, BoothElement, IconElement, LayoutSettings, ShapeElement, TextElement, BackgroundLayer } from "./types";
+import type { AnyElement, BoothElement, IconElement, LayoutSettings, TextElement, BackgroundLayer } from "./types";
 import type { DesignerActions } from "./store";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -108,11 +108,19 @@ export function Inspector({
     <div className="flex h-full flex-col border-l border-border bg-card">
       <PanelHeader title={describe(el)} sub={el.kind} />
       <div className="flex-1 space-y-4 overflow-auto p-3">
+        <Field label={el.kind === "text" ? "Text" : "Name"}>
+          <Input
+            className="h-8"
+            value={el.kind === "text" ? el.text : (el.name ?? "")}
+            placeholder={el.kind === "booth" ? "e.g. Kate's Pretzels" : "Label shown on canvas"}
+            onChange={(e) => {
+              if (el.kind === "text") actions.update(el.id, { text: e.target.value } as Partial<AnyElement>);
+              else actions.update(el.id, { name: e.target.value } as Partial<AnyElement>);
+            }}
+          />
+        </Field>
         <NumRow el={el} actions={actions} />
         {el.kind === "booth" && <BoothFields el={el as BoothElement} actions={actions} />}
-        {(el.kind === "rect" || el.kind === "circle" || el.kind === "triangle" || el.kind === "line") && (
-          <ShapeFields el={el as ShapeElement} actions={actions} />
-        )}
         {el.kind === "text" && <TextFields el={el as TextElement} actions={actions} />}
         {el.kind === "icon" && <IconFields el={el as IconElement} actions={actions} />}
         <ZButtons ids={[el.id]} actions={actions} />
