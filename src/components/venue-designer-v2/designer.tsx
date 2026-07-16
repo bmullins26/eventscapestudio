@@ -357,9 +357,14 @@ export function VenueDesignerV2({ venueId, organizationId, venueName, initial, o
                 <ElementsListPanel
                   elements={state.elements}
                   selection={state.selection}
-                  onSelect={(id) => actions.select([id])}
+                  onSelect={(id) => { setBgSelected(false); actions.select([id]); }}
                   onToggleHidden={(id, hidden) => actions.update(id, { hidden } as any)}
                   onToggleLocked={(id, locked) => actions.update(id, { locked } as any)}
+                  background={bg}
+                  bgSelected={bgSelected}
+                  onBgSelect={() => { actions.select([]); setBgSelected(true); }}
+                  onBgToggleHidden={() => bg && patchBg({ hidden: !bg.hidden })}
+                  onBgToggleLocked={() => bg && patchBg({ locked: !bg.locked })}
                 />
               )}
               {leftTab === "search" && (
