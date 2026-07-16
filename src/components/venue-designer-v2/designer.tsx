@@ -33,8 +33,6 @@ type LeftTab = "objects" | "layers" | "search" | null;
 function installFactory() {
   (globalThis as any).__vdFactory = (tool: string, x: number, y: number, extra?: any): AnyElement | null => {
     if (tool === "booth") return makeBooth(x - 5, y - 5);
-    if (tool === "rect" || tool === "circle" || tool === "triangle" || tool === "line")
-      return makeShape(tool as any, x - 6, y - 6);
     if (tool === "text") return makeText(x, y - 3);
     if (tool === "icon" && extra?.iconKey) return makeIcon(extra.iconKey as IconKey, x - 4, y - 4);
     if (
