@@ -482,10 +482,6 @@ function ObjectLibraryPanel({ onPick, activeTool, activeIconKey }: {
 }) {
   const shapes: Array<{ key: CanvasTool; label: string; icon: React.ReactNode }> = [
     { key: "booth", label: "Booth", icon: <Store className="h-4 w-4" /> },
-    { key: "rect", label: "Rectangle", icon: <Square className="h-4 w-4" /> },
-    { key: "circle", label: "Circle", icon: <CircleIcon className="h-4 w-4" /> },
-    { key: "triangle", label: "Triangle", icon: <Triangle className="h-4 w-4" /> },
-    { key: "line", label: "Line", icon: <Minus className="h-4 w-4" /> },
     { key: "text", label: "Text", icon: <Type className="h-4 w-4" /> },
     { key: "road" as CanvasTool, label: "Road", icon: <RouteIcon className="h-4 w-4" /> },
     { key: "walkway" as CanvasTool, label: "Walkway", icon: <Footprints className="h-4 w-4" /> },
