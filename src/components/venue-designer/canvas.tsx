@@ -534,7 +534,7 @@ export function DesignerCanvas({ elements, selection, actions, tool, toolPayload
         })()}
 
         {/* Crop overlay (screen space, rotates with bg) */}
-        {bgMode === "crop" && background && (() => {
+        {cropMode && background && (() => {
           const bx = (background.x - vp.x) * vp.scale;
           const by = (background.y - vp.y) * vp.scale;
           const bw = background.w * vp.scale;
