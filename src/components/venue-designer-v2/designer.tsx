@@ -57,6 +57,8 @@ export function VenueDesignerV2({ venueId, organizationId, venueName, initial, o
   const [bgDialogOpen, setBgDialogOpen] = useState(false);
   const [bgMode, setBgMode] = useState<"idle" | "adjust" | "crop">("idle");
   const viewportRef = useRef({ x: -20, y: -20, scale: 4 });
+  const workspaceRef = useRef<HTMLDivElement | null>(null);
+
 
   const bg = state.settings.background ?? null;
   const patchBg = (patch: Partial<NonNullable<typeof bg>>) => {
@@ -185,9 +187,13 @@ export function VenueDesignerV2({ venueId, organizationId, venueName, initial, o
   };
 
   const zoomToFit = () => {
+    const rect = workspaceRef.current?.getBoundingClientRect();
+    const winW = Math.max(200, (rect?.width ?? window.innerWidth) - 60);
+    const winH = Math.max(200, (rect?.height ?? window.innerHeight) - 60);
     if (state.elements.length === 0) {
-      viewportRef.current = { x: -20, y: -20, scale: 4 };
-      setZoomPct(100);
+      const scale = Math.max(1, Math.min(60, Math.min(winW / 120, winH / 90)));
+      viewportRef.current = { x: -10, y: -10, scale };
+      setZoomPct(Math.round(scale * 100 / 4));
       setTool((t) => t);
       return;
     }
@@ -198,13 +204,12 @@ export function VenueDesignerV2({ venueId, organizationId, venueName, initial, o
     const w = Math.max(1, maxX - minX);
     const h = Math.max(1, maxY - minY);
     const pad = 0.1;
-    const winW = window.innerWidth - 120;
-    const winH = window.innerHeight - 120;
     const scale = Math.max(1, Math.min(60, Math.min(winW / (w * (1 + pad)), winH / (h * (1 + pad)))));
     viewportRef.current = { x: minX - w * pad / 2, y: minY - h * pad / 2, scale };
     setZoomPct(Math.round(scale * 100 / 4));
     setTool((t) => t);
   };
+
 
   const selectedCount = state.selection.length;
   const selectedName = useMemo(() => {
@@ -217,9 +222,18 @@ export function VenueDesignerV2({ venueId, organizationId, venueName, initial, o
   }, [selectedCount, state.selection, state.elements]);
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-background overflow-hidden">
-      {/* Full-bleed canvas fills the entire viewport */}
-      <div className="absolute inset-0">
+    <div className="fixed inset-0 flex flex-col overflow-hidden designer-desk">
+      {/* Framed workspace — a centered "sheet on a desk" that clips the canvas */}
+      <div
+        ref={workspaceRef}
+        className={cn(
+          "absolute rounded-2xl border border-border/70 bg-card overflow-hidden",
+          "shadow-[0_20px_60px_-20px_hsl(var(--foreground)/0.28),0_2px_6px_-2px_hsl(var(--foreground)/0.08)]",
+          "transition-[right,left,top,bottom] duration-200 ease-out",
+          "top-[68px] bottom-[60px] left-[68px]",
+          rightOpen ? "right-[340px]" : "right-4",
+        )}
+      >
         <DesignerCanvas
           elements={state.elements}
           selection={state.selection}
@@ -234,23 +248,24 @@ export function VenueDesignerV2({ venueId, organizationId, venueName, initial, o
           mapInteractive={bgMode === "adjust" && bg?.kind === "google-satellite"}
           onMapViewportChange={onMapViewport}
         />
+
+        {bgMode !== "idle" && (
+          <div className="pointer-events-none absolute inset-x-0 top-2 z-20 flex justify-center px-3">
+            <div className="pointer-events-auto rounded-md border border-border/60 bg-card/95 px-3 py-1.5 text-xs shadow-lg backdrop-blur">
+              {bgMode === "adjust"
+                ? (bg?.kind === "google-satellite"
+                    ? "Drag the map to pan · scroll to zoom · use the frame handle to rotate"
+                    : "Drag to move · handles to resize · top handle to rotate")
+                : "Drag the crop handles — click Apply on Crop to keep, or click Adjust/Crop again to exit"}
+              <button
+                className="ml-3 rounded px-2 py-0.5 text-[11px] font-medium text-primary hover:bg-muted"
+                onClick={() => setBgMode("idle")}
+              >Done</button>
+            </div>
+          </div>
+        )}
       </div>
 
-      {bgMode !== "idle" && (
-        <div className="pointer-events-none absolute inset-x-0 top-16 z-40 flex justify-center">
-          <div className="pointer-events-auto rounded-md border border-border/60 bg-card/95 px-3 py-1.5 text-xs shadow-lg backdrop-blur">
-            {bgMode === "adjust"
-              ? (bg?.kind === "google-satellite"
-                  ? "Drag the map to pan · scroll to zoom · use the frame handle to rotate"
-                  : "Drag to move · handles to resize · top handle to rotate")
-              : "Drag the crop handles — click Apply on Crop to keep, or click Adjust/Crop again to exit"}
-            <button
-              className="ml-3 rounded px-2 py-0.5 text-[11px] font-medium text-primary hover:bg-muted"
-              onClick={() => setBgMode("idle")}
-            >Done</button>
-          </div>
-        </div>
-      )}
 
       {/* Top floating toolbar */}
       <div className="pointer-events-none absolute inset-x-0 top-0 z-30 flex items-start justify-between gap-3 p-3">
@@ -360,7 +375,7 @@ export function VenueDesignerV2({ venueId, organizationId, venueName, initial, o
 
       {/* Right contextual inspector — floating overlay */}
       {rightOpen && (
-        <div className="pointer-events-auto absolute right-3 top-20 z-30 flex h-[calc(100vh-8rem)] w-80 flex-col overflow-hidden rounded-xl border border-border/60 bg-card/95 shadow-xl backdrop-blur">
+        <div className="pointer-events-auto absolute right-4 top-[68px] bottom-[60px] z-30 flex w-80 flex-col overflow-hidden rounded-2xl border border-border/60 bg-card/95 shadow-xl backdrop-blur">
           <div className="flex items-center justify-between border-b border-border px-3 py-2">
             <div className="min-w-0 truncate text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               {selectedCount === 0 ? "Layout settings" : selectedName}

@@ -167,3 +167,14 @@
   border-radius: var(--radius-2xl);
   box-shadow: var(--shadow-soft);
 }
+
+@utility designer-desk {
+  background-color: color-mix(in oklab, var(--color-muted) 55%, var(--color-background));
+  background-image: radial-gradient(
+    circle at 1px 1px,
+    color-mix(in oklab, var(--color-foreground) 12%, transparent) 1px,
+    transparent 0
+  );
+  background-size: 22px 22px;
+}
+

@@ -1,51 +1,74 @@
-## Goal
+# OnePlan-style framed workspace for the Venue Designer
 
-Let the user reposition (drag), resize/rotate, and crop **any** background — satellite maps as well as uploaded images / PDFs — inside the v2 designer.
+Right now `VenueDesignerV2` renders `DesignerCanvas` full-bleed (`absolute inset-0`) behind floating toolbars. OnePlan instead puts the map/plan inside a clearly bounded, rounded "stage" that sits centered on screen with breathing room, so all drawing, panning, zooming happens *inside a frame* while chrome (toolbars, side panels, inspector) surrounds it.
 
-## Current state
+This plan reshapes the designer shell to match that feel, without touching drawing logic or data.
 
-- `SatelliteMapLayer` already supports `interactive` mode: the Google Map itself becomes draggable/zoomable and reports new `{ lat, lng, zoom }` via `onViewportChange`. Not wired into v2 yet.
-- Uploaded `image` backgrounds render as a static `<img>` in `canvas.tsx`. There is no drag/resize/rotate UI for the background — only opacity, rotation number field, lock and calibrate in the Inspector.
-- Backgrounds store `{ x, y, w, h, rotation, opacity, locked, calibrated }` in world feet. Satellite adds `{ lat, lng, zoom, meta }`. There is no crop field.
+## What changes visually
 
-## Plan
+```text
+┌──────────────────────────────────────────────────────────────┐
+│  [toolbar]         [center tools]              [save]        │
+│                                                              │
+│  ┌──┐   ┌──────────────────────────────────────┐  ┌────────┐ │
+│  │◧ │   │                                      │  │ Insp.  │ │
+│  │◨ │   │        FRAMED WORKSPACE              │  │ panel  │ │
+│  │◪ │   │        (canvas + map inside)         │  │        │ │
+│  └──┘   │                                      │  └────────┘ │
+│         └──────────────────────────────────────┘             │
+│                     [zoom pill · % · fit]                    │
+└──────────────────────────────────────────────────────────────┘
+```
 
-### 1. Unified "Adjust background" mode (drag + resize + rotate)
+- Neutral app background behind the workspace (soft muted tone, very subtle grid or dot pattern) so the frame reads as a distinct "sheet on a desk".
+- The workspace is a centered card: rounded-2xl, 1px border, soft outer shadow, `overflow: hidden` so tiles/elements are clipped by the frame edge.
+- A small header strip on the workspace shows plan name + status pill (Saved / Unsaved / Saving) — echoes OnePlan's top bar on the plan itself.
+- Floating toolbars keep their current pill styling but sit *outside* the frame, gaining padding so they never overlap the frame corners.
+- The zoom / fit / percentage cluster moves to a floating pill anchored to the bottom of the frame (OnePlan pattern).
 
-Works for **both** `google-satellite` and `image` (uploaded PNG / JPG / PDF-rasterized) backgrounds.
+## Layout math
 
-- Add `adjustingBackground: boolean` state in `src/components/venue-designer-v2/designer.tsx`, plus an **Adjust** button in the Inspector's `BackgroundSection` (replaces the current lock/unlock toggle when enabled).
-- While adjusting, canvas element hit-testing is suspended and the background renders with a selection frame + 8 resize handles + a rotate handle, using the same interaction model already implemented for elements in `canvas.tsx` (reuse the resize/rotate math from `store.ts`).
-- **Satellite specifics**: in adjust mode, also render `SatelliteMapLayer` with `interactive={true}` so the user can pan/zoom the tiles inside the frame. `onViewportChange` updates `{ lat, lng, zoom }` on the background. Zooming rescales `widthFeet`/`heightFeet` using the same meters-per-pixel formula used server-side in `fetchSatelliteBackground`, so ground truth stays accurate — venue elements keep their real-world size relative to the map.
-- **Uploaded image/PDF specifics**: dragging the frame moves `{x,y}`; corner handles resize (preserving aspect by default, Shift to free-scale); edge handles free-scale one axis; rotate handle updates `rotation`. This effectively replaces the old "Calibrate" workflow for the common case of "just make this fit"; Calibrate stays available for precise two-point scale.
-- **History**: single undo entry committed on **Done**, not per drag frame. **Cancel** restores the pre-mode snapshot without touching history.
+Replace the `fixed inset-0` + `absolute inset-0 canvas` structure in `src/components/venue-designer-v2/designer.tsx` with a CSS grid:
 
-### 2. Unified Crop mode
+- Row 1: top toolbar (auto height)
+- Row 2: `1fr` — contains a flex row of [left rail + optional slide-over] · [framed workspace] · [inspector]
+- Row 3: bottom status/zoom bar (auto height)
 
-Works for both background kinds.
+The framed workspace is the middle grid cell with:
+```
+className="relative m-4 flex-1 min-w-0 min-h-0 rounded-2xl border border-border/70 bg-card shadow-[0_10px_40px_-15px_hsl(var(--foreground)/0.25)] overflow-hidden"
+```
+`DesignerCanvas` fills that container with `absolute inset-0`, so nothing about its internal SVG / pan-zoom math changes — it just becomes framed instead of full-bleed.
 
-- Extend `BackgroundLayer` in `src/components/venue-designer/types.ts` with an optional `crop?: { x: number; y: number; w: number; h: number }` in world feet, relative to the background's own `{x,y,w,h}` box (so moving/rotating the background moves the crop with it).
-- Add a **Crop** button to the `BackgroundSection`. Entering crop mode overlays a draggable/resizable rectangle with 8 handles on top of the background in `canvas.tsx`. **Apply** commits `crop`; **Cancel** discards; **Reset crop** clears an existing crop.
-- Rendering: when `bg.crop` is set, wrap the background in a clipping container (`clipPath: inset(...)` computed from the crop rect in screen space). For satellite, this masks the scaled tile host inside `SatelliteMapLayer` — the map keeps rendering full-resolution, we just mask it. For uploaded images/PDFs, same clip approach around the `<img>`.
-- Crop is **non-destructive**: the underlying image/tiles are untouched; only the visible region changes. Undo restores instantly.
+## Zoom-to-fit correction
 
-### 3. Inspector wiring
+`zoomToFit()` currently sizes to `window.innerWidth - 120` / `window.innerHeight - 120`. That was correct for full-bleed but overshoots inside the new frame. Fix: measure the workspace element via a ref (`workspaceRef.current.getBoundingClientRect()`) and fit to that rect (minus a small padding), so "Fit" centers the plan inside the frame exactly like OnePlan's fit control.
 
-- `BackgroundSection` (both v1 and v2 share this component via `inspector.tsx`) gains three actions: **Adjust**, **Crop**, **Reset crop** (visible only when a crop exists). Adjust / Crop / Calibrate are mutually exclusive.
-- A thin hint bar renders at the top of the canvas while a mode is active:
-  - Adjust satellite: "Drag the map to pan · scroll to zoom · drag the frame handles to resize — Done / Cancel"
-  - Adjust image/PDF: "Drag to move · handles to resize · top handle to rotate — Done / Cancel"
-  - Crop: "Drag the handles to crop — Apply / Cancel"
+## Side panels
 
-### 4. Files touched
+- Left rail and its slide-over stay as floating pills but are re-anchored to the outer shell (outside the frame's left edge) instead of `absolute` inside the canvas layer. Same for the top toolbar.
+- Inspector (`rightOpen`) becomes a real grid column when open (width 320px), pushing the frame narrower rather than overlapping it — matches OnePlan's docked right panel behavior. When closed, only the toggle button remains.
 
-- `src/components/venue-designer/types.ts` — add `crop` to `BackgroundLayer`.
-- `src/components/venue-designer/inspector.tsx` — Adjust / Crop / Reset crop buttons + callbacks; accept a `mode` prop from the parent so buttons reflect active state.
-- `src/components/venue-designer/canvas.tsx` — background selection frame with resize/rotate handles when adjusting; crop overlay with handles when cropping; clip-path when `crop` set; suspend element hit-testing during either mode; hint bar.
-- `src/components/venue-designer/satellite-map-layer.tsx` — no code change needed (already supports `interactive`); the canvas wraps it in the clipping container.
-- `src/components/venue-designer-v2/designer.tsx` — `mode: 'idle' | 'adjust' | 'crop'` state, viewport-change handler that recomputes world size from zoom, single-entry history commits on Done/Apply, pass mode + callbacks to Inspector and canvas.
+## Background modes hint bar
 
-## Questions
+The "Drag the map… / Drag the crop handles…" hint (lines 239–253) currently floats at `top-16`. Move it to be anchored to the top of the framed workspace (absolute inside the frame, `top-2`), so instructions live with the stage, not with the app shell.
 
-1. In Adjust mode for **satellite**, when the user zooms the tiles, should the map's world size (feet) **rescale** so ground truth stays accurate (recommended — keeps elements to scale) or **stay locked** (map just shows more/less detail inside the same rectangle)?
-2. Crop as **non-destructive mask** (my default — easy to reset, no data lost) or physically **shrink** the background's `{x,y,w,h}` to the crop region on Apply?
+## Files touched
+
+- `src/components/venue-designer-v2/designer.tsx` — restructure JSX from fixed/absolute layers into a grid shell; add `workspaceRef`; update `zoomToFit`; re-anchor bg-mode hint bar; move zoom controls into a bottom-of-frame pill.
+- `src/styles.css` — one small utility for the subtle dotted desk background behind the frame (`.designer-desk` with `background-image: radial-gradient(...)`).
+
+No changes to `canvas.tsx`, `store.ts`, `inspector.tsx`, `satellite-map-layer.tsx`, or any data model — just shell/chrome.
+
+## Out of scope (say so if you want them next)
+
+- Reworking the tool palette into OnePlan's left-side category tree
+- OnePlan-style layers panel with drag-reorder
+- Sharing / export toolbar cluster on the right
+- Locking pan so you can't scroll the canvas *outside* the frame (currently drawings can live off-frame; OnePlan clips visually but still allows off-canvas work — I'd keep current behavior unless you want a hard boundary)
+
+## Question
+
+One decision to confirm before I build:
+
+**When the inspector is open, should the framed workspace shrink to fit the remaining space (OnePlan-style docked panel), or should the inspector float over the frame like the toolbars do today?** I'd recommend docked/shrink — feels more like a proper workspace and avoids the inspector covering the map.
