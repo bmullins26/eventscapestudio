@@ -378,7 +378,7 @@ export function DesignerCanvas({ elements, selection, actions, tool, toolPayload
       {/* Live Google Maps satellite layer (behind SVG). Rendered when the
           background is a "google-satellite" kind. Pointer-events disabled so
           the SVG above handles all input. */}
-      {background && background.kind === "google-satellite" &&
+      {background && !background.hidden && background.kind === "google-satellite" &&
         typeof background.meta?.lat === "number" &&
         typeof background.meta?.lng === "number" && (() => {
         const bx = (background.x - vp.x) * vp.scale;
