@@ -261,8 +261,16 @@ function colorish(v: string): string {
   return "#4f46e5";
 }
 
-function BackgroundSection({ background, onChange }: { background: BackgroundLayer; onChange: (bg: BackgroundLayer | null) => void }) {
+function BackgroundSection({
+  background, onChange, bgMode = "idle", onBgModeChange,
+}: {
+  background: BackgroundLayer;
+  onChange: (bg: BackgroundLayer | null) => void;
+  bgMode?: BgEditMode;
+  onBgModeChange?: (mode: BgEditMode) => void;
+}) {
   const s = (patch: Partial<BackgroundLayer>) => onChange({ ...background, ...patch });
+  const toggleMode = (m: BgEditMode) => onBgModeChange?.(bgMode === m ? "idle" : m);
   return (
     <div className="space-y-3 rounded border border-border p-3">
       <div className="flex items-center justify-between">
@@ -272,9 +280,25 @@ function BackgroundSection({ background, onChange }: { background: BackgroundLay
         </Button>
       </div>
       <div className="text-[11px] text-muted-foreground">
-        {background.kind === "satellite" ? (background.meta?.address ?? "Satellite imagery") : "Uploaded reference"}
+        {background.kind === "google-satellite" ? (background.meta?.address ?? "Satellite imagery") :
+          background.kind === "satellite" ? (background.meta?.address ?? "Satellite imagery") : "Uploaded reference"}
         {background.calibrated ? " · calibrated" : " · not calibrated"}
       </div>
+      {onBgModeChange && (
+        <div className="grid grid-cols-2 gap-2">
+          <Button size="sm" variant={bgMode === "adjust" ? "default" : "outline"} className="h-8" onClick={() => toggleMode("adjust")}>
+            <Move className="mr-1.5 h-3.5 w-3.5" /> {bgMode === "adjust" ? "Done" : "Adjust"}
+          </Button>
+          <Button size="sm" variant={bgMode === "crop" ? "default" : "outline"} className="h-8" onClick={() => toggleMode("crop")}>
+            <Crop className="mr-1.5 h-3.5 w-3.5" /> {bgMode === "crop" ? "Apply" : "Crop"}
+          </Button>
+        </div>
+      )}
+      {background.crop && (
+        <Button size="sm" variant="ghost" className="h-7 w-full text-xs" onClick={() => s({ crop: null })}>
+          <RotateCcw className="mr-1.5 h-3 w-3" /> Reset crop
+        </Button>
+      )}
       <div>
         <Label className="text-[11px] text-muted-foreground">Opacity ({Math.round(background.opacity * 100)}%)</Label>
         <Slider
