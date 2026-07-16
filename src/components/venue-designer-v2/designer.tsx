@@ -55,7 +55,29 @@ export function VenueDesignerV2({ venueId, organizationId, venueName, initial, o
   const [leftTab, setLeftTab] = useState<LeftTab>(null);
   const [rightOpen, setRightOpen] = useState(true);
   const [bgDialogOpen, setBgDialogOpen] = useState(false);
+  const [bgMode, setBgMode] = useState<"idle" | "adjust" | "crop">("idle");
   const viewportRef = useRef({ x: -20, y: -20, scale: 4 });
+
+  const bg = state.settings.background ?? null;
+  const patchBg = (patch: Partial<NonNullable<typeof bg>>) => {
+    if (!bg) return;
+    actions.setSettings({ background: { ...bg, ...patch } });
+  };
+  const onMapViewport = (v: { lat: number; lng: number; zoom: number }) => {
+    if (!bg || bg.kind !== "google-satellite") return;
+    const mpp = (156543.03392 * Math.cos((v.lat * Math.PI) / 180)) / Math.pow(2, v.zoom);
+    const feet = 1024 * mpp * 3.28084;
+    const cx = bg.x + bg.w / 2;
+    const cy = bg.y + bg.h / 2;
+    actions.setSettings({
+      background: {
+        ...bg,
+        w: feet, h: feet,
+        x: cx - feet / 2, y: cy - feet / 2,
+        meta: { ...(bg.meta ?? {}), lat: v.lat, lng: v.lng, zoom: v.zoom },
+      },
+    });
+  };
 
   useEffect(() => { installFactory(); }, []);
 
