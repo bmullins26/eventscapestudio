@@ -1,4 +1,4 @@
-import type { AnyElement, BoothElement, IconKey } from "./types";
+import type { AnyElement, BoothElement, IconElement, IconKey, TextElement } from "./types";
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
@@ -28,23 +28,7 @@ export function makeBooth(x: number, y: number): BoothElement {
   };
 }
 
-export function makeShape(kind: "rect" | "circle" | "triangle" | "line", x: number, y: number): AnyElement {
-  return {
-    id: uid(),
-    kind,
-    x,
-    y,
-    w: kind === "line" ? 20 : 12,
-    h: kind === "line" ? 0 : 12,
-    rotation: 0,
-    fill: kind === "line" ? "transparent" : "hsl(var(--muted))",
-    stroke: "hsl(var(--foreground))",
-    strokeWidth: 1,
-    strokeStyle: "solid",
-  } as AnyElement;
-}
-
-export function makeText(x: number, y: number): AnyElement {
+export function makeText(x: number, y: number): TextElement {
   return {
     id: uid(),
     kind: "text",
@@ -60,7 +44,8 @@ export function makeText(x: number, y: number): AnyElement {
   };
 }
 
-export function makeIcon(iconKey: IconKey, x: number, y: number): AnyElement {
+export function makeIcon(iconKey: IconKey, x: number, y: number): IconElement {
+  const label = ICONS.find((i) => i.key === iconKey)?.label ?? "";
   return {
     id: uid(),
     kind: "icon",
@@ -71,41 +56,38 @@ export function makeIcon(iconKey: IconKey, x: number, y: number): AnyElement {
     rotation: 0,
     iconKey,
     tint: "hsl(var(--primary))",
+    name: label,
   };
 }
 
 type PresetKind = "road" | "walkway" | "building" | "parking" | "measure" | "table" | "chair" | "fence";
 
-const PRESETS: Record<PresetKind, { kind: "rect" | "line"; w: number; h: number; fill: string; stroke: string; strokeWidth: number; strokeStyle: "solid" | "dashed"; name: string }> = {
-  road:     { kind: "rect", w: 60, h: 12, fill: "hsl(0 0% 30%)",  stroke: "hsl(0 0% 90%)", strokeWidth: 0.4, strokeStyle: "dashed", name: "Road" },
-  walkway:  { kind: "rect", w: 40, h: 6,  fill: "hsl(30 25% 75%)", stroke: "hsl(30 25% 55%)", strokeWidth: 0.3, strokeStyle: "solid", name: "Walkway" },
-  building: { kind: "rect", w: 30, h: 20, fill: "hsl(210 15% 55%)", stroke: "hsl(210 20% 30%)", strokeWidth: 0.6, strokeStyle: "solid", name: "Building" },
-  parking:  { kind: "rect", w: 40, h: 20, fill: "hsl(0 0% 45%)",  stroke: "hsl(0 0% 90%)",  strokeWidth: 0.4, strokeStyle: "dashed", name: "Parking" },
-  measure:  { kind: "line", w: 20, h: 0,  fill: "transparent",     stroke: "hsl(var(--primary))", strokeWidth: 0.4, strokeStyle: "solid", name: "Measurement" },
-  table:    { kind: "rect", w: 6,  h: 3,  fill: "hsl(30 40% 65%)", stroke: "hsl(30 40% 35%)", strokeWidth: 0.3, strokeStyle: "solid", name: "Table" },
-  chair:    { kind: "rect", w: 2,  h: 2,  fill: "hsl(210 15% 70%)", stroke: "hsl(210 15% 40%)", strokeWidth: 0.2, strokeStyle: "solid", name: "Chair" },
-  fence:    { kind: "line", w: 30, h: 0,  fill: "transparent",     stroke: "hsl(30 25% 30%)", strokeWidth: 0.5, strokeStyle: "dashed", name: "Fence" },
+const PRESETS: Record<PresetKind, { iconKey: IconKey; w: number; h: number; name: string }> = {
+  road:     { iconKey: "road",     w: 60, h: 12, name: "Road" },
+  walkway:  { iconKey: "walkway",  w: 40, h: 6,  name: "Walkway" },
+  building: { iconKey: "building", w: 30, h: 20, name: "Building" },
+  parking:  { iconKey: "parking",  w: 40, h: 20, name: "Parking" },
+  measure:  { iconKey: "measure",  w: 20, h: 4,  name: "Measurement" },
+  table:    { iconKey: "table",    w: 8,  h: 4,  name: "Table" },
+  chair:    { iconKey: "chair",    w: 3,  h: 3,  name: "Chair" },
+  fence:    { iconKey: "fence",    w: 30, h: 4,  name: "Fence" },
 };
 
-export function makePreset(kind: PresetKind, x: number, y: number): AnyElement {
+export function makePreset(kind: PresetKind, x: number, y: number): IconElement {
   const p = PRESETS[kind];
   return {
     id: uid(),
-    kind: p.kind,
+    kind: "icon",
     x: x - p.w / 2,
-    y: y - Math.max(p.h, 1) / 2,
+    y: y - p.h / 2,
     w: p.w,
     h: p.h,
     rotation: 0,
-    fill: p.fill,
-    stroke: p.stroke,
-    strokeWidth: p.strokeWidth,
-    strokeStyle: p.strokeStyle,
+    iconKey: p.iconKey,
+    tint: "hsl(var(--foreground))",
     name: p.name,
-  } as AnyElement;
+  };
 }
-
-
 
 export const ICONS: Array<{ key: IconKey; label: string }> = [
   { key: "booth_canopy", label: "Canopy booth" },
@@ -115,6 +97,7 @@ export const ICONS: Array<{ key: IconKey; label: string }> = [
   { key: "tree", label: "Tree" },
   { key: "fence", label: "Fence" },
   { key: "road", label: "Road" },
+  { key: "walkway", label: "Walkway" },
   { key: "building", label: "Building" },
   { key: "restroom", label: "Restroom" },
   { key: "stage", label: "Stage" },
@@ -124,14 +107,24 @@ export const ICONS: Array<{ key: IconKey; label: string }> = [
   { key: "atm", label: "ATM" },
   { key: "info", label: "Info" },
   { key: "arrow", label: "Arrow" },
+  { key: "measure", label: "Measurement" },
 ];
 
 export function describe(el: AnyElement): string {
   if (el.name) return el.name;
   if (el.kind === "booth") return `Booth ${el.label}`;
   if (el.kind === "text") return `Text: ${el.text.slice(0, 20)}`;
-  if (el.kind === "icon") return `Icon: ${el.iconKey}`;
-  return el.kind.charAt(0).toUpperCase() + el.kind.slice(1);
+  if (el.kind === "icon") return ICONS.find((i) => i.key === el.iconKey)?.label ?? "Icon";
+  return "Object";
+}
+
+/**
+ * Filter out any legacy element kinds (rect/circle/triangle/line) that may
+ * exist in previously-saved layouts. Primitives are no longer supported.
+ */
+export function stripLegacyElements(elements: AnyElement[]): AnyElement[] {
+  const allowed = new Set(["booth", "text", "icon"]);
+  return elements.filter((e) => allowed.has((e as { kind: string }).kind));
 }
 
 export { uid };

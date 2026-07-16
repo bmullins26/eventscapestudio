@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import type { AnyElement, BoothElement, ShapeElement, TextElement, IconElement, BackgroundLayer } from "./types";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import type { AnyElement, BoothElement, TextElement, IconElement, BackgroundLayer } from "./types";
 import type { DesignerActions } from "./store";
 import { IconGlyph } from "./icon-glyph";
 import { SatelliteMapLayer } from "./satellite-map-layer";
@@ -13,10 +13,6 @@ interface Viewport {
 export type CanvasTool =
   | "select"
   | "booth"
-  | "rect"
-  | "circle"
-  | "triangle"
-  | "line"
   | "text"
   | "icon"
   | "calibrate"
@@ -77,6 +73,9 @@ export function DesignerCanvas({ elements, selection, actions, tool, toolPayload
   const [drag, setDrag] = useState<DragState>(null);
   const [size, setSize] = useState({ w: 800, h: 600 });
   const [calibratePt1, setCalibratePt1] = useState<{ x: number; y: number } | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingValue, setEditingValue] = useState("");
+  const editingInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => { viewportRef.current = vp; onZoomChange?.(Math.round(vp.scale * 100 / 4)); }, [vp, onZoomChange, viewportRef]);
 
@@ -364,6 +363,53 @@ export function DesignerCanvas({ elements, selection, actions, tool, toolPayload
 
   const cursor = drag?.kind === "pan" ? "grabbing" : space ? "grab" : tool !== "select" ? "crosshair" : "default";
 
+  const startEditing = (id: string) => {
+    const el = elements.find((e) => e.id === id);
+    if (!el || el.locked) return;
+    const current = el.kind === "text" ? el.text : (el.name ?? (el.kind === "booth" ? el.label : ""));
+    setEditingId(id);
+    setEditingValue(current);
+  };
+  const commitEdit = () => {
+    if (!editingId) return;
+    const el = elements.find((e) => e.id === editingId);
+    if (el) {
+      const v = editingValue.trim();
+      if (el.kind === "text") actions.update(el.id, { text: v || "Label" } as Partial<AnyElement>);
+      else actions.update(el.id, { name: v } as Partial<AnyElement>);
+    }
+    setEditingId(null);
+  };
+  const cancelEdit = () => setEditingId(null);
+
+  // F2 keyboard shortcut for renaming the current selection
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      const inEditable = t && (["INPUT", "TEXTAREA", "SELECT"].includes(t.tagName) || t.isContentEditable);
+      if (inEditable) return;
+      if (e.key === "F2" && selection.length === 1) {
+        e.preventDefault();
+        startEditing(selection[0]);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selection, elements]);
+
+  useLayoutEffect(() => {
+    if (editingId && editingInputRef.current) {
+      editingInputRef.current.focus();
+      editingInputRef.current.select();
+    }
+  }, [editingId]);
+
+  const onDoubleClick: React.MouseEventHandler<HTMLDivElement> = (e) => {
+    const idAttr = (e.target as Element).closest("[data-el-id]")?.getAttribute("data-el-id");
+    if (idAttr) startEditing(idAttr);
+  };
+
   return (
     <div
       ref={containerRef}
@@ -371,6 +417,7 @@ export function DesignerCanvas({ elements, selection, actions, tool, toolPayload
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
+      onDoubleClick={onDoubleClick}
       onContextMenu={(e) => e.preventDefault()}
       style={{ cursor }}
       className="relative h-full w-full overflow-hidden bg-muted/40 touch-none select-none"
@@ -583,6 +630,36 @@ export function DesignerCanvas({ elements, selection, actions, tool, toolPayload
           />
         )}
       </svg>
+
+      {/* Inline rename overlay (HTML input positioned over the element) */}
+      {editingId && (() => {
+        const el = elements.find((e) => e.id === editingId);
+        if (!el) return null;
+        const sx = (el.x - vp.x) * vp.scale;
+        const sy = (el.y - vp.y) * vp.scale;
+        const sw = Math.max(80, el.w * vp.scale);
+        const sh = el.h * vp.scale;
+        // Place the input just below the element (or centered inside a booth).
+        const top = el.kind === "booth" ? sy + sh / 2 - 12 : sy + sh + 4;
+        return (
+          <input
+            ref={editingInputRef}
+            value={editingValue}
+            onChange={(e) => setEditingValue(e.target.value)}
+            onBlur={commitEdit}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") { e.preventDefault(); commitEdit(); }
+              else if (e.key === "Escape") { e.preventDefault(); cancelEdit(); }
+              e.stopPropagation();
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+            onDoubleClick={(e) => e.stopPropagation()}
+            placeholder={el.kind === "booth" ? "Booth name (e.g. Kate's Pretzels)" : "Name"}
+            className="absolute z-30 rounded-md border border-primary/70 bg-card px-2 py-1 text-xs font-medium shadow-lg outline-none focus:ring-2 focus:ring-primary"
+            style={{ left: sx, top, width: sw, minWidth: 120 }}
+          />
+        );
+      })()}
     </div>
   );
 }
@@ -604,49 +681,95 @@ function ElementNode({ el, selected, vpScale }: { el: AnyElement; selected: bool
   const commonProps: any = { "data-el-id": el.id, transform, style: { cursor: el.locked ? "not-allowed" : "move" } };
   const highlight = selected ? { filter: "drop-shadow(0 0 2px hsl(var(--primary)))" } : {};
 
-  if (el.kind === "booth") return renderBooth(el as BoothElement, commonProps, highlight);
-  if (el.kind === "rect") return renderRect(el as ShapeElement, commonProps, highlight);
-  if (el.kind === "circle") return renderCircle(el as ShapeElement, commonProps, highlight);
-  if (el.kind === "triangle") return renderTriangle(el as ShapeElement, commonProps, highlight);
-  if (el.kind === "line") return renderLine(el as ShapeElement, commonProps, highlight);
-  if (el.kind === "text") return renderText(el as TextElement, commonProps, highlight);
-  if (el.kind === "icon") return renderIcon(el as IconElement, commonProps, highlight, vpScale);
+  if (el.kind === "booth") return renderBooth(el, commonProps, highlight);
+  if (el.kind === "text") return renderText(el, commonProps, highlight);
+  if (el.kind === "icon") return renderIcon(el, commonProps, highlight, vpScale);
   return null;
 }
 
-function renderBooth(el: BoothElement, common: any, hl: any) {
-  const dash = el.strokeStyle === "dashed" ? "1 0.6" : undefined;
+/**
+ * Auto-fitting label below an element. Uses SVG `textLength` so long names
+ * shrink horizontally to fit within the element's world-space width. Hidden
+ * at very small on-screen sizes to avoid clutter.
+ */
+function ElementLabel({ el, vpScale }: { el: AnyElement; vpScale: number }) {
+  const name = el.name?.trim();
+  if (!name) return null;
+  const screenW = el.w * vpScale;
+  if (screenW < 24) return null; // too small on screen — hide
+  // Label sits just below the element, in world units.
+  const worldFont = Math.max(1.4, Math.min(3.5, el.w * 0.14));
+  const padX = el.w * 0.06;
+  const boxW = el.w - padX * 2;
+  const y = el.y + el.h + worldFont * 1.2;
   return (
-    <g {...common}>
-      <rect x={el.x} y={el.y} width={el.w} height={el.h} rx={el.radius} ry={el.radius}
-        fill={el.fill} stroke={el.stroke} strokeWidth={el.strokeWidth} strokeDasharray={dash} style={hl} />
-      <text x={el.x + el.w / 2} y={el.y + el.h / 2}
-        fontSize={el.fontSize} fontWeight={el.fontWeight}
-        textAnchor="middle" dominantBaseline="central" fill="hsl(var(--foreground))"
-        style={{ pointerEvents: "none" }}>
-        {el.label}
+    <g style={{ pointerEvents: "none" }}>
+      {/* Pill background for legibility over maps/photos */}
+      <rect
+        x={el.x + padX}
+        y={y - worldFont * 0.95}
+        width={boxW}
+        height={worldFont * 1.35}
+        rx={worldFont * 0.35}
+        fill="hsl(var(--card) / 0.9)"
+        stroke="hsl(var(--border))"
+        strokeWidth={worldFont * 0.05}
+      />
+      <text
+        x={el.x + el.w / 2}
+        y={y}
+        fontSize={worldFont}
+        fontWeight={600}
+        textAnchor="middle"
+        dominantBaseline="central"
+        fill="hsl(var(--foreground))"
+        textLength={boxW * 0.94}
+        lengthAdjust="spacingAndGlyphs"
+      >
+        {name}
       </text>
     </g>
   );
 }
 
-function renderRect(el: ShapeElement, common: any, hl: any) {
+function renderBooth(el: BoothElement, common: any, hl: any) {
   const dash = el.strokeStyle === "dashed" ? "1 0.6" : undefined;
-  return <rect {...common} x={el.x} y={el.y} width={el.w} height={el.h}
-    fill={el.fill} stroke={el.stroke} strokeWidth={el.strokeWidth} strokeDasharray={dash} style={hl} />;
+  const name = el.name?.trim();
+  // If a name is set and the booth is tall enough, split the interior into
+  // booth # (top) and name (bottom); otherwise just the number.
+  const canFitName = name && el.h >= el.fontSize * 2.2;
+  return (
+    <g {...common}>
+      <rect x={el.x} y={el.y} width={el.w} height={el.h} rx={el.radius} ry={el.radius}
+        fill={el.fill} stroke={el.stroke} strokeWidth={el.strokeWidth} strokeDasharray={dash} style={hl} />
+      <text x={el.x + el.w / 2} y={canFitName ? el.y + el.h * 0.38 : el.y + el.h / 2}
+        fontSize={el.fontSize} fontWeight={el.fontWeight}
+        textAnchor="middle" dominantBaseline="central" fill="hsl(var(--foreground))"
+        style={{ pointerEvents: "none" }}>
+        {el.label}
+      </text>
+      {canFitName && (
+        <text
+          x={el.x + el.w / 2}
+          y={el.y + el.h * 0.72}
+          fontSize={el.fontSize * 0.7}
+          fontWeight={500}
+          textAnchor="middle"
+          dominantBaseline="central"
+          fill="hsl(var(--foreground))"
+          textLength={(el.w - el.w * 0.12) * 0.95}
+          lengthAdjust="spacingAndGlyphs"
+          style={{ pointerEvents: "none" }}
+        >
+          {name}
+        </text>
+      )}
+      {/* When too short/narrow to fit inside, show the name below the booth. */}
+      {name && !canFitName && <ElementLabel el={el} vpScale={1 /* handled via world units */} />}
+    </g>
+  );
 }
-function renderCircle(el: ShapeElement, common: any, hl: any) {
-  return <ellipse {...common} cx={el.x + el.w / 2} cy={el.y + el.h / 2} rx={el.w / 2} ry={el.h / 2}
-    fill={el.fill} stroke={el.stroke} strokeWidth={el.strokeWidth} style={hl} />;
-}
-function renderTriangle(el: ShapeElement, common: any, hl: any) {
-  const pts = `${el.x + el.w / 2},${el.y} ${el.x},${el.y + el.h} ${el.x + el.w},${el.y + el.h}`;
-  return <polygon {...common} points={pts} fill={el.fill} stroke={el.stroke} strokeWidth={el.strokeWidth} style={hl} />;
-}
-function renderLine(el: ShapeElement, common: any, hl: any) {
-  return <line {...common} x1={el.x} y1={el.y + el.h / 2} x2={el.x + el.w} y2={el.y + el.h / 2}
-    stroke={el.stroke} strokeWidth={el.strokeWidth} style={hl} />;
-}
+
 function renderText(el: TextElement, common: any, hl: any) {
   return (
     <g {...common}>
@@ -656,8 +779,8 @@ function renderText(el: TextElement, common: any, hl: any) {
     </g>
   );
 }
+
 function renderIcon(el: IconElement, common: any, hl: any, vpScale: number) {
-  // Render icon glyph via foreignObject so we can reuse SVG icon components
   return (
     <g {...common} style={{ ...common.style, ...hl }}>
       <foreignObject x={el.x} y={el.y} width={el.w} height={el.h}>
@@ -665,6 +788,7 @@ function renderIcon(el: IconElement, common: any, hl: any, vpScale: number) {
           <IconGlyph iconKey={el.iconKey} size={Math.min(el.w, el.h) * vpScale} color={el.tint} />
         </div>
       </foreignObject>
+      <ElementLabel el={el} vpScale={vpScale} />
     </g>
   );
 }

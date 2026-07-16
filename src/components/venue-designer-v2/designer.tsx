@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { DesignerCanvas, type CanvasTool } from "@/components/venue-designer/canvas";
 import { Inspector } from "@/components/venue-designer/inspector";
 import { useDesignerStore } from "@/components/venue-designer/store";
-import { makeBooth, makeText, makeIcon, makePreset, ICONS, uid, resetBoothCounter } from "@/components/venue-designer/factory";
+import { makeBooth, makeText, makeIcon, makePreset, ICONS, uid, resetBoothCounter, stripLegacyElements } from "@/components/venue-designer/factory";
 import { IconGlyph } from "@/components/venue-designer/icon-glyph";
 import { AddBackgroundDialog } from "@/components/venue-designer/add-background-dialog";
 import type { AnyElement, IconKey, Layout } from "@/components/venue-designer/types";
@@ -45,7 +45,11 @@ function installFactory() {
 }
 
 export function VenueDesignerV2({ venueId, organizationId, venueName, initial, onSave }: DesignerV2Props) {
-  const { state, actions } = useDesignerStore(initial);
+  const cleanedInitial = useMemo(() => ({
+    ...initial,
+    elements: stripLegacyElements(initial.elements),
+  }), [initial]);
+  const { state, actions } = useDesignerStore(cleanedInitial);
   const [tool, setTool] = useState<CanvasTool>("select");
   const [iconKey, setIconKey] = useState<IconKey>("tree");
   const [zoomPct, setZoomPct] = useState(100);
@@ -498,7 +502,7 @@ function ObjectLibraryPanel({ onPick, activeTool, activeIconKey }: {
   return (
     <div className="space-y-4">
       <div>
-        <div className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Primitives</div>
+        <div className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Objects</div>
         <div className="grid grid-cols-3 gap-2">
           {shapes.map((s) => (
             <button
