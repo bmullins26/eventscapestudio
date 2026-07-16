@@ -417,7 +417,7 @@ export function DesignerCanvas({ elements, selection, actions, tool, toolPayload
         <rect x={0} y={0} width={size.w} height={size.h} fill="url(#vd-grid-major)" />
 
         {/* Background reference layer (raster image kinds — behind elements) */}
-        {background && background.kind !== "google-satellite" && background.url && (() => {
+        {background && !background.hidden && background.kind !== "google-satellite" && background.url && (() => {
           const bx = (background.x - vp.x) * vp.scale;
           const by = (background.y - vp.y) * vp.scale;
           const bw = background.w * vp.scale;
