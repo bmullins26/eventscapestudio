@@ -140,8 +140,8 @@ export function DesignerCanvas({ elements, selection, actions, tool, toolPayload
       return;
     }
 
-    // Background adjust/crop mode intercepts everything except pan.
-    if (bgMode !== "idle" && background) {
+    // Background layer interactions when it is the selected layer or in crop mode.
+    if (background && (bgSelected || cropMode)) {
       const target = e.target as Element;
       const bgHandle = target.closest("[data-bg-handle]")?.getAttribute("data-bg-handle");
       const bgRotate = target.closest("[data-bg-rotate]")?.getAttribute("data-bg-rotate");
@@ -149,7 +149,21 @@ export function DesignerCanvas({ elements, selection, actions, tool, toolPayload
       const cropHandle = target.closest("[data-crop-handle]")?.getAttribute("data-crop-handle");
       const cropBody = target.closest("[data-crop-body]")?.getAttribute("data-crop-body");
 
-      if (bgMode === "adjust") {
+      if (cropMode) {
+        const crop = background.crop ?? { x: 0, y: 0, w: 1, h: 1 };
+        if (cropHandle) {
+          setDrag({ kind: "crop-resize", handle: cropHandle, startX: sx, startY: sy, orig: { ...crop }, bg: background });
+          return;
+        }
+        if (cropBody) {
+          setDrag({ kind: "crop-move", startX: sx, startY: sy, orig: { ...crop }, bg: background });
+          return;
+        }
+        return;
+      }
+
+      // bgSelected mode — always allow rotate/resize/move handles.
+      if (!background.locked) {
         if (bgRotate) {
           const cx = background.x + background.w / 2;
           const cy = background.y + background.h / 2;
@@ -162,25 +176,15 @@ export function DesignerCanvas({ elements, selection, actions, tool, toolPayload
           setDrag({ kind: "bg-resize", handle: bgHandle, startX: sx, startY: sy, orig: { ...background } });
           return;
         }
-        if (bgBody && background.kind !== "google-satellite") {
+        // Body drag: for satellite this pans the layer in world space, unless
+        // the internal map is in "adjust map view" mode where the map itself
+        // consumes gestures.
+        if (bgBody && !mapInteractive) {
           setDrag({ kind: "bg-move", startX: sx, startY: sy, orig: { ...background } });
           return;
         }
-        // Fall through: let map (satellite) receive events via its own DOM.
-        return;
       }
-      if (bgMode === "crop") {
-        const crop = background.crop ?? { x: 0, y: 0, w: 1, h: 1 };
-        if (cropHandle) {
-          setDrag({ kind: "crop-resize", handle: cropHandle, startX: sx, startY: sy, orig: { ...crop }, bg: background });
-          return;
-        }
-        if (cropBody) {
-          setDrag({ kind: "crop-move", startX: sx, startY: sy, orig: { ...crop }, bg: background });
-          return;
-        }
-        return;
-      }
+      // fall through — allow element hit-testing / marquee below
     }
 
     // Calibrate tool: record two clicks, then invoke onCalibrate.
