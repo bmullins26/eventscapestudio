@@ -374,6 +374,7 @@ export function DesignerCanvas({ elements, selection, actions, tool, toolPayload
             opacity={background.opacity}
             interactive={!!mapInteractive}
             onViewportChange={onMapViewportChange}
+            crop={background.crop ?? null}
           />
         );
       })()}
