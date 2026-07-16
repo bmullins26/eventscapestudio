@@ -2,11 +2,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import {
-  ArrowLeft, Save, Undo2, Redo2, MousePointer2, Store, Square, Circle as CircleIcon,
-  Triangle, Minus, Type, Image as ImageIcon, Package, Layers as LayersIcon, Search,
+  ArrowLeft, Save, Undo2, Redo2, MousePointer2, Store,
+  Type, Package, Layers as LayersIcon, Search,
   ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Maximize2, PanelRightClose, PanelRightOpen,
   Route as RouteIcon, Footprints, Building2, ParkingSquare, Ruler, Armchair, Fence as FenceIcon, Table2,
-  MapPin,
+  MapPin, Eye, EyeOff, Lock, Unlock, Move as MoveIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
