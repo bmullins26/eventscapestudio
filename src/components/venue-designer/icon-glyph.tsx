@@ -200,6 +200,27 @@ const glyphs: Record<IconKey, (p: GlyphProps) => React.ReactNode> = {
       <rect x="50" y="30" width="8" height="4" fill="#fdd835" />
     </Svg>
   ),
+  walkway: ({ size, color = "#1f2937" }) => (
+    <Svg size={size}>
+      {/* Paver/concrete walkway strip */}
+      <rect x="0" y="16" width="64" height="32" fill="#cfc7bb" stroke={color} strokeWidth="0.5" />
+      <line x1="0" y1="24" x2="64" y2="24" stroke="#a89f92" strokeWidth="0.6" strokeDasharray="4 3" />
+      <line x1="0" y1="40" x2="64" y2="40" stroke="#a89f92" strokeWidth="0.6" strokeDasharray="4 3" />
+      <line x1="16" y1="16" x2="16" y2="48" stroke="#a89f92" strokeWidth="0.4" />
+      <line x1="32" y1="16" x2="32" y2="48" stroke="#a89f92" strokeWidth="0.4" />
+      <line x1="48" y1="16" x2="48" y2="48" stroke="#a89f92" strokeWidth="0.4" />
+    </Svg>
+  ),
+  measure: ({ size, color = "#1f2937" }) => (
+    <Svg size={size}>
+      {/* Dimension line with end caps */}
+      <line x1="6" y1="32" x2="58" y2="32" stroke={color} strokeWidth="2" />
+      <line x1="6" y1="20" x2="6" y2="44" stroke={color} strokeWidth="2" />
+      <line x1="58" y1="20" x2="58" y2="44" stroke={color} strokeWidth="2" />
+      <polygon points="6,32 14,28 14,36" fill={color} />
+      <polygon points="58,32 50,28 50,36" fill={color} />
+    </Svg>
+  ),
 };
 
 export function IconGlyph({ iconKey, size = 24, color = "currentColor" }: {
