@@ -55,7 +55,29 @@ export function VenueDesignerV2({ venueId, organizationId, venueName, initial, o
   const [leftTab, setLeftTab] = useState<LeftTab>(null);
   const [rightOpen, setRightOpen] = useState(true);
   const [bgDialogOpen, setBgDialogOpen] = useState(false);
+  const [bgMode, setBgMode] = useState<"idle" | "adjust" | "crop">("idle");
   const viewportRef = useRef({ x: -20, y: -20, scale: 4 });
+
+  const bg = state.settings.background ?? null;
+  const patchBg = (patch: Partial<NonNullable<typeof bg>>) => {
+    if (!bg) return;
+    actions.setSettings({ background: { ...bg, ...patch } });
+  };
+  const onMapViewport = (v: { lat: number; lng: number; zoom: number }) => {
+    if (!bg || bg.kind !== "google-satellite") return;
+    const mpp = (156543.03392 * Math.cos((v.lat * Math.PI) / 180)) / Math.pow(2, v.zoom);
+    const feet = 1024 * mpp * 3.28084;
+    const cx = bg.x + bg.w / 2;
+    const cy = bg.y + bg.h / 2;
+    actions.setSettings({
+      background: {
+        ...bg,
+        w: feet, h: feet,
+        x: cx - feet / 2, y: cy - feet / 2,
+        meta: { ...(bg.meta ?? {}), lat: v.lat, lng: v.lng, zoom: v.zoom },
+      },
+    });
+  };
 
   useEffect(() => { installFactory(); }, []);
 
@@ -207,8 +229,28 @@ export function VenueDesignerV2({ venueId, organizationId, venueName, initial, o
           onZoomChange={setZoomPct}
           viewportRef={viewportRef}
           background={state.settings.background ?? null}
+          bgMode={bgMode}
+          onBgChange={patchBg}
+          mapInteractive={bgMode === "adjust" && bg?.kind === "google-satellite"}
+          onMapViewportChange={onMapViewport}
         />
       </div>
+
+      {bgMode !== "idle" && (
+        <div className="pointer-events-none absolute inset-x-0 top-16 z-40 flex justify-center">
+          <div className="pointer-events-auto rounded-md border border-border/60 bg-card/95 px-3 py-1.5 text-xs shadow-lg backdrop-blur">
+            {bgMode === "adjust"
+              ? (bg?.kind === "google-satellite"
+                  ? "Drag the map to pan · scroll to zoom · use the frame handle to rotate"
+                  : "Drag to move · handles to resize · top handle to rotate")
+              : "Drag the crop handles — click Apply on Crop to keep, or click Adjust/Crop again to exit"}
+            <button
+              className="ml-3 rounded px-2 py-0.5 text-[11px] font-medium text-primary hover:bg-muted"
+              onClick={() => setBgMode("idle")}
+            >Done</button>
+          </div>
+        </div>
+      )}
 
       {/* Top floating toolbar */}
       <div className="pointer-events-none absolute inset-x-0 top-0 z-30 flex items-start justify-between gap-3 p-3">
@@ -337,9 +379,11 @@ export function VenueDesignerV2({ venueId, organizationId, venueName, initial, o
               onName={actions.setName}
               onSettings={actions.setSettings}
               background={state.settings.background ?? null}
-              onBackgroundChange={(bg) => actions.setSettings({ background: bg })}
+              onBackgroundChange={(bg) => { actions.setSettings({ background: bg }); if (!bg) setBgMode("idle"); }}
               venueId={venueId}
               organizationId={organizationId}
+              bgMode={bgMode}
+              onBgModeChange={setBgMode}
             />
           </div>
         </div>

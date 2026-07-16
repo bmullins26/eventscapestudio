@@ -21,6 +21,8 @@ interface Props {
   opacity: number;
   interactive?: boolean;
   onViewportChange?: (v: { lat: number; lng: number; zoom: number }) => void;
+  /** Optional visual clip in fractions 0..1 of the layer's own box. */
+  crop?: { x: number; y: number; w: number; h: number } | null;
 }
 
 let mapsLoadPromise: Promise<any> | null = null;
@@ -53,7 +55,7 @@ function loadMapsJs(): Promise<any> {
 export function SatelliteMapLayer(props: Props) {
   const {
     lat, lng, zoom, pixelSize, screenX, screenY, screenW, screenH,
-    rotation, opacity, interactive = false, onViewportChange,
+    rotation, opacity, interactive = false, onViewportChange, crop,
   } = props;
   const hostRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<any>(null);
@@ -152,6 +154,12 @@ export function SatelliteMapLayer(props: Props) {
     );
   }
 
+  const clipStyle = crop
+    ? {
+        clipPath: `inset(${crop.y * 100}% ${(1 - crop.x - crop.w) * 100}% ${(1 - crop.y - crop.h) * 100}% ${crop.x * 100}%)`,
+      }
+    : {};
+
   return (
     <div
       style={{
@@ -160,6 +168,7 @@ export function SatelliteMapLayer(props: Props) {
         pointerEvents: interactive ? "auto" : "none",
         opacity, overflow: "hidden",
         outline: interactive ? "2px solid hsl(var(--primary))" : undefined,
+        ...clipStyle,
       }}
     >
       <div

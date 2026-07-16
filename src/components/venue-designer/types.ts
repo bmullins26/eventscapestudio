@@ -98,7 +98,13 @@ export interface BackgroundLayer {
   locked: boolean;
   calibrated?: boolean;
   attribution?: string;
-  meta?: { lat?: number; lng?: number; zoom?: number; address?: string };
+  meta?: { lat?: number; lng?: number; zoom?: number; address?: string; mapPixelSize?: number };
+  /**
+   * Optional crop, expressed in fractions (0..1) of the background's own
+   * un-rotated {w,h} box. Applied as a visual clip; the underlying image/
+   * tiles are not modified. Defaults to full extent when absent.
+   */
+  crop?: { x: number; y: number; w: number; h: number } | null;
 }
 
 export interface LayoutSettings {

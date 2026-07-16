@@ -29,6 +29,8 @@ export type CanvasTool =
   | "chair"
   | "fence";
 
+export type BgMode = "idle" | "adjust" | "crop";
+
 export interface CanvasProps {
   elements: AnyElement[];
   selection: string[];
@@ -41,6 +43,8 @@ export interface CanvasProps {
   onCalibrate?: (p1: { x: number; y: number }, p2: { x: number; y: number }) => void;
   mapInteractive?: boolean;
   onMapViewportChange?: (v: { lat: number; lng: number; zoom: number }) => void;
+  bgMode?: BgMode;
+  onBgChange?: (patch: Partial<BackgroundLayer>) => void;
 }
 
 // Screen -> world
@@ -57,9 +61,14 @@ type DragState =
   | { kind: "resize"; id: string; handle: string; startX: number; startY: number; orig: AnyElement }
   | { kind: "rotate"; id: string; cx: number; cy: number; startAngle: number; origRot: number }
   | { kind: "marquee"; startX: number; startY: number; x1: number; y1: number }
+  | { kind: "bg-move"; startX: number; startY: number; orig: BackgroundLayer }
+  | { kind: "bg-resize"; handle: string; startX: number; startY: number; orig: BackgroundLayer }
+  | { kind: "bg-rotate"; cx: number; cy: number; startAngle: number; origRot: number }
+  | { kind: "crop-move"; startX: number; startY: number; orig: { x: number; y: number; w: number; h: number }; bg: BackgroundLayer }
+  | { kind: "crop-resize"; handle: string; startX: number; startY: number; orig: { x: number; y: number; w: number; h: number }; bg: BackgroundLayer }
   | null;
 
-export function DesignerCanvas({ elements, selection, actions, tool, toolPayload, onZoomChange, viewportRef, background, onCalibrate, mapInteractive, onMapViewportChange }: CanvasProps) {
+export function DesignerCanvas({ elements, selection, actions, tool, toolPayload, onZoomChange, viewportRef, background, onCalibrate, mapInteractive, onMapViewportChange, bgMode = "idle", onBgChange }: CanvasProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [vp, setVp] = useState<Viewport>(() => viewportRef.current);
   const [space, setSpace] = useState(false);
@@ -127,6 +136,49 @@ export function DesignerCanvas({ elements, selection, actions, tool, toolPayload
     if (e.button === 1 || space || (e.button === 0 && (e.altKey))) {
       setDrag({ kind: "pan", startX: sx, startY: sy, vp0: vp });
       return;
+    }
+
+    // Background adjust/crop mode intercepts everything except pan.
+    if (bgMode !== "idle" && background) {
+      const target = e.target as Element;
+      const bgHandle = target.closest("[data-bg-handle]")?.getAttribute("data-bg-handle");
+      const bgRotate = target.closest("[data-bg-rotate]")?.getAttribute("data-bg-rotate");
+      const bgBody = target.closest("[data-bg-body]")?.getAttribute("data-bg-body");
+      const cropHandle = target.closest("[data-crop-handle]")?.getAttribute("data-crop-handle");
+      const cropBody = target.closest("[data-crop-body]")?.getAttribute("data-crop-body");
+
+      if (bgMode === "adjust") {
+        if (bgRotate) {
+          const cx = background.x + background.w / 2;
+          const cy = background.y + background.h / 2;
+          const w = s2w(sx, sy, vp);
+          const startAngle = Math.atan2(w.y - cy, w.x - cx) * 180 / Math.PI;
+          setDrag({ kind: "bg-rotate", cx, cy, startAngle, origRot: background.rotation });
+          return;
+        }
+        if (bgHandle) {
+          setDrag({ kind: "bg-resize", handle: bgHandle, startX: sx, startY: sy, orig: { ...background } });
+          return;
+        }
+        if (bgBody && background.kind !== "google-satellite") {
+          setDrag({ kind: "bg-move", startX: sx, startY: sy, orig: { ...background } });
+          return;
+        }
+        // Fall through: let map (satellite) receive events via its own DOM.
+        return;
+      }
+      if (bgMode === "crop") {
+        const crop = background.crop ?? { x: 0, y: 0, w: 1, h: 1 };
+        if (cropHandle) {
+          setDrag({ kind: "crop-resize", handle: cropHandle, startX: sx, startY: sy, orig: { ...crop }, bg: background });
+          return;
+        }
+        if (cropBody) {
+          setDrag({ kind: "crop-move", startX: sx, startY: sy, orig: { ...crop }, bg: background });
+          return;
+        }
+        return;
+      }
     }
 
     // Calibrate tool: record two clicks, then invoke onCalibrate.
@@ -221,6 +273,49 @@ export function DesignerCanvas({ elements, selection, actions, tool, toolPayload
       let next = drag.origRot + (angle - drag.startAngle);
       if (e.shiftKey) next = Math.round(next / 15) * 15;
       actions.update(drag.id, { rotation: next } as Partial<AnyElement>);
+    } else if (drag.kind === "bg-move") {
+      const dx = (sx - drag.startX) / vp.scale;
+      const dy = (sy - drag.startY) / vp.scale;
+      onBgChange?.({ x: drag.orig.x + dx, y: drag.orig.y + dy });
+    } else if (drag.kind === "bg-resize") {
+      const dx = (sx - drag.startX) / vp.scale;
+      const dy = (sy - drag.startY) / vp.scale;
+      const o = drag.orig;
+      let { x, y, w, h } = o;
+      if (drag.handle.includes("e")) w = Math.max(1, o.w + dx);
+      if (drag.handle.includes("s")) h = Math.max(1, o.h + dy);
+      if (drag.handle.includes("w")) { w = Math.max(1, o.w - dx); x = o.x + (o.w - w); }
+      if (drag.handle.includes("n")) { h = Math.max(1, o.h - dy); y = o.y + (o.h - h); }
+      onBgChange?.({ x, y, w, h });
+    } else if (drag.kind === "bg-rotate") {
+      const w = s2w(sx, sy, vp);
+      const angle = Math.atan2(w.y - drag.cy, w.x - drag.cx) * 180 / Math.PI;
+      let next = drag.origRot + (angle - drag.startAngle);
+      if (e.shiftKey) next = Math.round(next / 15) * 15;
+      onBgChange?.({ rotation: next });
+    } else if (drag.kind === "crop-move") {
+      const dxF = (sx - drag.startX) / vp.scale / drag.bg.w;
+      const dyF = (sy - drag.startY) / vp.scale / drag.bg.h;
+      const nx = Math.min(1 - drag.orig.w, Math.max(0, drag.orig.x + dxF));
+      const ny = Math.min(1 - drag.orig.h, Math.max(0, drag.orig.y + dyF));
+      onBgChange?.({ crop: { x: nx, y: ny, w: drag.orig.w, h: drag.orig.h } });
+    } else if (drag.kind === "crop-resize") {
+      const dxF = (sx - drag.startX) / vp.scale / drag.bg.w;
+      const dyF = (sy - drag.startY) / vp.scale / drag.bg.h;
+      const o = drag.orig;
+      let { x, y, w, h } = o;
+      const min = 0.02;
+      if (drag.handle.includes("e")) w = Math.min(1 - o.x, Math.max(min, o.w + dxF));
+      if (drag.handle.includes("s")) h = Math.min(1 - o.y, Math.max(min, o.h + dyF));
+      if (drag.handle.includes("w")) {
+        const nx = Math.max(0, Math.min(o.x + o.w - min, o.x + dxF));
+        w = o.x + o.w - nx; x = nx;
+      }
+      if (drag.handle.includes("n")) {
+        const ny = Math.max(0, Math.min(o.y + o.h - min, o.y + dyF));
+        h = o.y + o.h - ny; y = ny;
+      }
+      onBgChange?.({ crop: { x, y, w, h } });
     } else if (drag.kind === "marquee") {
       setDrag({ ...drag, x1: sx, y1: sy });
     }
@@ -279,6 +374,7 @@ export function DesignerCanvas({ elements, selection, actions, tool, toolPayload
             opacity={background.opacity}
             interactive={!!mapInteractive}
             onViewportChange={onMapViewportChange}
+            crop={background.crop ?? null}
           />
         );
       })()}
@@ -303,17 +399,28 @@ export function DesignerCanvas({ elements, selection, actions, tool, toolPayload
           const bh = background.h * vp.scale;
           const cx = bx + bw / 2;
           const cy = by + bh / 2;
+          const crop = background.crop;
+          const clipId = crop ? `vd-bg-clip-${Math.round(bx)}-${Math.round(by)}` : null;
           return (
             <g transform={`rotate(${background.rotation} ${cx} ${cy})`} style={{ pointerEvents: "none" }}>
-              <image
-                href={background.url}
-                x={bx}
-                y={by}
-                width={bw}
-                height={bh}
-                opacity={background.opacity}
-                preserveAspectRatio="none"
-              />
+              {crop && clipId && (
+                <defs>
+                  <clipPath id={clipId} clipPathUnits="userSpaceOnUse">
+                    <rect x={bx + crop.x * bw} y={by + crop.y * bh} width={crop.w * bw} height={crop.h * bh} />
+                  </clipPath>
+                </defs>
+              )}
+              <g clipPath={clipId ? `url(#${clipId})` : undefined}>
+                <image
+                  href={background.url}
+                  x={bx}
+                  y={by}
+                  width={bw}
+                  height={bh}
+                  opacity={background.opacity}
+                  preserveAspectRatio="none"
+                />
+              </g>
               {background.kind === "satellite" && (
                 <text x={bx + 6} y={by + bh - 6} fontSize={10} fill="#fff" stroke="#000" strokeWidth={0.3}
                   style={{ pointerEvents: "none" }}>Imagery ©Google</text>
@@ -356,6 +463,81 @@ export function DesignerCanvas({ elements, selection, actions, tool, toolPayload
               <circle data-rotate={el.id} cx={cx} cy={y - 28} r={6} fill="hsl(var(--primary))" style={{ cursor: "grab" }} />
               {handles.map(([k, hx, hy]) => (
                 <rect key={k} data-handle={k} x={hx - HANDLE_SIZE / 2} y={hy - HANDLE_SIZE / 2} width={HANDLE_SIZE} height={HANDLE_SIZE}
+                  fill="hsl(var(--background))" stroke="hsl(var(--primary))" strokeWidth={1.5}
+                  style={{ cursor: cursorForHandle(k as string) }} />
+              ))}
+            </g>
+          );
+        })()}
+
+        {/* Background adjust frame (screen space, rotates with bg) */}
+        {bgMode === "adjust" && background && (() => {
+          const bx = (background.x - vp.x) * vp.scale;
+          const by = (background.y - vp.y) * vp.scale;
+          const bw = background.w * vp.scale;
+          const bh = background.h * vp.scale;
+          const cx = bx + bw / 2; const cy = by + bh / 2;
+          const isSat = background.kind === "google-satellite";
+          const handles = [
+            ["nw", bx, by], ["n", bx + bw / 2, by], ["ne", bx + bw, by],
+            ["e", bx + bw, by + bh / 2], ["se", bx + bw, by + bh],
+            ["s", bx + bw / 2, by + bh], ["sw", bx, by + bh], ["w", bx, by + bh / 2],
+          ] as const;
+          return (
+            <g transform={`rotate(${background.rotation} ${cx} ${cy})`} pointerEvents="all">
+              {!isSat && (
+                <rect data-bg-body="1" x={bx} y={by} width={bw} height={bh}
+                  fill="transparent" style={{ cursor: "move" }} />
+              )}
+              <rect x={bx} y={by} width={bw} height={bh}
+                fill="none" stroke="hsl(var(--primary))" strokeWidth={1.5} strokeDasharray="6 4"
+                pointerEvents="none" />
+              <line x1={cx} y1={by} x2={cx} y2={by - 24} stroke="hsl(var(--primary))" strokeWidth={1.5} pointerEvents="none" />
+              <circle data-bg-rotate="1" cx={cx} cy={by - 28} r={7} fill="hsl(var(--primary))" style={{ cursor: "grab" }} />
+              {!isSat && handles.map(([k, hx, hy]) => (
+                <rect key={k} data-bg-handle={k} x={hx - HANDLE_SIZE / 2} y={hy - HANDLE_SIZE / 2}
+                  width={HANDLE_SIZE} height={HANDLE_SIZE}
+                  fill="hsl(var(--background))" stroke="hsl(var(--primary))" strokeWidth={1.5}
+                  style={{ cursor: cursorForHandle(k as string) }} />
+              ))}
+            </g>
+          );
+        })()}
+
+        {/* Crop overlay (screen space, rotates with bg) */}
+        {bgMode === "crop" && background && (() => {
+          const bx = (background.x - vp.x) * vp.scale;
+          const by = (background.y - vp.y) * vp.scale;
+          const bw = background.w * vp.scale;
+          const bh = background.h * vp.scale;
+          const cx = bx + bw / 2; const cy = by + bh / 2;
+          const crop = background.crop ?? { x: 0, y: 0, w: 1, h: 1 };
+          const cx0 = bx + crop.x * bw;
+          const cy0 = by + crop.y * bh;
+          const cw = crop.w * bw;
+          const ch = crop.h * bh;
+          const maskId = `vd-crop-mask-${Math.round(bx)}-${Math.round(by)}`;
+          const handles = [
+            ["nw", cx0, cy0], ["n", cx0 + cw / 2, cy0], ["ne", cx0 + cw, cy0],
+            ["e", cx0 + cw, cy0 + ch / 2], ["se", cx0 + cw, cy0 + ch],
+            ["s", cx0 + cw / 2, cy0 + ch], ["sw", cx0, cy0 + ch], ["w", cx0, cy0 + ch / 2],
+          ] as const;
+          return (
+            <g transform={`rotate(${background.rotation} ${cx} ${cy})`} pointerEvents="all">
+              <defs>
+                <mask id={maskId}>
+                  <rect x={bx} y={by} width={bw} height={bh} fill="white" />
+                  <rect x={cx0} y={cy0} width={cw} height={ch} fill="black" />
+                </mask>
+              </defs>
+              <rect x={bx} y={by} width={bw} height={bh}
+                fill="hsl(var(--background) / 0.6)" mask={`url(#${maskId})`} pointerEvents="none" />
+              <rect data-crop-body="1" x={cx0} y={cy0} width={cw} height={ch}
+                fill="transparent" stroke="hsl(var(--primary))" strokeWidth={1.5} strokeDasharray="6 4"
+                style={{ cursor: "move" }} />
+              {handles.map(([k, hx, hy]) => (
+                <rect key={k} data-crop-handle={k} x={hx - HANDLE_SIZE / 2} y={hy - HANDLE_SIZE / 2}
+                  width={HANDLE_SIZE} height={HANDLE_SIZE}
                   fill="hsl(var(--background))" stroke="hsl(var(--primary))" strokeWidth={1.5}
                   style={{ cursor: cursorForHandle(k as string) }} />
               ))}
