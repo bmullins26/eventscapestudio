@@ -375,7 +375,7 @@ export function VenueDesignerV2({ venueId, organizationId, venueName, initial, o
 
       {/* Right contextual inspector — floating overlay */}
       {rightOpen && (
-        <div className="pointer-events-auto absolute right-3 top-20 z-30 flex h-[calc(100vh-8rem)] w-80 flex-col overflow-hidden rounded-xl border border-border/60 bg-card/95 shadow-xl backdrop-blur">
+        <div className="pointer-events-auto absolute right-4 top-[68px] bottom-[60px] z-30 flex w-80 flex-col overflow-hidden rounded-2xl border border-border/60 bg-card/95 shadow-xl backdrop-blur">
           <div className="flex items-center justify-between border-b border-border px-3 py-2">
             <div className="min-w-0 truncate text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               {selectedCount === 0 ? "Layout settings" : selectedName}
