@@ -379,9 +379,11 @@ export function VenueDesignerV2({ venueId, organizationId, venueName, initial, o
               onName={actions.setName}
               onSettings={actions.setSettings}
               background={state.settings.background ?? null}
-              onBackgroundChange={(bg) => actions.setSettings({ background: bg })}
+              onBackgroundChange={(bg) => { actions.setSettings({ background: bg }); if (!bg) setBgMode("idle"); }}
               venueId={venueId}
               organizationId={organizationId}
+              bgMode={bgMode}
+              onBgModeChange={setBgMode}
             />
           </div>
         </div>
