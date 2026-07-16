@@ -50,7 +50,12 @@ export function Inspector({
             <Toggle label="Hide unassigned IDs" value={!!settings.hideUnassignedIds} onChange={(v) => onSettings({ hideUnassignedIds: v })} />
           </div>
           {background && onBackgroundChange && (
-            <BackgroundSection background={background} onChange={onBackgroundChange} />
+            <BackgroundSection
+              background={background}
+              onChange={onBackgroundChange}
+              bgMode={bgMode}
+              onBgModeChange={onBgModeChange}
+            />
           )}
           {!background && onBackgroundChange && venueId && organizationId && (
             <div className="space-y-2 rounded border border-dashed border-border p-3">
