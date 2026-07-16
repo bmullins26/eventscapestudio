@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import type { AnyElement, BoothElement, ShapeElement, TextElement, IconElement, BackgroundLayer } from "./types";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import type { AnyElement, BoothElement, TextElement, IconElement, BackgroundLayer } from "./types";
 import type { DesignerActions } from "./store";
 import { IconGlyph } from "./icon-glyph";
 import { SatelliteMapLayer } from "./satellite-map-layer";
@@ -13,10 +13,6 @@ interface Viewport {
 export type CanvasTool =
   | "select"
   | "booth"
-  | "rect"
-  | "circle"
-  | "triangle"
-  | "line"
   | "text"
   | "icon"
   | "calibrate"
