@@ -55,7 +55,7 @@ function loadMapsJs(): Promise<any> {
 export function SatelliteMapLayer(props: Props) {
   const {
     lat, lng, zoom, pixelSize, screenX, screenY, screenW, screenH,
-    rotation, opacity, interactive = false, onViewportChange,
+    rotation, opacity, interactive = false, onViewportChange, crop,
   } = props;
   const hostRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<any>(null);
