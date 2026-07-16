@@ -29,8 +29,6 @@ export type CanvasTool =
   | "chair"
   | "fence";
 
-export type BgMode = "idle" | "adjust" | "crop";
-
 export interface CanvasProps {
   elements: AnyElement[];
   selection: string[];
@@ -43,8 +41,12 @@ export interface CanvasProps {
   onCalibrate?: (p1: { x: number; y: number }, p2: { x: number; y: number }) => void;
   mapInteractive?: boolean;
   onMapViewportChange?: (v: { lat: number; lng: number; zoom: number }) => void;
-  bgMode?: BgMode;
+  /** Base map treated as the currently selected layer. */
+  bgSelected?: boolean;
+  /** Crop editing overlay is active. */
+  cropMode?: boolean;
   onBgChange?: (patch: Partial<BackgroundLayer>) => void;
+  onBgSelect?: (selected: boolean) => void;
 }
 
 // Screen -> world
@@ -68,7 +70,7 @@ type DragState =
   | { kind: "crop-resize"; handle: string; startX: number; startY: number; orig: { x: number; y: number; w: number; h: number }; bg: BackgroundLayer }
   | null;
 
-export function DesignerCanvas({ elements, selection, actions, tool, toolPayload, onZoomChange, viewportRef, background, onCalibrate, mapInteractive, onMapViewportChange, bgMode = "idle", onBgChange }: CanvasProps) {
+export function DesignerCanvas({ elements, selection, actions, tool, toolPayload, onZoomChange, viewportRef, background, onCalibrate, mapInteractive, onMapViewportChange, bgSelected = false, cropMode = false, onBgChange, onBgSelect }: CanvasProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [vp, setVp] = useState<Viewport>(() => viewportRef.current);
   const [space, setSpace] = useState(false);
@@ -138,8 +140,8 @@ export function DesignerCanvas({ elements, selection, actions, tool, toolPayload
       return;
     }
 
-    // Background adjust/crop mode intercepts everything except pan.
-    if (bgMode !== "idle" && background) {
+    // Background layer interactions when it is the selected layer or in crop mode.
+    if (background && (bgSelected || cropMode)) {
       const target = e.target as Element;
       const bgHandle = target.closest("[data-bg-handle]")?.getAttribute("data-bg-handle");
       const bgRotate = target.closest("[data-bg-rotate]")?.getAttribute("data-bg-rotate");
@@ -147,7 +149,21 @@ export function DesignerCanvas({ elements, selection, actions, tool, toolPayload
       const cropHandle = target.closest("[data-crop-handle]")?.getAttribute("data-crop-handle");
       const cropBody = target.closest("[data-crop-body]")?.getAttribute("data-crop-body");
 
-      if (bgMode === "adjust") {
+      if (cropMode) {
+        const crop = background.crop ?? { x: 0, y: 0, w: 1, h: 1 };
+        if (cropHandle) {
+          setDrag({ kind: "crop-resize", handle: cropHandle, startX: sx, startY: sy, orig: { ...crop }, bg: background });
+          return;
+        }
+        if (cropBody) {
+          setDrag({ kind: "crop-move", startX: sx, startY: sy, orig: { ...crop }, bg: background });
+          return;
+        }
+        return;
+      }
+
+      // bgSelected mode — always allow rotate/resize/move handles.
+      if (!background.locked) {
         if (bgRotate) {
           const cx = background.x + background.w / 2;
           const cy = background.y + background.h / 2;
@@ -160,25 +176,15 @@ export function DesignerCanvas({ elements, selection, actions, tool, toolPayload
           setDrag({ kind: "bg-resize", handle: bgHandle, startX: sx, startY: sy, orig: { ...background } });
           return;
         }
-        if (bgBody && background.kind !== "google-satellite") {
+        // Body drag: for satellite this pans the layer in world space, unless
+        // the internal map is in "adjust map view" mode where the map itself
+        // consumes gestures.
+        if (bgBody && !mapInteractive) {
           setDrag({ kind: "bg-move", startX: sx, startY: sy, orig: { ...background } });
           return;
         }
-        // Fall through: let map (satellite) receive events via its own DOM.
-        return;
       }
-      if (bgMode === "crop") {
-        const crop = background.crop ?? { x: 0, y: 0, w: 1, h: 1 };
-        if (cropHandle) {
-          setDrag({ kind: "crop-resize", handle: cropHandle, startX: sx, startY: sy, orig: { ...crop }, bg: background });
-          return;
-        }
-        if (cropBody) {
-          setDrag({ kind: "crop-move", startX: sx, startY: sy, orig: { ...crop }, bg: background });
-          return;
-        }
-        return;
-      }
+      // fall through — allow element hit-testing / marquee below
     }
 
     // Calibrate tool: record two clicks, then invoke onCalibrate.
@@ -225,6 +231,7 @@ export function DesignerCanvas({ elements, selection, actions, tool, toolPayload
       if (el) { setDrag({ kind: "resize", id: el.id, handle: handleAttr, startX: sx, startY: sy, orig: { ...el } }); return; }
     }
     if (idAttr) {
+      if (bgSelected) onBgSelect?.(false);
       const already = selection.includes(idAttr);
       if (!already) actions.select(e.shiftKey ? [...selection, idAttr] : [idAttr]);
       const ids = already ? selection : e.shiftKey ? [...selection, idAttr] : [idAttr];
@@ -236,7 +243,25 @@ export function DesignerCanvas({ elements, selection, actions, tool, toolPayload
       return;
     }
 
-    // Empty: marquee or clear selection
+    // Empty click. If background exists, is unlocked, and cursor is inside its
+    // rotated bounds, select the base map as the active layer. Otherwise clear.
+    if (background && !background.hidden && !background.locked && !cropMode) {
+      const w = s2w(sx, sy, vp);
+      const cx = background.x + background.w / 2;
+      const cy = background.y + background.h / 2;
+      const rad = -(background.rotation * Math.PI) / 180;
+      const rx = Math.cos(rad) * (w.x - cx) - Math.sin(rad) * (w.y - cy) + cx;
+      const ry = Math.sin(rad) * (w.x - cx) + Math.cos(rad) * (w.y - cy) + cy;
+      if (rx >= background.x && rx <= background.x + background.w && ry >= background.y && ry <= background.y + background.h) {
+        actions.select([]);
+        if (!bgSelected) onBgSelect?.(true);
+        if (!mapInteractive) {
+          setDrag({ kind: "bg-move", startX: sx, startY: sy, orig: { ...background } });
+        }
+        return;
+      }
+    }
+    if (bgSelected) onBgSelect?.(false);
     actions.select([]);
     setDrag({ kind: "marquee", startX: sx, startY: sy, x1: sx, y1: sy });
   };
@@ -353,7 +378,7 @@ export function DesignerCanvas({ elements, selection, actions, tool, toolPayload
       {/* Live Google Maps satellite layer (behind SVG). Rendered when the
           background is a "google-satellite" kind. Pointer-events disabled so
           the SVG above handles all input. */}
-      {background && background.kind === "google-satellite" &&
+      {background && !background.hidden && background.kind === "google-satellite" &&
         typeof background.meta?.lat === "number" &&
         typeof background.meta?.lng === "number" && (() => {
         const bx = (background.x - vp.x) * vp.scale;
@@ -392,7 +417,7 @@ export function DesignerCanvas({ elements, selection, actions, tool, toolPayload
         <rect x={0} y={0} width={size.w} height={size.h} fill="url(#vd-grid-major)" />
 
         {/* Background reference layer (raster image kinds — behind elements) */}
-        {background && background.kind !== "google-satellite" && background.url && (() => {
+        {background && !background.hidden && background.kind !== "google-satellite" && background.url && (() => {
           const bx = (background.x - vp.x) * vp.scale;
           const by = (background.y - vp.y) * vp.scale;
           const bw = background.w * vp.scale;
@@ -471,13 +496,13 @@ export function DesignerCanvas({ elements, selection, actions, tool, toolPayload
         })()}
 
         {/* Background adjust frame (screen space, rotates with bg) */}
-        {bgMode === "adjust" && background && (() => {
+        {bgSelected && !cropMode && background && !background.hidden && (() => {
           const bx = (background.x - vp.x) * vp.scale;
           const by = (background.y - vp.y) * vp.scale;
           const bw = background.w * vp.scale;
           const bh = background.h * vp.scale;
           const cx = bx + bw / 2; const cy = by + bh / 2;
-          const isSat = background.kind === "google-satellite";
+          const locked = background.locked;
           const handles = [
             ["nw", bx, by], ["n", bx + bw / 2, by], ["ne", bx + bw, by],
             ["e", bx + bw, by + bh / 2], ["se", bx + bw, by + bh],
@@ -485,16 +510,20 @@ export function DesignerCanvas({ elements, selection, actions, tool, toolPayload
           ] as const;
           return (
             <g transform={`rotate(${background.rotation} ${cx} ${cy})`} pointerEvents="all">
-              {!isSat && (
+              {!locked && !mapInteractive && (
                 <rect data-bg-body="1" x={bx} y={by} width={bw} height={bh}
                   fill="transparent" style={{ cursor: "move" }} />
               )}
               <rect x={bx} y={by} width={bw} height={bh}
                 fill="none" stroke="hsl(var(--primary))" strokeWidth={1.5} strokeDasharray="6 4"
                 pointerEvents="none" />
-              <line x1={cx} y1={by} x2={cx} y2={by - 24} stroke="hsl(var(--primary))" strokeWidth={1.5} pointerEvents="none" />
-              <circle data-bg-rotate="1" cx={cx} cy={by - 28} r={7} fill="hsl(var(--primary))" style={{ cursor: "grab" }} />
-              {!isSat && handles.map(([k, hx, hy]) => (
+              {!locked && (
+                <>
+                  <line x1={cx} y1={by} x2={cx} y2={by - 24} stroke="hsl(var(--primary))" strokeWidth={1.5} pointerEvents="none" />
+                  <circle data-bg-rotate="1" cx={cx} cy={by - 28} r={7} fill="hsl(var(--primary))" style={{ cursor: "grab" }} />
+                </>
+              )}
+              {!locked && handles.map(([k, hx, hy]) => (
                 <rect key={k} data-bg-handle={k} x={hx - HANDLE_SIZE / 2} y={hy - HANDLE_SIZE / 2}
                   width={HANDLE_SIZE} height={HANDLE_SIZE}
                   fill="hsl(var(--background))" stroke="hsl(var(--primary))" strokeWidth={1.5}
@@ -505,7 +534,7 @@ export function DesignerCanvas({ elements, selection, actions, tool, toolPayload
         })()}
 
         {/* Crop overlay (screen space, rotates with bg) */}
-        {bgMode === "crop" && background && (() => {
+        {cropMode && background && (() => {
           const bx = (background.x - vp.x) * vp.scale;
           const by = (background.y - vp.y) * vp.scale;
           const bw = background.w * vp.scale;

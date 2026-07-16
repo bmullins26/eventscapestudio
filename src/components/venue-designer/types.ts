@@ -97,6 +97,7 @@ export interface BackgroundLayer {
   opacity: number; // 0..1
   locked: boolean;
   calibrated?: boolean;
+  hidden?: boolean;
   attribution?: string;
   meta?: { lat?: number; lng?: number; zoom?: number; address?: string; mapPixelSize?: number };
   /**

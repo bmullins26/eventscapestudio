@@ -7,16 +7,16 @@ import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { ArrowUp, ArrowDown, ArrowUpToLine, ArrowDownToLine, Trash2, Copy, X, MapPin, Move, Crop, RotateCcw } from "lucide-react";
+import { ArrowUp, ArrowDown, ArrowUpToLine, ArrowDownToLine, Trash2, Copy, X, MapPin, Crop, RotateCcw, Move, Eye, EyeOff, Lock, Unlock } from "lucide-react";
 import { describe, uid } from "./factory";
 import { AddBackgroundDialog } from "./add-background-dialog";
-
-export type BgEditMode = "idle" | "adjust" | "crop";
 
 export function Inspector({
   elements, selection, actions, settings, name, onName, onSettings,
   background, onBackgroundChange, venueId, organizationId,
-  bgMode = "idle", onBgModeChange,
+  bgSelected = false, onBgSelectChange,
+  cropMode = false, onCropModeChange,
+  mapAdjust = false, onMapAdjustChange,
 }: {
   elements: AnyElement[];
   selection: string[];
@@ -29,8 +29,12 @@ export function Inspector({
   onBackgroundChange?: (bg: BackgroundLayer | null) => void;
   venueId?: string;
   organizationId?: string;
-  bgMode?: BgEditMode;
-  onBgModeChange?: (mode: BgEditMode) => void;
+  bgSelected?: boolean;
+  onBgSelectChange?: (v: boolean) => void;
+  cropMode?: boolean;
+  onCropModeChange?: (v: boolean) => void;
+  mapAdjust?: boolean;
+  onMapAdjustChange?: (v: boolean) => void;
 }) {
   const sel = elements.filter((e) => selection.includes(e.id));
   const [addOpen, setAddOpen] = useState(false);
@@ -38,7 +42,7 @@ export function Inspector({
   if (sel.length === 0) {
     return (
       <div className="flex h-full flex-col border-l border-border bg-card">
-        <PanelHeader title="Layout" />
+        <PanelHeader title={bgSelected && background ? "Base map" : "Layout"} />
         <div className="flex-1 space-y-4 overflow-auto p-3">
           <Field label="Name">
             <Input value={name} onChange={(e) => onName(e.target.value)} className="h-8" />
@@ -53,8 +57,12 @@ export function Inspector({
             <BackgroundSection
               background={background}
               onChange={onBackgroundChange}
-              bgMode={bgMode}
-              onBgModeChange={onBgModeChange}
+              bgSelected={bgSelected}
+              onBgSelectChange={onBgSelectChange}
+              cropMode={cropMode}
+              onCropModeChange={onCropModeChange}
+              mapAdjust={mapAdjust}
+              onMapAdjustChange={onMapAdjustChange}
             />
           )}
           {!background && onBackgroundChange && venueId && organizationId && (
@@ -262,36 +270,57 @@ function colorish(v: string): string {
 }
 
 function BackgroundSection({
-  background, onChange, bgMode = "idle", onBgModeChange,
+  background, onChange,
+  bgSelected = false, onBgSelectChange,
+  cropMode = false, onCropModeChange,
+  mapAdjust = false, onMapAdjustChange,
 }: {
   background: BackgroundLayer;
   onChange: (bg: BackgroundLayer | null) => void;
-  bgMode?: BgEditMode;
-  onBgModeChange?: (mode: BgEditMode) => void;
+  bgSelected?: boolean;
+  onBgSelectChange?: (v: boolean) => void;
+  cropMode?: boolean;
+  onCropModeChange?: (v: boolean) => void;
+  mapAdjust?: boolean;
+  onMapAdjustChange?: (v: boolean) => void;
 }) {
   const s = (patch: Partial<BackgroundLayer>) => onChange({ ...background, ...patch });
-  const toggleMode = (m: BgEditMode) => onBgModeChange?.(bgMode === m ? "idle" : m);
+  const isSat = background.kind === "google-satellite";
   return (
     <div className="space-y-3 rounded border border-border p-3">
       <div className="flex items-center justify-between">
-        <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Background</div>
+        <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Base map</div>
         <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => onChange(null)}>
           <X className="mr-1 h-3 w-3" /> Remove
         </Button>
       </div>
       <div className="text-[11px] text-muted-foreground">
-        {background.kind === "google-satellite" ? (background.meta?.address ?? "Satellite imagery") :
+        {isSat ? (background.meta?.address ?? "Satellite imagery") :
           background.kind === "satellite" ? (background.meta?.address ?? "Satellite imagery") : "Uploaded reference"}
         {background.calibrated ? " · calibrated" : " · not calibrated"}
       </div>
-      {onBgModeChange && (
+      {onBgSelectChange && (
+        <Button
+          size="sm"
+          variant={bgSelected ? "default" : "outline"}
+          className="h-8 w-full"
+          onClick={() => onBgSelectChange(!bgSelected)}
+        >
+          <Move className="mr-1.5 h-3.5 w-3.5" /> {bgSelected ? "Deselect layer" : "Select layer to move"}
+        </Button>
+      )}
+      {bgSelected && (
         <div className="grid grid-cols-2 gap-2">
-          <Button size="sm" variant={bgMode === "adjust" ? "default" : "outline"} className="h-8" onClick={() => toggleMode("adjust")}>
-            <Move className="mr-1.5 h-3.5 w-3.5" /> {bgMode === "adjust" ? "Done" : "Adjust"}
-          </Button>
-          <Button size="sm" variant={bgMode === "crop" ? "default" : "outline"} className="h-8" onClick={() => toggleMode("crop")}>
-            <Crop className="mr-1.5 h-3.5 w-3.5" /> {bgMode === "crop" ? "Apply" : "Crop"}
-          </Button>
+          {isSat && onMapAdjustChange && (
+            <Button size="sm" variant={mapAdjust ? "default" : "outline"} className="h-8" onClick={() => onMapAdjustChange(!mapAdjust)}>
+              <MapPin className="mr-1.5 h-3.5 w-3.5" /> {mapAdjust ? "Done" : "Adjust view"}
+            </Button>
+          )}
+          {onCropModeChange && (
+            <Button size="sm" variant={cropMode ? "default" : "outline"} className="h-8" onClick={() => onCropModeChange(!cropMode)}>
+              <Crop className="mr-1.5 h-3.5 w-3.5" /> {cropMode ? "Apply" : "Crop"}
+            </Button>
+          )}
         </div>
       )}
       {background.crop && (
@@ -323,8 +352,16 @@ function BackgroundSection({
           <Input type="number" step="1" className="h-8" value={round(background.rotation)} onChange={(e) => s({ rotation: Number(e.target.value) })} />
         </Field>
       </div>
-      <Toggle label="Lock background" value={background.locked} onChange={(v) => s({ locked: v })} />
+      <div className="grid grid-cols-2 gap-2">
+        <Button size="sm" variant="outline" className="h-8" onClick={() => s({ hidden: !background.hidden })}>
+          {background.hidden ? <><EyeOff className="mr-1.5 h-3.5 w-3.5" /> Hidden</> : <><Eye className="mr-1.5 h-3.5 w-3.5" /> Visible</>}
+        </Button>
+        <Button size="sm" variant="outline" className="h-8" onClick={() => s({ locked: !background.locked })}>
+          {background.locked ? <><Lock className="mr-1.5 h-3.5 w-3.5" /> Locked</> : <><Unlock className="mr-1.5 h-3.5 w-3.5" /> Unlocked</>}
+        </Button>
+      </div>
     </div>
   );
 }
+
 

@@ -2,11 +2,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import {
-  ArrowLeft, Save, Undo2, Redo2, MousePointer2, Store, Square, Circle as CircleIcon,
-  Triangle, Minus, Type, Image as ImageIcon, Package, Layers as LayersIcon, Search,
+  ArrowLeft, Save, Undo2, Redo2, MousePointer2, Store,
+  Type, Package, Layers as LayersIcon, Search,
   ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Maximize2, PanelRightClose, PanelRightOpen,
   Route as RouteIcon, Footprints, Building2, ParkingSquare, Ruler, Armchair, Fence as FenceIcon, Table2,
-  MapPin,
+  MapPin, Eye, EyeOff, Lock, Unlock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { DesignerCanvas, type CanvasTool } from "@/components/venue-designer/canvas";
 import { Inspector } from "@/components/venue-designer/inspector";
 import { useDesignerStore } from "@/components/venue-designer/store";
-import { makeBooth, makeShape, makeText, makeIcon, makePreset, ICONS, uid, resetBoothCounter } from "@/components/venue-designer/factory";
+import { makeBooth, makeText, makeIcon, makePreset, ICONS, uid, resetBoothCounter } from "@/components/venue-designer/factory";
 import { IconGlyph } from "@/components/venue-designer/icon-glyph";
 import { AddBackgroundDialog } from "@/components/venue-designer/add-background-dialog";
 import type { AnyElement, IconKey, Layout } from "@/components/venue-designer/types";
@@ -33,8 +33,6 @@ type LeftTab = "objects" | "layers" | "search" | null;
 function installFactory() {
   (globalThis as any).__vdFactory = (tool: string, x: number, y: number, extra?: any): AnyElement | null => {
     if (tool === "booth") return makeBooth(x - 5, y - 5);
-    if (tool === "rect" || tool === "circle" || tool === "triangle" || tool === "line")
-      return makeShape(tool as any, x - 6, y - 6);
     if (tool === "text") return makeText(x, y - 3);
     if (tool === "icon" && extra?.iconKey) return makeIcon(extra.iconKey as IconKey, x - 4, y - 4);
     if (
@@ -55,7 +53,9 @@ export function VenueDesignerV2({ venueId, organizationId, venueName, initial, o
   const [leftTab, setLeftTab] = useState<LeftTab>(null);
   const [rightOpen, setRightOpen] = useState(true);
   const [bgDialogOpen, setBgDialogOpen] = useState(false);
-  const [bgMode, setBgMode] = useState<"idle" | "adjust" | "crop">("idle");
+  const [bgSelected, setBgSelected] = useState(false);
+  const [cropMode, setCropMode] = useState(false);
+  const [mapAdjust, setMapAdjust] = useState(false);
   const viewportRef = useRef({ x: -20, y: -20, scale: 4 });
   const workspaceRef = useRef<HTMLDivElement | null>(null);
 
@@ -139,7 +139,7 @@ export function VenueDesignerV2({ venueId, organizationId, venueName, initial, o
         });
         return;
       }
-      const map: Record<string, CanvasTool> = { v: "select", b: "booth", r: "rect", c: "circle", t: "text", l: "line", m: "measure", f: "fence" };
+      const map: Record<string, CanvasTool> = { v: "select", b: "booth", t: "text", m: "measure", f: "fence" };
       const t = map[e.key.toLowerCase()];
       if (t) setTool(t);
       if (e.key === "Escape") { setTool("select"); setLeftTab(null); }
@@ -243,28 +243,29 @@ export function VenueDesignerV2({ venueId, organizationId, venueName, initial, o
           onZoomChange={setZoomPct}
           viewportRef={viewportRef}
           background={state.settings.background ?? null}
-          bgMode={bgMode}
+          bgSelected={bgSelected}
+          cropMode={cropMode}
+          onBgSelect={(sel) => { setBgSelected(sel); if (!sel) { setCropMode(false); setMapAdjust(false); } }}
           onBgChange={patchBg}
-          mapInteractive={bgMode === "adjust" && bg?.kind === "google-satellite"}
+          mapInteractive={mapAdjust && bg?.kind === "google-satellite"}
           onMapViewportChange={onMapViewport}
         />
 
-        {bgMode !== "idle" && (
+        {(cropMode || mapAdjust) && (
           <div className="pointer-events-none absolute inset-x-0 top-2 z-20 flex justify-center px-3">
             <div className="pointer-events-auto rounded-md border border-border/60 bg-card/95 px-3 py-1.5 text-xs shadow-lg backdrop-blur">
-              {bgMode === "adjust"
-                ? (bg?.kind === "google-satellite"
-                    ? "Drag the map to pan · scroll to zoom · use the frame handle to rotate"
-                    : "Drag to move · handles to resize · top handle to rotate")
-                : "Drag the crop handles — click Apply on Crop to keep, or click Adjust/Crop again to exit"}
+              {cropMode
+                ? "Drag the crop handles — click Done to apply"
+                : "Adjusting map view — drag to pan · scroll to zoom"}
               <button
                 className="ml-3 rounded px-2 py-0.5 text-[11px] font-medium text-primary hover:bg-muted"
-                onClick={() => setBgMode("idle")}
+                onClick={() => { setCropMode(false); setMapAdjust(false); }}
               >Done</button>
             </div>
           </div>
         )}
       </div>
+
 
 
       {/* Top floating toolbar */}
@@ -287,10 +288,6 @@ export function VenueDesignerV2({ venueId, organizationId, venueName, initial, o
         <div className="pointer-events-auto flex items-center gap-1 rounded-xl border border-border/60 bg-card/95 p-1 shadow-lg backdrop-blur">
           <ToolBtn active={tool === "select"} onClick={() => setTool("select")} title="Select (V)"><MousePointer2 className="h-4 w-4" /></ToolBtn>
           <ToolBtn active={tool === "booth"} onClick={() => setTool("booth")} title="Booth (B)"><Store className="h-4 w-4" /></ToolBtn>
-          <ToolBtn active={tool === "rect"} onClick={() => setTool("rect")} title="Rectangle (R)"><Square className="h-4 w-4" /></ToolBtn>
-          <ToolBtn active={tool === "circle"} onClick={() => setTool("circle")} title="Circle (C)"><CircleIcon className="h-4 w-4" /></ToolBtn>
-          <ToolBtn active={tool === "triangle"} onClick={() => setTool("triangle")} title="Triangle"><Triangle className="h-4 w-4" /></ToolBtn>
-          <ToolBtn active={tool === "line"} onClick={() => setTool("line")} title="Line (L)"><Minus className="h-4 w-4" /></ToolBtn>
           <ToolBtn active={tool === "text"} onClick={() => setTool("text")} title="Text (T)"><Type className="h-4 w-4" /></ToolBtn>
           <div className="mx-1 h-5 w-px bg-border" />
           <ToolBtn active={tool === "road"} onClick={() => setTool("road" as CanvasTool)} title="Road"><RouteIcon className="h-4 w-4" /></ToolBtn>
@@ -360,9 +357,14 @@ export function VenueDesignerV2({ venueId, organizationId, venueName, initial, o
                 <ElementsListPanel
                   elements={state.elements}
                   selection={state.selection}
-                  onSelect={(id) => actions.select([id])}
+                  onSelect={(id) => { setBgSelected(false); actions.select([id]); }}
                   onToggleHidden={(id, hidden) => actions.update(id, { hidden } as any)}
                   onToggleLocked={(id, locked) => actions.update(id, { locked } as any)}
+                  background={bg}
+                  bgSelected={bgSelected}
+                  onBgSelect={() => { actions.select([]); setBgSelected(true); }}
+                  onBgToggleHidden={() => bg && patchBg({ hidden: !bg.hidden })}
+                  onBgToggleLocked={() => bg && patchBg({ locked: !bg.locked })}
                 />
               )}
               {leftTab === "search" && (
@@ -394,11 +396,15 @@ export function VenueDesignerV2({ venueId, organizationId, venueName, initial, o
               onName={actions.setName}
               onSettings={actions.setSettings}
               background={state.settings.background ?? null}
-              onBackgroundChange={(bg) => { actions.setSettings({ background: bg }); if (!bg) setBgMode("idle"); }}
+              onBackgroundChange={(bg) => { actions.setSettings({ background: bg }); if (!bg) { setBgSelected(false); setCropMode(false); setMapAdjust(false); } }}
               venueId={venueId}
               organizationId={organizationId}
-              bgMode={bgMode}
-              onBgModeChange={setBgMode}
+              bgSelected={bgSelected}
+              onBgSelectChange={setBgSelected}
+              cropMode={cropMode}
+              onCropModeChange={setCropMode}
+              mapAdjust={mapAdjust}
+              onMapAdjustChange={setMapAdjust}
             />
           </div>
         </div>
@@ -479,10 +485,6 @@ function ObjectLibraryPanel({ onPick, activeTool, activeIconKey }: {
 }) {
   const shapes: Array<{ key: CanvasTool; label: string; icon: React.ReactNode }> = [
     { key: "booth", label: "Booth", icon: <Store className="h-4 w-4" /> },
-    { key: "rect", label: "Rectangle", icon: <Square className="h-4 w-4" /> },
-    { key: "circle", label: "Circle", icon: <CircleIcon className="h-4 w-4" /> },
-    { key: "triangle", label: "Triangle", icon: <Triangle className="h-4 w-4" /> },
-    { key: "line", label: "Line", icon: <Minus className="h-4 w-4" /> },
     { key: "text", label: "Text", icon: <Type className="h-4 w-4" /> },
     { key: "road" as CanvasTool, label: "Road", icon: <RouteIcon className="h-4 w-4" /> },
     { key: "walkway" as CanvasTool, label: "Walkway", icon: <Footprints className="h-4 w-4" /> },
@@ -538,18 +540,51 @@ function ObjectLibraryPanel({ onPick, activeTool, activeIconKey }: {
 
 function ElementsListPanel({
   elements, selection, onSelect, onToggleHidden, onToggleLocked,
+  background, bgSelected, onBgSelect, onBgToggleHidden, onBgToggleLocked,
 }: {
   elements: AnyElement[];
   selection: string[];
   onSelect: (id: string) => void;
   onToggleHidden: (id: string, hidden: boolean) => void;
   onToggleLocked: (id: string, locked: boolean) => void;
+  background?: ReturnType<typeof Object> | any;
+  bgSelected?: boolean;
+  onBgSelect?: () => void;
+  onBgToggleHidden?: () => void;
+  onBgToggleLocked?: () => void;
 }) {
-  if (elements.length === 0) {
+  const hasBg = !!background;
+  if (elements.length === 0 && !hasBg) {
     return <div className="text-xs text-muted-foreground">No elements yet. Pick a tool and click on the canvas to add one.</div>;
   }
   return (
     <div className="space-y-1">
+      {hasBg && (
+        <div
+          className={cn(
+            "flex items-center gap-2 rounded-md border px-2 py-1 text-xs",
+            bgSelected ? "border-primary/40 bg-primary/10 text-primary" : "border-border/60 hover:bg-muted",
+          )}
+        >
+          <button className="min-w-0 flex-1 truncate text-left font-medium" onClick={() => onBgSelect?.()}>
+            <MapPin className="mr-1 inline-block h-3 w-3" /> Base map
+          </button>
+          <button
+            onClick={() => onBgToggleHidden?.()}
+            className={cn("rounded px-1", background?.hidden ? "text-muted-foreground" : "text-foreground")}
+            title={background?.hidden ? "Show" : "Hide"}
+          >
+            {background?.hidden ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+          </button>
+          <button
+            onClick={() => onBgToggleLocked?.()}
+            className={cn("rounded px-1", background?.locked ? "text-primary" : "text-muted-foreground")}
+            title={background?.locked ? "Unlock" : "Lock"}
+          >
+            {background?.locked ? <Lock className="h-3.5 w-3.5" /> : <Unlock className="h-3.5 w-3.5" />}
+          </button>
+        </div>
+      )}
       {[...elements].reverse().map((el) => {
         const label = el.kind === "booth" ? `Booth ${(el as any).label}` : el.name ?? el.kind;
         const isSel = selection.includes(el.id);
@@ -566,17 +601,17 @@ function ElementsListPanel({
             </button>
             <button
               onClick={() => onToggleHidden(el.id, !el.hidden)}
-              className={cn("rounded px-1 text-[10px]", el.hidden ? "text-muted-foreground" : "text-foreground")}
+              className={cn("rounded px-1", el.hidden ? "text-muted-foreground" : "text-foreground")}
               title={el.hidden ? "Show" : "Hide"}
             >
-              {el.hidden ? "◌" : "●"}
+              {el.hidden ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
             </button>
             <button
               onClick={() => onToggleLocked(el.id, !el.locked)}
-              className={cn("rounded px-1 text-[10px]", el.locked ? "text-primary" : "text-muted-foreground")}
+              className={cn("rounded px-1", el.locked ? "text-primary" : "text-muted-foreground")}
               title={el.locked ? "Unlock" : "Lock"}
             >
-              {el.locked ? "🔒" : "🔓"}
+              {el.locked ? <Lock className="h-3.5 w-3.5" /> : <Unlock className="h-3.5 w-3.5" />}
             </button>
           </div>
         );
