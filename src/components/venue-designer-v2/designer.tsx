@@ -55,7 +55,9 @@ export function VenueDesignerV2({ venueId, organizationId, venueName, initial, o
   const [leftTab, setLeftTab] = useState<LeftTab>(null);
   const [rightOpen, setRightOpen] = useState(true);
   const [bgDialogOpen, setBgDialogOpen] = useState(false);
-  const [bgMode, setBgMode] = useState<"idle" | "adjust" | "crop">("idle");
+  const [bgSelected, setBgSelected] = useState(false);
+  const [cropMode, setCropMode] = useState(false);
+  const [mapAdjust, setMapAdjust] = useState(false);
   const viewportRef = useRef({ x: -20, y: -20, scale: 4 });
   const workspaceRef = useRef<HTMLDivElement | null>(null);
 
