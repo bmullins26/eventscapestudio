@@ -14,7 +14,9 @@ import { AddBackgroundDialog } from "./add-background-dialog";
 export function Inspector({
   elements, selection, actions, settings, name, onName, onSettings,
   background, onBackgroundChange, venueId, organizationId,
-  bgMode = "idle", onBgModeChange,
+  bgSelected = false, onBgSelectChange,
+  cropMode = false, onCropModeChange,
+  mapAdjust = false, onMapAdjustChange,
 }: {
   elements: AnyElement[];
   selection: string[];
@@ -27,8 +29,12 @@ export function Inspector({
   onBackgroundChange?: (bg: BackgroundLayer | null) => void;
   venueId?: string;
   organizationId?: string;
-  bgMode?: BgEditMode;
-  onBgModeChange?: (mode: BgEditMode) => void;
+  bgSelected?: boolean;
+  onBgSelectChange?: (v: boolean) => void;
+  cropMode?: boolean;
+  onCropModeChange?: (v: boolean) => void;
+  mapAdjust?: boolean;
+  onMapAdjustChange?: (v: boolean) => void;
 }) {
   const sel = elements.filter((e) => selection.includes(e.id));
   const [addOpen, setAddOpen] = useState(false);
@@ -36,7 +42,7 @@ export function Inspector({
   if (sel.length === 0) {
     return (
       <div className="flex h-full flex-col border-l border-border bg-card">
-        <PanelHeader title="Layout" />
+        <PanelHeader title={bgSelected && background ? "Base map" : "Layout"} />
         <div className="flex-1 space-y-4 overflow-auto p-3">
           <Field label="Name">
             <Input value={name} onChange={(e) => onName(e.target.value)} className="h-8" />
@@ -51,8 +57,12 @@ export function Inspector({
             <BackgroundSection
               background={background}
               onChange={onBackgroundChange}
-              bgMode={bgMode}
-              onBgModeChange={onBgModeChange}
+              bgSelected={bgSelected}
+              onBgSelectChange={onBgSelectChange}
+              cropMode={cropMode}
+              onCropModeChange={onCropModeChange}
+              mapAdjust={mapAdjust}
+              onMapAdjustChange={onMapAdjustChange}
             />
           )}
           {!background && onBackgroundChange && venueId && organizationId && (
