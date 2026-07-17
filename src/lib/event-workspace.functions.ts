@@ -31,7 +31,7 @@ export const getEventWorkspace = createServerFn({ method: "GET" })
 
     const { data: event, error: eErr } = await supabase
       .from("events")
-      .select("id, name, organization_id, venue_id, start_date, end_date, is_public")
+      .select("id, name, organization_id, venue_id, starts_at, ends_at, is_public, status")
       .eq("id", data.eventId)
       .maybeSingle();
     if (eErr) throw eErr;
