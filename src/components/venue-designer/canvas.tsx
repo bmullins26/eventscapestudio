@@ -696,6 +696,38 @@ export function DesignerCanvas({ elements, selection, actions, tool, toolPayload
           />
         );
       })()}
+
+      {/* Event-mode hover card — small floating card near the cursor with the
+          derived tooltip for whichever booth the mouse is over. Suppressed
+          while dragging or during inline rename. */}
+      {overlayByObjectId && hoverId && hoverPos && !drag && !editingId && (() => {
+        const el = elements.find((e) => e.id === hoverId);
+        const ov = el ? overlayByObjectId.get(el.objectId) : null;
+        if (!el || !ov) return null;
+        const left = Math.min(hoverPos.x + 14, size.w - 220);
+        const top = Math.min(hoverPos.y + 14, size.h - 60);
+        return (
+          <div
+            className="pointer-events-none absolute z-40 max-w-[220px] rounded-md border border-border/60 bg-card/95 px-2.5 py-1.5 text-[11px] shadow-lg backdrop-blur animate-fade-in"
+            style={{ left, top }}
+          >
+            <div className="flex items-center gap-1.5">
+              <span
+                className="inline-block h-2 w-2 rounded-full"
+                style={{ backgroundColor: ov.fill, boxShadow: `0 0 0 1px ${ov.stroke}` }}
+              />
+              <span className="font-medium">{ov.tooltip}</span>
+            </div>
+            {ov.badges.length > 0 && (
+              <div className="mt-1 flex gap-1 text-[10px] text-muted-foreground">
+                {ov.badges.map((b) => (
+                  <span key={b.id} title={b.label}>{b.glyph} {b.label}</span>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 }
