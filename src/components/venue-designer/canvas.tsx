@@ -286,6 +286,16 @@ export function DesignerCanvas({ elements, selection, actions, tool, toolPayload
   };
 
   const onPointerMove: React.PointerEventHandler<HTMLDivElement> = (e) => {
+    // Track hover for the event-mode hover card whenever we're not dragging.
+    if (containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      setHoverPos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+      if (!drag) {
+        const target = e.target as SVGElement | null;
+        const elGroup = target?.closest?.("[data-el-id]") as SVGElement | null;
+        setHoverId(elGroup?.getAttribute("data-el-id") ?? null);
+      }
+    }
     if (!drag || !containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
     const sx = e.clientX - rect.left;
