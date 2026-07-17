@@ -533,7 +533,13 @@ export function DesignerCanvas({ elements, selection, actions, tool, toolPayload
 
         <g transform={`scale(${vp.scale}) translate(${-vp.x} ${-vp.y})`}>
           {elements.map((el) => el.hidden ? null : (
-            <ElementNode key={el.id} el={el} selected={selection.includes(el.id)} vpScale={vp.scale} />
+            <ElementNode
+              key={el.id}
+              el={el}
+              selected={selection.includes(el.id)}
+              vpScale={vp.scale}
+              overlay={overlayByObjectId?.get(el.objectId) ?? null}
+            />
           ))}
         </g>
 
