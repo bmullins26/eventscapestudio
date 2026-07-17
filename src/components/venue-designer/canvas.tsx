@@ -711,13 +711,13 @@ function cursorForHandle(k: string): string {
   } as Record<string, string>)[k] ?? "pointer";
 }
 
-function ElementNode({ el, selected, vpScale }: { el: AnyElement; selected: boolean; vpScale: number }) {
+function ElementNode({ el, selected, vpScale, overlay }: { el: AnyElement; selected: boolean; vpScale: number; overlay: CanvasOverlay | null }) {
   const cx = el.x + el.w / 2; const cy = el.y + el.h / 2;
   const transform = el.rotation ? `rotate(${el.rotation} ${cx} ${cy})` : undefined;
   const commonProps: any = { "data-el-id": el.id, transform, style: { cursor: el.locked ? "not-allowed" : "move" } };
   const highlight = selected ? { filter: "drop-shadow(0 0 2px hsl(var(--primary)))" } : {};
 
-  if (el.kind === "booth") return renderBooth(el, commonProps, highlight, vpScale);
+  if (el.kind === "booth") return renderBooth(el, commonProps, highlight, vpScale, overlay);
   if (el.kind === "text") return renderText(el, commonProps, highlight);
   if (el.kind === "icon") return renderIcon(el, commonProps, highlight, vpScale);
   return null;
