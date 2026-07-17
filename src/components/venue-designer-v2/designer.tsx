@@ -358,7 +358,7 @@ export function VenueDesignerV2({ venueId, organizationId, venueName, initial, o
           <button
             onClick={() => setRightOpen((v) => !v)}
             className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted"
-            title={rightOpen ? "Hide inspector" : "Show inspector"}
+            title={rightOpen ? "Hide Context Panel" : "Show Context Panel"}
           >
             {rightOpen ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
           </button>
