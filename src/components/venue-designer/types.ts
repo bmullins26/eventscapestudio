@@ -25,6 +25,13 @@ export type IconKey =
 
 export interface BaseElement {
   id: string;
+  /**
+   * Stable UUID that survives label changes, renumbering, and copy/paste
+   * within the same layout. This is what event snapshots key `event_booths`
+   * rows against (`event_object_id`). Backfilled on layout load for
+   * legacy elements missing it.
+   */
+  objectId: string;
   kind: ElementKind;
   /** Top-left x in world units (feet). */
   x: number;
@@ -39,7 +46,12 @@ export interface BaseElement {
   name?: string;
   /** Optional label color (hex). Falls back to theme foreground. */
   labelColor?: string;
-
+  /**
+   * Free-form per-kind metadata. Used by schema-driven inspector fields for
+   * non-core object kinds (road/parking/building/tree/fence/stage/…).
+   * Booth uses its own typed fields below; new kinds should prefer `meta`.
+   */
+  meta?: Record<string, unknown>;
 }
 
 export interface BoothElement extends BaseElement {
@@ -54,6 +66,13 @@ export interface BoothElement extends BaseElement {
   radius: number;
   fontSize: number;
   fontWeight: 400 | 500 | 600 | 700;
+  /** Vendor category, e.g. "Food", "Crafts". Drives clustering intelligence. */
+  category?: string | null;
+  /** Booth traits — surface as badges + drive intelligence rules. */
+  isPremium?: boolean;
+  isCorner?: boolean;
+  isElectric?: boolean;
+  isWater?: boolean;
 }
 
 export interface TextElement extends BaseElement {
