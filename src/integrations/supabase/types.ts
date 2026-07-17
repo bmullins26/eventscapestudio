@@ -392,11 +392,14 @@ export type Database = {
           code: string
           created_at: string
           event_id: string
+          event_object_id: string | null
           height: number
           id: string
+          is_corner: boolean
           is_electric: boolean
           is_premium: boolean
           is_reserved: boolean
+          is_water: boolean
           notes: string | null
           price: number | null
           rotation: number
@@ -404,6 +407,7 @@ export type Database = {
           status: Database["public"]["Enums"]["booth_status"]
           template_booth_id: string | null
           updated_at: string
+          vendor_profile_id: string | null
           width: number
           x: number
           y: number
@@ -414,11 +418,14 @@ export type Database = {
           code: string
           created_at?: string
           event_id: string
+          event_object_id?: string | null
           height?: number
           id?: string
+          is_corner?: boolean
           is_electric?: boolean
           is_premium?: boolean
           is_reserved?: boolean
+          is_water?: boolean
           notes?: string | null
           price?: number | null
           rotation?: number
@@ -426,6 +433,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["booth_status"]
           template_booth_id?: string | null
           updated_at?: string
+          vendor_profile_id?: string | null
           width?: number
           x?: number
           y?: number
@@ -436,11 +444,14 @@ export type Database = {
           code?: string
           created_at?: string
           event_id?: string
+          event_object_id?: string | null
           height?: number
           id?: string
+          is_corner?: boolean
           is_electric?: boolean
           is_premium?: boolean
           is_reserved?: boolean
+          is_water?: boolean
           notes?: string | null
           price?: number | null
           rotation?: number
@@ -448,6 +459,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["booth_status"]
           template_booth_id?: string | null
           updated_at?: string
+          vendor_profile_id?: string | null
           width?: number
           x?: number
           y?: number
@@ -465,6 +477,13 @@ export type Database = {
             columns: ["template_booth_id"]
             isOneToOne: false
             referencedRelation: "layout_template_booths"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_booths_vendor_profile_id_fkey"
+            columns: ["vendor_profile_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_profiles"
             referencedColumns: ["id"]
           },
         ]

@@ -2,6 +2,19 @@ import type { AnyElement, BoothElement, IconElement, IconKey, TextElement } from
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
+/**
+ * Mint a stable UUID for a new object. Prefers crypto.randomUUID when
+ * available (SSR + modern browsers), falls back to a compact random string.
+ * The result is stored on element.objectId and survives label/renumbering.
+ */
+export function makeObjectId(): string {
+  try {
+    const g = globalThis as { crypto?: { randomUUID?: () => string } };
+    if (g.crypto?.randomUUID) return g.crypto.randomUUID();
+  } catch { /* ignore */ }
+  return `obj_${uid()}${uid()}`;
+}
+
 let boothCounter = 0;
 export const resetBoothCounter = (n: number) => { boothCounter = n; };
 
@@ -9,6 +22,7 @@ export function makeBooth(x: number, y: number): BoothElement {
   boothCounter += 1;
   return {
     id: uid(),
+    objectId: makeObjectId(),
     kind: "booth",
     x,
     y,
@@ -31,6 +45,7 @@ export function makeBooth(x: number, y: number): BoothElement {
 export function makeText(x: number, y: number): TextElement {
   return {
     id: uid(),
+    objectId: makeObjectId(),
     kind: "text",
     x,
     y,
@@ -48,6 +63,7 @@ export function makeIcon(iconKey: IconKey, x: number, y: number): IconElement {
   const label = ICONS.find((i) => i.key === iconKey)?.label ?? "";
   return {
     id: uid(),
+    objectId: makeObjectId(),
     kind: "icon",
     x,
     y,
@@ -77,6 +93,7 @@ export function makePreset(kind: PresetKind, x: number, y: number): IconElement 
   const p = PRESETS[kind];
   return {
     id: uid(),
+    objectId: makeObjectId(),
     kind: "icon",
     x: x - p.w / 2,
     y: y - p.h / 2,
@@ -125,6 +142,21 @@ export function describe(el: AnyElement): string {
 export function stripLegacyElements(elements: AnyElement[]): AnyElement[] {
   const allowed = new Set(["booth", "text", "icon"]);
   return elements.filter((e) => allowed.has((e as { kind: string }).kind));
+}
+
+/**
+ * Backfill objectId on any element loaded from a legacy layout that predates
+ * the persistent-object-id migration. Idempotent: elements that already have
+ * one are untouched.
+ */
+export function ensureObjectIds(elements: AnyElement[]): AnyElement[] {
+  let mutated = false;
+  const next = elements.map((el) => {
+    if (el.objectId && typeof el.objectId === "string" && el.objectId.length > 0) return el;
+    mutated = true;
+    return { ...el, objectId: makeObjectId() } as AnyElement;
+  });
+  return mutated ? next : elements;
 }
 
 export { uid };

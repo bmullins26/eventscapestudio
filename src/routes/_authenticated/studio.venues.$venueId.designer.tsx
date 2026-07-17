@@ -8,7 +8,7 @@ import { VenueDesignerV2 } from "@/components/venue-designer-v2/designer";
 import type { AnyElement, Layout, LayoutSettings } from "@/components/venue-designer/types";
 
 export const Route = createFileRoute("/_authenticated/studio/venues/$venueId/designer")({
-  head: () => ({ meta: [{ title: "Layout Designer · EventScape Studio" }] }),
+  head: () => ({ meta: [{ title: "Venue Workspace · EventScape Studio" }] }),
   component: VenueDesignerPage,
 });
 

@@ -242,3 +242,126 @@ export const getEventVenueSnapshot = createServerFn({ method: "GET" })
     if (error) throw error;
     return (row ?? null) as Record<string, any> | null;
   });
+
+/* -------------------------------------------------------------------------
+ * Phase 1 — Event booth materialization
+ *
+ * `snapshotVenueForEvent` takes a venue's layout, copies it into the event's
+ * snapshot model, and upserts one `event_booths` row per booth element,
+ * keyed by `event_object_id = element.objectId`. This is the durable link
+ * that carries live status (reservations, applications, payments, check-in)
+ * back to the geometry on the canvas.
+ *
+ * Idempotent: re-running against the same event reuses existing rows via
+ * ON CONFLICT (event_id, event_object_id).
+ * ---------------------------------------------------------------------- */
+
+const SnapshotForEventInput = z.object({
+  eventId: z.string().uuid(),
+});
+
+export const snapshotVenueForEvent = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => SnapshotForEventInput.parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+
+    // Load the event → resolve its venue.
+    const { data: eventRow, error: eErr } = await supabase
+      .from("events")
+      .select("id, venue_id, organization_id")
+      .eq("id", data.eventId)
+      .maybeSingle();
+    if (eErr) throw eErr;
+    if (!eventRow) throw new Error("Event not found");
+    if (!eventRow.venue_id) throw new Error("Event has no venue linked");
+
+    // Authz: caller must be a member of the event's organization.
+    const { data: isMember } = await supabase.rpc("is_org_member", {
+      _user_id: userId,
+      _org_id: eventRow.organization_id,
+    });
+    if (!isMember) throw new Error("Forbidden");
+
+    // Load the venue's live layout.
+    const { data: layout } = await (supabase.from("venue_layouts" as never) as any)
+      .select("name, settings, elements")
+      .eq("venue_id", eventRow.venue_id)
+      .maybeSingle();
+
+    const elements = (layout?.elements ?? []) as Array<Record<string, unknown>>;
+
+    // Extract booth elements — the only kind that materializes into event_booths.
+    const boothElements = elements.filter((el) => el.kind === "booth");
+
+    // Upsert one event_booths row per booth element.
+    let inserted = 0;
+    let updated = 0;
+    for (const el of boothElements) {
+      const objectId = (el.objectId as string | undefined) ?? null;
+      if (!objectId) continue; // legacy row missing id; layout load would normally backfill
+
+      const label = (el.label as string | undefined) ?? "";
+      const price = (el.price as number | undefined) ?? null;
+      const category = (el.category as string | undefined) ?? null;
+      const isElectric = Boolean(el.isElectric);
+      const isWater = Boolean(el.isWater);
+      const isPremium = Boolean(el.isPremium);
+      const isCorner = Boolean(el.isCorner);
+
+      // See if the row already exists.
+      const { data: existing } = await (supabase.from("event_booths" as never) as any)
+        .select("id")
+        .eq("event_id", data.eventId)
+        .eq("event_object_id", objectId)
+        .maybeSingle();
+
+      const geometry = {
+        x: Number(el.x) || 0,
+        y: Number(el.y) || 0,
+        width: Number(el.w) || 0,
+        height: Number(el.h) || 0,
+        rotation: Number(el.rotation) || 0,
+      };
+
+      if (existing) {
+        const { error: uErr } = await (supabase.from("event_booths" as never) as any)
+          .update({
+            code: label,
+            price,
+            category,
+            is_electric: isElectric,
+            is_water: isWater,
+            is_premium: isPremium,
+            is_corner: isCorner,
+            ...geometry,
+          })
+          .eq("id", existing.id);
+        if (uErr) throw uErr;
+        updated += 1;
+      } else {
+        const { error: iErr } = await (supabase.from("event_booths" as never) as any)
+          .insert({
+            event_id: data.eventId,
+            event_object_id: objectId,
+            code: label,
+            price,
+            category,
+            is_electric: isElectric,
+            is_water: isWater,
+            is_premium: isPremium,
+            is_corner: isCorner,
+            ...geometry,
+          });
+        if (iErr) throw iErr;
+        inserted += 1;
+      }
+    }
+
+    return {
+      eventId: data.eventId,
+      booths: boothElements.length,
+      inserted,
+      updated,
+    };
+  });
