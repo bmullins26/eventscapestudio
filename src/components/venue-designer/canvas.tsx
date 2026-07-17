@@ -766,16 +766,24 @@ function ElementLabel({ el, vpScale }: { el: AnyElement; vpScale: number }) {
   );
 }
 
-function renderBooth(el: BoothElement, common: any, hl: any, vpScale: number) {
+function renderBooth(el: BoothElement, common: any, hl: any, vpScale: number, overlay: CanvasOverlay | null) {
   const dash = el.strokeStyle === "dashed" ? "1 0.6" : undefined;
   const name = el.name?.trim();
   const canFitName = !!name && el.h >= el.fontSize * 2.2;
   const nameFont = Math.min(el.fontSize * 0.7, 10 / Math.max(vpScale, 0.0001));
-  const labelFill = (el as { labelColor?: string }).labelColor ?? "hsl(var(--foreground))";
+  // Event mode overrides fill/stroke with the derived state color.
+  const fill = overlay?.fill ?? el.fill;
+  const stroke = overlay?.stroke ?? el.stroke;
+  // Pick a readable label color when we've overridden the fill — dark
+  // colors get light text, light colors get dark text.
+  const overlayLabelFill = overlay ? pickReadableTextColor(overlay.fill) : null;
+  const labelFill =
+    overlayLabelFill ?? (el as { labelColor?: string }).labelColor ?? "hsl(var(--foreground))";
+  const badgeSize = Math.min(el.w, el.h) * 0.18;
   return (
     <g {...common}>
       <rect x={el.x} y={el.y} width={el.w} height={el.h} rx={el.radius} ry={el.radius}
-        fill={el.fill} stroke={el.stroke} strokeWidth={el.strokeWidth} strokeDasharray={dash} style={hl} />
+        fill={fill} stroke={stroke} strokeWidth={el.strokeWidth} strokeDasharray={dash} style={{ ...hl, transition: "fill 200ms ease, stroke 200ms ease" }} />
       <text x={el.x + el.w / 2} y={canFitName ? el.y + el.h * 0.38 : el.y + el.h / 2}
         fontSize={el.fontSize} fontWeight={el.fontWeight}
         textAnchor="middle" dominantBaseline="central" fill={labelFill}
@@ -792,7 +800,7 @@ function renderBooth(el: BoothElement, common: any, hl: any, vpScale: number) {
             textAnchor="middle"
             dominantBaseline="central"
             fill="none"
-            stroke="hsl(var(--background))"
+            stroke={overlay ? overlay.fill : "hsl(var(--background))"}
             strokeWidth={nameFont * 0.35}
             strokeLinejoin="round"
             style={{ pointerEvents: "none", paintOrder: "stroke" }}
@@ -814,8 +822,48 @@ function renderBooth(el: BoothElement, common: any, hl: any, vpScale: number) {
         </>
       )}
       {name && !canFitName && <ElementLabel el={el} vpScale={vpScale} />}
+      {overlay && overlay.badges.length > 0 && (
+        <g style={{ pointerEvents: "none" }}>
+          {overlay.badges.slice(0, 4).map((b, i) => {
+            const bx = el.x + el.w - (badgeSize * (i + 1) + badgeSize * 0.3 * (i + 1));
+            const by = el.y + badgeSize * 0.3;
+            return (
+              <g key={b.id}>
+                <circle
+                  cx={bx + badgeSize / 2}
+                  cy={by + badgeSize / 2}
+                  r={badgeSize / 2}
+                  fill="hsl(var(--background))"
+                  stroke={overlay.stroke}
+                  strokeWidth={badgeSize * 0.08}
+                />
+                <text
+                  x={bx + badgeSize / 2}
+                  y={by + badgeSize / 2}
+                  fontSize={badgeSize * 0.72}
+                  textAnchor="middle"
+                  dominantBaseline="central"
+                >
+                  {b.glyph}
+                </text>
+              </g>
+            );
+          })}
+        </g>
+      )}
     </g>
   );
+}
+
+/** Rough luminance-based contrast pick for overlay booth colors. */
+function pickReadableTextColor(hex: string): string {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex);
+  if (!m) return "hsl(var(--foreground))";
+  const n = parseInt(m[1], 16);
+  const r = (n >> 16) & 0xff, g = (n >> 8) & 0xff, b = n & 0xff;
+  // Perceived luminance (Rec. 709).
+  const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+  return lum > 0.6 ? "#111827" : "#ffffff";
 }
 
 
