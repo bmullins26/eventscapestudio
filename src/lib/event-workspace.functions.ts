@@ -26,7 +26,7 @@ const EventIdInput = z.object({ eventId: z.string().uuid() });
 export const getEventWorkspace = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => EventIdInput.parse(d))
-  .handler(async ({ data, context }) => {
+  .handler(async ({ data, context }): Promise<any> => {
     const { supabase } = context;
 
     const { data: event, error: eErr } = await supabase
