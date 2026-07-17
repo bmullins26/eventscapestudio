@@ -169,7 +169,7 @@ export function setFieldValue(el: AnyElement, path: string, value: unknown): Par
   }
   // Nested — clone the top-level container and mutate the leaf.
   const [head, ...rest] = parts;
-  const container = { ...(((el as Record<string, unknown>)[head]) as Record<string, unknown> | undefined ?? {}) };
+  const container = { ...(((el as unknown as Record<string, unknown>)[head]) as Record<string, unknown> | undefined ?? {}) };
   let cursor: Record<string, unknown> = container;
   for (let i = 0; i < rest.length - 1; i++) {
     const k = rest[i];
