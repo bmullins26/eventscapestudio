@@ -25,6 +25,14 @@ export type CanvasTool =
   | "chair"
   | "fence";
 
+/** Per-object overlay rendered by the canvas in event mode. */
+export interface CanvasOverlay {
+  fill: string;
+  stroke: string;
+  badges: Array<{ id: string; glyph: string; label: string }>;
+  tooltip: string;
+}
+
 export interface CanvasProps {
   elements: AnyElement[];
   selection: string[];
@@ -43,6 +51,14 @@ export interface CanvasProps {
   cropMode?: boolean;
   onBgChange?: (patch: Partial<BackgroundLayer>) => void;
   onBgSelect?: (selected: boolean) => void;
+  /**
+   * Optional per-object overlay for event mode. Keyed by `objectId` (the
+   * persistent UUID on every element). When present, the canvas will:
+   *   • override booth fill / stroke with the derived color
+   *   • render badges inside the booth
+   *   • surface a hover tooltip near the cursor with the tooltip string
+   */
+  overlayByObjectId?: Map<string, CanvasOverlay> | null;
 }
 
 // Screen -> world
