@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { DesignerCanvas, type CanvasTool } from "@/components/venue-designer/canvas";
 import { Inspector } from "@/components/venue-designer/inspector";
 import { useDesignerStore } from "@/components/venue-designer/store";
-import { makeBooth, makeText, makeIcon, makePreset, ICONS, uid, resetBoothCounter, stripLegacyElements } from "@/components/venue-designer/factory";
+import { makeBooth, makeText, makeIcon, makePreset, ICONS, uid, makeObjectId, resetBoothCounter, stripLegacyElements, ensureObjectIds } from "@/components/venue-designer/factory";
 import { IconGlyph } from "@/components/venue-designer/icon-glyph";
 import { AddBackgroundDialog } from "@/components/venue-designer/add-background-dialog";
 import type { AnyElement, IconKey, Layout } from "@/components/venue-designer/types";
@@ -47,7 +47,7 @@ function installFactory() {
 export function VenueDesignerV2({ venueId, organizationId, venueName, initial, onSave }: DesignerV2Props) {
   const cleanedInitial = useMemo(() => ({
     ...initial,
-    elements: stripLegacyElements(initial.elements),
+    elements: ensureObjectIds(stripLegacyElements(initial.elements)),
   }), [initial]);
   const { state, actions } = useDesignerStore(cleanedInitial);
   const [tool, setTool] = useState<CanvasTool>("select");
@@ -149,7 +149,9 @@ export function VenueDesignerV2({ venueId, organizationId, venueName, initial, o
         clipboardRef.current.forEach((el) => {
           const id = uid();
           newIds.push(id);
-          actions.add({ ...el, id, x: el.x + off, y: el.y + off } as AnyElement);
+          // Paste creates a NEW object — mint a fresh objectId so it links
+          // to its own event_booths row.
+          actions.add({ ...el, id, objectId: makeObjectId(), x: el.x + off, y: el.y + off } as AnyElement);
         });
         // select newly pasted
         setTimeout(() => actions.select(newIds), 0);
@@ -159,7 +161,7 @@ export function VenueDesignerV2({ venueId, organizationId, venueName, initial, o
         e.preventDefault();
         state.selection.forEach((id) => {
           const el = state.elements.find((x) => x.id === id);
-          if (el) actions.add({ ...el, id: uid(), x: el.x + 5, y: el.y + 5 } as AnyElement);
+          if (el) actions.add({ ...el, id: uid(), objectId: makeObjectId(), x: el.x + 5, y: el.y + 5 } as AnyElement);
         });
         return;
       }
@@ -420,7 +422,7 @@ export function VenueDesignerV2({ venueId, organizationId, venueName, initial, o
         <div className="pointer-events-auto absolute right-4 top-[68px] bottom-[60px] z-30 flex w-80 flex-col overflow-hidden rounded-2xl border border-border/60 bg-card/95 shadow-xl backdrop-blur">
           <div className="flex items-center justify-between border-b border-border px-3 py-2">
             <div className="min-w-0 truncate text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              {selectedCount === 0 ? "Layout settings" : selectedName}
+              {selectedCount === 0 ? "Venue Workspace" : selectedName}
             </div>
             <button onClick={() => setRightOpen(false)} className="rounded p-1 hover:bg-muted" aria-label="Close">
               <ChevronRight className="h-4 w-4" />
