@@ -389,6 +389,8 @@ export type Database = {
         Row: {
           assigned_application_id: string | null
           category: string | null
+          checked_in_at: string | null
+          checked_out_at: string | null
           code: string
           created_at: string
           event_id: string
@@ -404,9 +406,11 @@ export type Database = {
           price: number | null
           rotation: number
           size_label: string | null
+          staff_notes: string | null
           status: Database["public"]["Enums"]["booth_status"]
           template_booth_id: string | null
           updated_at: string
+          vendor_notes: string | null
           vendor_profile_id: string | null
           width: number
           x: number
@@ -415,6 +419,8 @@ export type Database = {
         Insert: {
           assigned_application_id?: string | null
           category?: string | null
+          checked_in_at?: string | null
+          checked_out_at?: string | null
           code: string
           created_at?: string
           event_id: string
@@ -430,9 +436,11 @@ export type Database = {
           price?: number | null
           rotation?: number
           size_label?: string | null
+          staff_notes?: string | null
           status?: Database["public"]["Enums"]["booth_status"]
           template_booth_id?: string | null
           updated_at?: string
+          vendor_notes?: string | null
           vendor_profile_id?: string | null
           width?: number
           x?: number
@@ -441,6 +449,8 @@ export type Database = {
         Update: {
           assigned_application_id?: string | null
           category?: string | null
+          checked_in_at?: string | null
+          checked_out_at?: string | null
           code?: string
           created_at?: string
           event_id?: string
@@ -456,9 +466,11 @@ export type Database = {
           price?: number | null
           rotation?: number
           size_label?: string | null
+          staff_notes?: string | null
           status?: Database["public"]["Enums"]["booth_status"]
           template_booth_id?: string | null
           updated_at?: string
+          vendor_notes?: string | null
           vendor_profile_id?: string | null
           width?: number
           x?: number

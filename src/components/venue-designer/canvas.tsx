@@ -25,6 +25,14 @@ export type CanvasTool =
   | "chair"
   | "fence";
 
+/** Per-object overlay rendered by the canvas in event mode. */
+export interface CanvasOverlay {
+  fill: string;
+  stroke: string;
+  badges: Array<{ id: string; glyph: string; label: string }>;
+  tooltip: string;
+}
+
 export interface CanvasProps {
   elements: AnyElement[];
   selection: string[];
@@ -43,6 +51,14 @@ export interface CanvasProps {
   cropMode?: boolean;
   onBgChange?: (patch: Partial<BackgroundLayer>) => void;
   onBgSelect?: (selected: boolean) => void;
+  /**
+   * Optional per-object overlay for event mode. Keyed by `objectId` (the
+   * persistent UUID on every element). When present, the canvas will:
+   *   • override booth fill / stroke with the derived color
+   *   • render badges inside the booth
+   *   • surface a hover tooltip near the cursor with the tooltip string
+   */
+  overlayByObjectId?: Map<string, CanvasOverlay> | null;
 }
 
 // Screen -> world
@@ -66,7 +82,7 @@ type DragState =
   | { kind: "crop-resize"; handle: string; startX: number; startY: number; orig: { x: number; y: number; w: number; h: number }; bg: BackgroundLayer }
   | null;
 
-export function DesignerCanvas({ elements, selection, actions, tool, toolPayload, onZoomChange, viewportRef, background, onCalibrate, mapInteractive, onMapViewportChange, bgSelected = false, cropMode = false, onBgChange, onBgSelect }: CanvasProps) {
+export function DesignerCanvas({ elements, selection, actions, tool, toolPayload, onZoomChange, viewportRef, background, onCalibrate, mapInteractive, onMapViewportChange, bgSelected = false, cropMode = false, onBgChange, onBgSelect, overlayByObjectId = null }: CanvasProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [vp, setVp] = useState<Viewport>(() => viewportRef.current);
   const [space, setSpace] = useState(false);
@@ -76,6 +92,10 @@ export function DesignerCanvas({ elements, selection, actions, tool, toolPayload
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingValue, setEditingValue] = useState("");
   const editingInputRef = useRef<HTMLInputElement | null>(null);
+  /** Which object the mouse is currently over — drives the event-mode hover card. */
+  const [hoverId, setHoverId] = useState<string | null>(null);
+  /** Screen-space cursor position for the hover card. */
+  const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null);
 
   useEffect(() => { viewportRef.current = vp; onZoomChange?.(Math.round(vp.scale * 100 / 4)); }, [vp, onZoomChange, viewportRef]);
 
@@ -266,6 +286,16 @@ export function DesignerCanvas({ elements, selection, actions, tool, toolPayload
   };
 
   const onPointerMove: React.PointerEventHandler<HTMLDivElement> = (e) => {
+    // Track hover for the event-mode hover card whenever we're not dragging.
+    if (containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      setHoverPos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+      if (!drag) {
+        const target = e.target as SVGElement | null;
+        const elGroup = target?.closest?.("[data-el-id]") as SVGElement | null;
+        setHoverId(elGroup?.getAttribute("data-el-id") ?? null);
+      }
+    }
     if (!drag || !containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
     const sx = e.clientX - rect.left;
@@ -503,7 +533,13 @@ export function DesignerCanvas({ elements, selection, actions, tool, toolPayload
 
         <g transform={`scale(${vp.scale}) translate(${-vp.x} ${-vp.y})`}>
           {elements.map((el) => el.hidden ? null : (
-            <ElementNode key={el.id} el={el} selected={selection.includes(el.id)} vpScale={vp.scale} />
+            <ElementNode
+              key={el.id}
+              el={el}
+              selected={selection.includes(el.id)}
+              vpScale={vp.scale}
+              overlay={overlayByObjectId?.get(el.objectId) ?? null}
+            />
           ))}
         </g>
 
@@ -660,6 +696,38 @@ export function DesignerCanvas({ elements, selection, actions, tool, toolPayload
           />
         );
       })()}
+
+      {/* Event-mode hover card — small floating card near the cursor with the
+          derived tooltip for whichever booth the mouse is over. Suppressed
+          while dragging or during inline rename. */}
+      {overlayByObjectId && hoverId && hoverPos && !drag && !editingId && (() => {
+        const el = elements.find((e) => e.id === hoverId);
+        const ov = el ? overlayByObjectId.get(el.objectId) : null;
+        if (!el || !ov) return null;
+        const left = Math.min(hoverPos.x + 14, size.w - 220);
+        const top = Math.min(hoverPos.y + 14, size.h - 60);
+        return (
+          <div
+            className="pointer-events-none absolute z-40 max-w-[220px] rounded-md border border-border/60 bg-card/95 px-2.5 py-1.5 text-[11px] shadow-lg backdrop-blur animate-fade-in"
+            style={{ left, top }}
+          >
+            <div className="flex items-center gap-1.5">
+              <span
+                className="inline-block h-2 w-2 rounded-full"
+                style={{ backgroundColor: ov.fill, boxShadow: `0 0 0 1px ${ov.stroke}` }}
+              />
+              <span className="font-medium">{ov.tooltip}</span>
+            </div>
+            {ov.badges.length > 0 && (
+              <div className="mt-1 flex gap-1 text-[10px] text-muted-foreground">
+                {ov.badges.map((b) => (
+                  <span key={b.id} title={b.label}>{b.glyph} {b.label}</span>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 }
@@ -675,13 +743,13 @@ function cursorForHandle(k: string): string {
   } as Record<string, string>)[k] ?? "pointer";
 }
 
-function ElementNode({ el, selected, vpScale }: { el: AnyElement; selected: boolean; vpScale: number }) {
+function ElementNode({ el, selected, vpScale, overlay }: { el: AnyElement; selected: boolean; vpScale: number; overlay: CanvasOverlay | null }) {
   const cx = el.x + el.w / 2; const cy = el.y + el.h / 2;
   const transform = el.rotation ? `rotate(${el.rotation} ${cx} ${cy})` : undefined;
   const commonProps: any = { "data-el-id": el.id, transform, style: { cursor: el.locked ? "not-allowed" : "move" } };
   const highlight = selected ? { filter: "drop-shadow(0 0 2px hsl(var(--primary)))" } : {};
 
-  if (el.kind === "booth") return renderBooth(el, commonProps, highlight, vpScale);
+  if (el.kind === "booth") return renderBooth(el, commonProps, highlight, vpScale, overlay);
   if (el.kind === "text") return renderText(el, commonProps, highlight);
   if (el.kind === "icon") return renderIcon(el, commonProps, highlight, vpScale);
   return null;
@@ -730,16 +798,24 @@ function ElementLabel({ el, vpScale }: { el: AnyElement; vpScale: number }) {
   );
 }
 
-function renderBooth(el: BoothElement, common: any, hl: any, vpScale: number) {
+function renderBooth(el: BoothElement, common: any, hl: any, vpScale: number, overlay: CanvasOverlay | null) {
   const dash = el.strokeStyle === "dashed" ? "1 0.6" : undefined;
   const name = el.name?.trim();
   const canFitName = !!name && el.h >= el.fontSize * 2.2;
   const nameFont = Math.min(el.fontSize * 0.7, 10 / Math.max(vpScale, 0.0001));
-  const labelFill = (el as { labelColor?: string }).labelColor ?? "hsl(var(--foreground))";
+  // Event mode overrides fill/stroke with the derived state color.
+  const fill = overlay?.fill ?? el.fill;
+  const stroke = overlay?.stroke ?? el.stroke;
+  // Pick a readable label color when we've overridden the fill — dark
+  // colors get light text, light colors get dark text.
+  const overlayLabelFill = overlay ? pickReadableTextColor(overlay.fill) : null;
+  const labelFill =
+    overlayLabelFill ?? (el as { labelColor?: string }).labelColor ?? "hsl(var(--foreground))";
+  const badgeSize = Math.min(el.w, el.h) * 0.18;
   return (
     <g {...common}>
       <rect x={el.x} y={el.y} width={el.w} height={el.h} rx={el.radius} ry={el.radius}
-        fill={el.fill} stroke={el.stroke} strokeWidth={el.strokeWidth} strokeDasharray={dash} style={hl} />
+        fill={fill} stroke={stroke} strokeWidth={el.strokeWidth} strokeDasharray={dash} style={{ ...hl, transition: "fill 200ms ease, stroke 200ms ease" }} />
       <text x={el.x + el.w / 2} y={canFitName ? el.y + el.h * 0.38 : el.y + el.h / 2}
         fontSize={el.fontSize} fontWeight={el.fontWeight}
         textAnchor="middle" dominantBaseline="central" fill={labelFill}
@@ -756,7 +832,7 @@ function renderBooth(el: BoothElement, common: any, hl: any, vpScale: number) {
             textAnchor="middle"
             dominantBaseline="central"
             fill="none"
-            stroke="hsl(var(--background))"
+            stroke={overlay ? overlay.fill : "hsl(var(--background))"}
             strokeWidth={nameFont * 0.35}
             strokeLinejoin="round"
             style={{ pointerEvents: "none", paintOrder: "stroke" }}
@@ -778,8 +854,48 @@ function renderBooth(el: BoothElement, common: any, hl: any, vpScale: number) {
         </>
       )}
       {name && !canFitName && <ElementLabel el={el} vpScale={vpScale} />}
+      {overlay && overlay.badges.length > 0 && (
+        <g style={{ pointerEvents: "none" }}>
+          {overlay.badges.slice(0, 4).map((b, i) => {
+            const bx = el.x + el.w - (badgeSize * (i + 1) + badgeSize * 0.3 * (i + 1));
+            const by = el.y + badgeSize * 0.3;
+            return (
+              <g key={b.id}>
+                <circle
+                  cx={bx + badgeSize / 2}
+                  cy={by + badgeSize / 2}
+                  r={badgeSize / 2}
+                  fill="hsl(var(--background))"
+                  stroke={overlay.stroke}
+                  strokeWidth={badgeSize * 0.08}
+                />
+                <text
+                  x={bx + badgeSize / 2}
+                  y={by + badgeSize / 2}
+                  fontSize={badgeSize * 0.72}
+                  textAnchor="middle"
+                  dominantBaseline="central"
+                >
+                  {b.glyph}
+                </text>
+              </g>
+            );
+          })}
+        </g>
+      )}
     </g>
   );
+}
+
+/** Rough luminance-based contrast pick for overlay booth colors. */
+function pickReadableTextColor(hex: string): string {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex);
+  if (!m) return "hsl(var(--foreground))";
+  const n = parseInt(m[1], 16);
+  const r = (n >> 16) & 0xff, g = (n >> 8) & 0xff, b = n & 0xff;
+  // Perceived luminance (Rec. 709).
+  const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+  return lum > 0.6 ? "#111827" : "#ffffff";
 }
 
 
