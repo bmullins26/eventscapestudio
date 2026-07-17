@@ -166,7 +166,7 @@ const AssignVendorInput = z.object({
 export const assignVendorToBooth = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => AssignVendorInput.parse(d))
-  .handler(async ({ data, context }) => {
+  .handler(async ({ data, context }): Promise<any> => {
     const { error } = await (context.supabase.from("event_booths" as never) as any)
       .update({
         vendor_profile_id: data.vendorProfileId,
