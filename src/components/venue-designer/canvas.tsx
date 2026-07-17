@@ -82,7 +82,7 @@ type DragState =
   | { kind: "crop-resize"; handle: string; startX: number; startY: number; orig: { x: number; y: number; w: number; h: number }; bg: BackgroundLayer }
   | null;
 
-export function DesignerCanvas({ elements, selection, actions, tool, toolPayload, onZoomChange, viewportRef, background, onCalibrate, mapInteractive, onMapViewportChange, bgSelected = false, cropMode = false, onBgChange, onBgSelect }: CanvasProps) {
+export function DesignerCanvas({ elements, selection, actions, tool, toolPayload, onZoomChange, viewportRef, background, onCalibrate, mapInteractive, onMapViewportChange, bgSelected = false, cropMode = false, onBgChange, onBgSelect, overlayByObjectId = null }: CanvasProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [vp, setVp] = useState<Viewport>(() => viewportRef.current);
   const [space, setSpace] = useState(false);
@@ -92,6 +92,10 @@ export function DesignerCanvas({ elements, selection, actions, tool, toolPayload
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingValue, setEditingValue] = useState("");
   const editingInputRef = useRef<HTMLInputElement | null>(null);
+  /** Which object the mouse is currently over — drives the event-mode hover card. */
+  const [hoverId, setHoverId] = useState<string | null>(null);
+  /** Screen-space cursor position for the hover card. */
+  const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null);
 
   useEffect(() => { viewportRef.current = vp; onZoomChange?.(Math.round(vp.scale * 100 / 4)); }, [vp, onZoomChange, viewportRef]);
 
