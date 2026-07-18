@@ -1191,7 +1191,7 @@ export default function WorkspaceApp() {
         <span className="text-[10px] text-muted-foreground">ft</span>
         {selectedId
           ? <span className="text-[10px] text-primary">1 object selected</span>
-          : <span className="text-[10px] text-muted-foreground">{BOOTHS.length} booths</span>
+          : <span className="text-[10px] text-muted-foreground">{booths.length} booths</span>
         }
         <div className="flex-1"/>
         <SToggle label="Map" active={showMiniMap} onClick={()=>setShowMiniMap(v=>!v)} icon={Map}/>
