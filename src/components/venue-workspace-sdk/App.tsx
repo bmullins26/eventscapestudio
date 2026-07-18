@@ -955,7 +955,9 @@ export default function WorkspaceApp() {
   const [rightOpen, setRightOpen]       = useState(true);
   const [sheet, setSheet]               = useState<Sheet>(null);
 
-  const selectedBooth = BOOTHS.find(b=>b.id===selectedId)??null;
+  const ctx = useWorkspaceCtx();
+  const booths = ctx?.booths ?? BOOTHS;
+  const selectedBooth = booths.find(b=>b.id===selectedId)??null;
 
   // On mobile: auto-open inspector sheet when booth is selected
   const handleSelect = (id: string|null) => {
