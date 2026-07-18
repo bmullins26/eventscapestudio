@@ -156,10 +156,6 @@ const PatchBoothInput = z.object({
   vendor_notes: z.string().nullable().optional(),
   status: z.enum(["available", "held", "assigned", "occupied", "blocked"]).optional(),
 });
-  staff_notes: z.string().nullable().optional(),
-  vendor_notes: z.string().nullable().optional(),
-  status: z.enum(["available", "held", "assigned", "occupied", "blocked"]).optional(),
-});
 
 export const patchEventBooth = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
