@@ -2287,6 +2287,86 @@ export type Database = {
           },
         ]
       }
+      workspace_objects: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          event_booth_id: string | null
+          event_id: string | null
+          geometry: Json
+          id: string
+          kind: string
+          layer_id: string | null
+          locked: boolean
+          props: Json
+          updated_at: string
+          venue_id: string
+          visible: boolean
+          z_index: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          event_booth_id?: string | null
+          event_id?: string | null
+          geometry?: Json
+          id?: string
+          kind: string
+          layer_id?: string | null
+          locked?: boolean
+          props?: Json
+          updated_at?: string
+          venue_id: string
+          visible?: boolean
+          z_index?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          event_booth_id?: string | null
+          event_id?: string | null
+          geometry?: Json
+          id?: string
+          kind?: string
+          layer_id?: string | null
+          locked?: boolean
+          props?: Json
+          updated_at?: string
+          venue_id?: string
+          visible?: boolean
+          z_index?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_objects_event_booth_id_fkey"
+            columns: ["event_booth_id"]
+            isOneToOne: false
+            referencedRelation: "event_booths"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_objects_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_objects_layer_id_fkey"
+            columns: ["layer_id"]
+            isOneToOne: false
+            referencedRelation: "venue_layers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_objects_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

@@ -52,6 +52,7 @@ import { Route as AuthenticatedAdminLogsRouteImport } from './routes/_authentica
 import { Route as AuthenticatedAdminAnalyticsRouteImport } from './routes/_authenticated/admin.analytics'
 import { Route as AuthenticatedStudioVenuesIndexRouteImport } from './routes/_authenticated/studio.venues.index'
 import { Route as AuthenticatedStudioVenuesVenueIdDesignerRouteImport } from './routes/_authenticated/studio.venues.$venueId.designer'
+import { Route as AuthenticatedStudioEventsEventIdWorkspaceSdkRouteImport } from './routes/_authenticated/studio.events.$eventId.workspace-sdk'
 import { Route as AuthenticatedStudioEventsEventIdVenueRouteImport } from './routes/_authenticated/studio.events.$eventId.venue'
 
 const PricingRoute = PricingRouteImport.update({
@@ -296,6 +297,12 @@ const AuthenticatedStudioVenuesVenueIdDesignerRoute =
     path: '/$venueId/designer',
     getParentRoute: () => AuthenticatedStudioVenuesRoute,
   } as any)
+const AuthenticatedStudioEventsEventIdWorkspaceSdkRoute =
+  AuthenticatedStudioEventsEventIdWorkspaceSdkRouteImport.update({
+    id: '/$eventId/workspace-sdk',
+    path: '/$eventId/workspace-sdk',
+    getParentRoute: () => AuthenticatedStudioEventsRoute,
+  } as any)
 const AuthenticatedStudioEventsEventIdVenueRoute =
   AuthenticatedStudioEventsEventIdVenueRouteImport.update({
     id: '/$eventId/venue',
@@ -346,6 +353,7 @@ export interface FileRoutesByFullPath {
   '/studio/': typeof AuthenticatedStudioIndexRoute
   '/studio/venues/': typeof AuthenticatedStudioVenuesIndexRoute
   '/studio/events/$eventId/venue': typeof AuthenticatedStudioEventsEventIdVenueRoute
+  '/studio/events/$eventId/workspace-sdk': typeof AuthenticatedStudioEventsEventIdWorkspaceSdkRoute
   '/studio/venues/$venueId/designer': typeof AuthenticatedStudioVenuesVenueIdDesignerRoute
 }
 export interface FileRoutesByTo {
@@ -387,6 +395,7 @@ export interface FileRoutesByTo {
   '/studio': typeof AuthenticatedStudioIndexRoute
   '/studio/venues': typeof AuthenticatedStudioVenuesIndexRoute
   '/studio/events/$eventId/venue': typeof AuthenticatedStudioEventsEventIdVenueRoute
+  '/studio/events/$eventId/workspace-sdk': typeof AuthenticatedStudioEventsEventIdWorkspaceSdkRoute
   '/studio/venues/$venueId/designer': typeof AuthenticatedStudioVenuesVenueIdDesignerRoute
 }
 export interface FileRoutesById {
@@ -434,6 +443,7 @@ export interface FileRoutesById {
   '/_authenticated/studio/': typeof AuthenticatedStudioIndexRoute
   '/_authenticated/studio/venues/': typeof AuthenticatedStudioVenuesIndexRoute
   '/_authenticated/studio/events/$eventId/venue': typeof AuthenticatedStudioEventsEventIdVenueRoute
+  '/_authenticated/studio/events/$eventId/workspace-sdk': typeof AuthenticatedStudioEventsEventIdWorkspaceSdkRoute
   '/_authenticated/studio/venues/$venueId/designer': typeof AuthenticatedStudioVenuesVenueIdDesignerRoute
 }
 export interface FileRouteTypes {
@@ -481,6 +491,7 @@ export interface FileRouteTypes {
     | '/studio/'
     | '/studio/venues/'
     | '/studio/events/$eventId/venue'
+    | '/studio/events/$eventId/workspace-sdk'
     | '/studio/venues/$venueId/designer'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -522,6 +533,7 @@ export interface FileRouteTypes {
     | '/studio'
     | '/studio/venues'
     | '/studio/events/$eventId/venue'
+    | '/studio/events/$eventId/workspace-sdk'
     | '/studio/venues/$venueId/designer'
   id:
     | '__root__'
@@ -568,6 +580,7 @@ export interface FileRouteTypes {
     | '/_authenticated/studio/'
     | '/_authenticated/studio/venues/'
     | '/_authenticated/studio/events/$eventId/venue'
+    | '/_authenticated/studio/events/$eventId/workspace-sdk'
     | '/_authenticated/studio/venues/$venueId/designer'
   fileRoutesById: FileRoutesById
 }
@@ -885,6 +898,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedStudioVenuesVenueIdDesignerRouteImport
       parentRoute: typeof AuthenticatedStudioVenuesRoute
     }
+    '/_authenticated/studio/events/$eventId/workspace-sdk': {
+      id: '/_authenticated/studio/events/$eventId/workspace-sdk'
+      path: '/$eventId/workspace-sdk'
+      fullPath: '/studio/events/$eventId/workspace-sdk'
+      preLoaderRoute: typeof AuthenticatedStudioEventsEventIdWorkspaceSdkRouteImport
+      parentRoute: typeof AuthenticatedStudioEventsRoute
+    }
     '/_authenticated/studio/events/$eventId/venue': {
       id: '/_authenticated/studio/events/$eventId/venue'
       path: '/$eventId/venue'
@@ -949,12 +969,15 @@ const AuthenticatedPortalRouteWithChildren =
 
 interface AuthenticatedStudioEventsRouteChildren {
   AuthenticatedStudioEventsEventIdVenueRoute: typeof AuthenticatedStudioEventsEventIdVenueRoute
+  AuthenticatedStudioEventsEventIdWorkspaceSdkRoute: typeof AuthenticatedStudioEventsEventIdWorkspaceSdkRoute
 }
 
 const AuthenticatedStudioEventsRouteChildren: AuthenticatedStudioEventsRouteChildren =
   {
     AuthenticatedStudioEventsEventIdVenueRoute:
       AuthenticatedStudioEventsEventIdVenueRoute,
+    AuthenticatedStudioEventsEventIdWorkspaceSdkRoute:
+      AuthenticatedStudioEventsEventIdWorkspaceSdkRoute,
   }
 
 const AuthenticatedStudioEventsRouteWithChildren =
