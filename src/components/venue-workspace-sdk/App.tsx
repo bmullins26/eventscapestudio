@@ -1128,7 +1128,7 @@ export default function WorkspaceApp() {
           <div className="absolute inset-0 md:pt-5 flex items-center justify-center">
             <div className="w-full h-full p-3 md:p-6">
               <VenueCanvas
-                booths={BOOTHS} selected={selectedId} onSelect={handleSelect}
+                booths={booths} selected={selectedId} onSelect={handleSelect}
                 showGrid={showGrid}/>
             </div>
           </div>
