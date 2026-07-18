@@ -986,9 +986,9 @@ export default function WorkspaceApp() {
 
         {/* Venue breadcrumb */}
         <div className="flex items-center gap-1 text-xs text-muted-foreground mr-2 sm:mr-3 min-w-0 overflow-hidden">
-          <span className="hidden sm:inline shrink-0">Riverside Fairgrounds</span>
+          <span className="hidden sm:inline shrink-0">{ctx?.venueName ?? "Riverside Fairgrounds"}</span>
           <ChevronRight size={12} className="hidden sm:inline shrink-0"/>
-          <span className="text-foreground font-medium truncate">Summer Market 2025</span>
+          <span className="text-foreground font-medium truncate">{ctx?.eventName ?? "Summer Market 2025"}</span>
         </div>
 
         {/* Mode toggle — hidden on mobile (shown in dock) */}
