@@ -610,6 +610,8 @@ function VenueCanvas({
 // ─── Mini Map ─────────────────────────────────────────────────────────────────
 
 function MiniMap() {
+  const ctx = useWorkspaceCtx();
+  const booths = ctx?.booths ?? BOOTHS;
   return (
     <div className="absolute bottom-12 right-3 w-28 h-20 bg-card border border-border rounded-lg overflow-hidden shadow-xl">
       <svg viewBox="0 0 1110 560" className="w-full h-full">
@@ -617,7 +619,7 @@ function MiniMap() {
         <rect x="5" y="5" width="1100" height="550" fill="none" stroke="#5A7A4A" strokeWidth="4"/>
         <rect x="82" y="248" width="928" height="55" fill="#B8A882" opacity="0.6"/>
         <rect x="870" y="10" width="38" height="540" fill="#2A2A2E" opacity="0.5"/>
-        {BOOTHS.map((b)=>(
+        {booths.map((b)=>(
           <rect key={b.id} x={b.x} y={b.y} width={b.w} height={b.h}
             fill={STATUS_COLORS[b.status].stroke} opacity="0.75" rx="1"/>
         ))}
@@ -629,6 +631,7 @@ function MiniMap() {
     </div>
   );
 }
+
 
 // ─── Shared panel components ──────────────────────────────────────────────────
 
