@@ -38,9 +38,9 @@ export const getEventWorkspaceSdk = createServerFn({ method: "GET" })
       venue = v ?? null;
 
       const { data: ls } = await (supabase.from("venue_layers" as never) as any)
-        .select("id, venue_id, name, color, visible, locked, sort_order, kind")
+        .select("id, venue_id, name, color, visible, locked, order_index, kind, opacity")
         .eq("venue_id", event.venue_id)
-        .order("sort_order", { ascending: true });
+        .order("order_index", { ascending: true });
       layers = (ls ?? []) as Array<any>;
 
       const { data: objs } = await (supabase.from("workspace_objects" as never) as any)
@@ -53,10 +53,10 @@ export const getEventWorkspaceSdk = createServerFn({ method: "GET" })
     const { data: booths } = await (supabase.from("event_booths" as never) as any)
       .select(`
         id, event_id, event_object_id, code, price, category, status, notes,
-        is_electric, is_water, is_premium, is_corner, is_reserved,
+        is_electric, is_water, is_premium, is_corner,
         vendor_profile_id, assigned_application_id,
         checked_in_at, checked_out_at, staff_notes, vendor_notes,
-        x_ft, y_ft, w_ft, h_ft, size_label,
+        x, y, width, height, rotation, size_label,
         vendor_profiles:vendor_profile_id(id, business_name, contact_name, email, phone)
       `)
       .eq("event_id", data.eventId);
