@@ -152,7 +152,10 @@ const PatchBoothInput = z.object({
   is_water: z.boolean().optional(),
   is_premium: z.boolean().optional(),
   is_corner: z.boolean().optional(),
-  is_reserved: z.boolean().optional(),
+  staff_notes: z.string().nullable().optional(),
+  vendor_notes: z.string().nullable().optional(),
+  status: z.enum(["available", "held", "assigned", "occupied", "blocked"]).optional(),
+});
   staff_notes: z.string().nullable().optional(),
   vendor_notes: z.string().nullable().optional(),
   status: z.enum(["available", "held", "assigned", "occupied", "blocked"]).optional(),
