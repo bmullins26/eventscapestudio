@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, createContext, useContext, useMemo } from "react";
 import {
   MousePointer2, Hand, Square, Pentagon, Minus, Type, LayoutGrid,
   Route, Fence, Building2, ParkingCircle, Mic2, TreePine, Ruler,
@@ -11,7 +11,30 @@ import {
   AlignLeft, SlidersHorizontal, Activity, Map,
 } from "lucide-react";
 
+// ─── Data context (real booths from Supabase; falls back to demo data) ──────
+type LayerRow = { id: string; name: string; color: string | null; visible: boolean; locked: boolean; kind: string };
+export type WorkspaceCtx = {
+  venueName: string;
+  eventName: string;
+  booths: Booth[] | null;
+  layers: LayerRow[] | null;
+  onPatchBooth?: (id: string, patch: Partial<Booth> & { staff_notes?: string; vendor_notes?: string }) => void;
+  onCheckIn?: (id: string) => void;
+  onCheckOut?: (id: string) => void;
+  onOpenVendor?: (vendorProfileId: string) => void;
+  onLayerToggle?: (id: string, patch: { visible?: boolean; locked?: boolean }) => void;
+};
+const WorkspaceDataContext = createContext<WorkspaceCtx | null>(null);
+export function WorkspaceDataProvider({ value, children }: { value: WorkspaceCtx; children: React.ReactNode }) {
+  return <WorkspaceDataContext.Provider value={value}>{children}</WorkspaceDataContext.Provider>;
+}
+function useWorkspaceCtx(): WorkspaceCtx | null {
+  return useContext(WorkspaceDataContext);
+}
+
 // ─── Breakpoint Hook ──────────────────────────────────────────────────────────
+
+
 
 function useBreakpoint() {
   const [w, setW] = useState(() =>
