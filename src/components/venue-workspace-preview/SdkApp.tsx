@@ -912,7 +912,7 @@ function MobileDock({
 
 // ─── App ──────────────────────────────────────────────────────────────────────
 
-export default function App() {
+export default function SdkApp() {
   const { isMobile, isTablet, isDesktop } = useBreakpoint();
 
   const [activeTool, setActiveTool]     = useState<Tool>("select");
