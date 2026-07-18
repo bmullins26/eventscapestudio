@@ -824,10 +824,12 @@ function LayersPanel() {
 // ─── Status Legend ────────────────────────────────────────────────────────────
 
 function Legend() {
+  const ctx = useWorkspaceCtx();
+  const source = ctx?.booths ?? BOOTHS;
   const counts: Record<BoothStatus,number> = {
     available:0, reserved:0, paid:0, pending:0, sponsor:0, unavailable:0,
   };
-  BOOTHS.forEach(b=>counts[b.status]++);
+  source.forEach(b=>counts[b.status]++);
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
       {(Object.entries(STATUS_COLORS) as [BoothStatus, typeof STATUS_COLORS[BoothStatus]][]).map(([st,c])=>(
