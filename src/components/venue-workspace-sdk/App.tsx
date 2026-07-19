@@ -10,7 +10,7 @@ import {
   PanelLeftOpen, PanelRightClose, PanelRightOpen,
   AlignLeft, AlignCenter, AlignRight, AlignStartVertical, AlignCenterVertical, AlignEndVertical,
   AlignHorizontalDistributeCenter, AlignVerticalDistributeCenter,
-  SlidersHorizontal, Activity, Map, Trash2, Copy,
+  SlidersHorizontal, Activity, Trash2, Copy,
 } from "lucide-react";
 import { toast } from "sonner";
 
