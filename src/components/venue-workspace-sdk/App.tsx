@@ -1046,7 +1046,12 @@ export default function WorkspaceApp() {
     else if (lower.includes("build")) setActiveTool("building");
     else if (lower.includes("stage")) setActiveTool("stage");
     else if (lower.includes("park")) setActiveTool("parking");
-    else if (lower.includes("road") || lower.includes("walk")) setActiveTool("road");
+    else if (lower.includes("walk")) setActiveTool("walkway");
+    else if (lower.includes("road") || lower.includes("lane")) setActiveTool("road");
+    else if (lower.includes("6")) setActiveTool("table6");
+    else if (lower.includes("8")) setActiveTool("table8");
+    else if (lower.includes("round") || lower.includes("cocktail")) setActiveTool("tableRound");
+    else if (lower.includes("chair")) setActiveTool("chair");
     else if (lower.includes("fence")) setActiveTool("fence");
     else setActiveTool("rect");
     toast.message(`Click the canvas to place: ${item}`);
