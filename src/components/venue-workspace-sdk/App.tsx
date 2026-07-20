@@ -67,7 +67,9 @@ interface Booth {
 }
 
 interface PlacedObj {
-  id: string; kind: "tree" | "building" | "stage" | "parking" | "fence" | "rect" | "text";
+  id: string;
+  kind: "tree" | "building" | "stage" | "parking" | "fence" | "rect" | "text"
+      | "road" | "walkway" | "table6" | "table8" | "tableRound" | "chair";
   x: number; y: number; w: number; h: number; label?: string;
 }
 
