@@ -11,6 +11,7 @@ import {
   AlignLeft, AlignCenter, AlignRight, AlignStartVertical, AlignCenterVertical, AlignEndVertical,
   AlignHorizontalDistributeCenter, AlignVerticalDistributeCenter,
   SlidersHorizontal, Activity, Trash2, Copy,
+  Footprints, Armchair, Circle as CircleIcon, RectangleHorizontal,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -52,7 +53,8 @@ type Mode = "design" | "reservations" | "operations";
 type Tool =
   | "select" | "pan" | "rect" | "polygon" | "line" | "text"
   | "booth"  | "road" | "walkway" | "fence"  | "building" | "parking"
-  | "stage"  | "tree" | "measure" | "ai"    | "image";
+  | "stage"  | "tree" | "measure" | "ai"    | "image"
+  | "table6" | "table8" | "tableRound" | "chair";
 type Sheet = "objects" | "layers" | "inspector" | null;
 
 interface Booth {
@@ -65,7 +67,9 @@ interface Booth {
 }
 
 interface PlacedObj {
-  id: string; kind: "tree" | "building" | "stage" | "parking" | "fence" | "rect" | "text";
+  id: string;
+  kind: "tree" | "building" | "stage" | "parking" | "fence" | "rect" | "text"
+      | "road" | "walkway" | "table6" | "table8" | "tableRound" | "chair";
   x: number; y: number; w: number; h: number; label?: string;
 }
 
@@ -127,11 +131,16 @@ const LEFT_TOOLS: { id: Tool; icon: React.ElementType; label: string; shortcut?:
   { id:"text",     icon:Type,          label:"Text",        shortcut:"T" },
   { id:"booth",    icon:LayoutGrid,    label:"Booth",       shortcut:"B" },
   { id:"road",     icon:Route,         label:"Road" },
+  { id:"walkway",  icon:Footprints,    label:"Walkway" },
   { id:"fence",    icon:Fence,         label:"Fence" },
   { id:"building", icon:Building2,     label:"Building" },
   { id:"parking",  icon:ParkingCircle, label:"Parking" },
   { id:"stage",    icon:Mic2,          label:"Stage" },
   { id:"tree",     icon:TreePine,      label:"Tree" },
+  { id:"table6",   icon:RectangleHorizontal, label:"6′ Table" },
+  { id:"table8",   icon:RectangleHorizontal, label:"8′ Table" },
+  { id:"tableRound", icon:CircleIcon,  label:"Round Table" },
+  { id:"chair",    icon:Armchair,      label:"Chair" },
   { id:"measure",  icon:Ruler,         label:"Measure",     shortcut:"M" },
   { id:"ai",       icon:Wand2,         label:"AI Import" },
   { id:"image",    icon:ImagePlus,     label:"Image" },
@@ -150,6 +159,7 @@ const OBJ_CATEGORIES = [
   { label:"Booths",     items:["Standard Booth","Corner Booth","Double Booth","Food Booth","Sponsor Booth"] },
   { label:"Structures", items:["Building","Stage","Pavilion","Tent","Ticket Booth","Info Booth"] },
   { label:"Roads",      items:["Main Road","Service Road","Walkway","Emergency Lane"] },
+  { label:"Seating",    items:["6′ Table","8′ Table","Round Table","Chair","Cocktail Table"] },
   { label:"Utilities",  items:["Electrical Panel","Generator","Water Hookup","Sewer Access"] },
   { label:"Landscape",  items:["Oak Tree","Pine Tree","Shrub","Flower Bed"] },
   { label:"Amenities",  items:["Restroom","ATM","Trash Station","Bench","Picnic Table"] },
@@ -206,6 +216,86 @@ function StageSVG({ x, y, w, h }: { x:number; y:number; w:number; h:number }) {
       <rect x={x} y={y} width={w} height={backH} fill="#1A0E2E" stroke="#3B1D72" strokeWidth="1" rx="3"/>
       <rect x={x} y={y+backH} width={w} height={h-backH} fill="#3B2208" stroke="#4A2E10" strokeWidth="1"/>
       <text x={x+w/2} y={y+h*0.6} textAnchor="middle" fill="#92400E" fontSize="10" fontWeight="800" letterSpacing="4" fontFamily="Inter,sans-serif" opacity="0.7">STAGE</text>
+    </g>
+  );
+}
+
+// ─── Roads / Walkways ────────────────────────────────────────────────────────
+function RoadSVG({ x, y, w, h }: { x:number; y:number; w:number; h:number }) {
+  const horizontal = w >= h;
+  const cx = x + w/2, cy = y + h/2;
+  return (
+    <g pointerEvents="none">
+      <rect x={x} y={y} width={w} height={h} fill="#1F1F22" stroke="#0A0A0C" strokeWidth="0.8" rx="1.5"/>
+      <rect x={x} y={y} width={w} height={Math.max(1, h*0.15)} fill="#ffffff08"/>
+      {horizontal ? (
+        <line x1={x+4} y1={cy} x2={x+w-4} y2={cy} stroke="#F5D046" strokeWidth={Math.max(1, h*0.06)} strokeDasharray={`${Math.max(8, w*0.06)} ${Math.max(6, w*0.05)}`} opacity="0.95"/>
+      ) : (
+        <line x1={cx} y1={y+4} x2={cx} y2={y+h-4} stroke="#F5D046" strokeWidth={Math.max(1, w*0.06)} strokeDasharray={`${Math.max(8, h*0.06)} ${Math.max(6, h*0.05)}`} opacity="0.95"/>
+      )}
+    </g>
+  );
+}
+function WalkwaySVG({ x, y, w, h }: { x:number; y:number; w:number; h:number }) {
+  const horizontal = w >= h;
+  const step = 14;
+  const paverId = `paver-${Math.round(x)}-${Math.round(y)}`;
+  return (
+    <g pointerEvents="none">
+      <defs>
+        <pattern id={paverId} width={step} height={step} patternUnits="userSpaceOnUse">
+          <rect width={step} height={step} fill="#C8B98F"/>
+          <path d={`M0 0 H${step} M0 ${step} H${step} M0 0 V${step} M${step} 0 V${step}`} stroke="#A99968" strokeWidth="0.6" opacity="0.6"/>
+        </pattern>
+      </defs>
+      <rect x={x} y={y} width={w} height={h} fill={`url(#${paverId})`} stroke="#8A7A55" strokeWidth="0.8" rx="1.5"/>
+      {/* subtle center scuff line */}
+      {horizontal
+        ? <line x1={x+4} y1={y+h/2} x2={x+w-4} y2={y+h/2} stroke="#8A7A55" strokeWidth="0.4" opacity="0.35"/>
+        : <line x1={x+w/2} y1={y+4} x2={x+w/2} y2={y+h-4} stroke="#8A7A55" strokeWidth="0.4" opacity="0.35"/>}
+    </g>
+  );
+}
+
+// ─── Tables & Chairs ─────────────────────────────────────────────────────────
+function RectTableSVG({ x, y, w, h, label }: { x:number; y:number; w:number; h:number; label?:string }) {
+  // Rectangular banquet table with wood top and darker legs
+  const legT = Math.max(2, Math.min(w, h) * 0.06);
+  return (
+    <g pointerEvents="none">
+      <rect x={x+2} y={y+2} width={w} height={h} fill="#000" opacity="0.22" rx="2"/>
+      <rect x={x} y={y} width={w} height={h} fill="#C69A6B" stroke="#7A4E28" strokeWidth="1" rx="2"/>
+      <rect x={x+2} y={y+2} width={w-4} height={h-4} fill="none" stroke="#A87A48" strokeWidth="0.6" rx="1.5" opacity="0.7"/>
+      <line x1={x+w*0.5} y1={y+2} x2={x+w*0.5} y2={y+h-2} stroke="#8A5A30" strokeWidth="0.5" opacity="0.5"/>
+      {/* legs (corners) */}
+      <rect x={x} y={y} width={legT} height={legT} fill="#5A3A1E"/>
+      <rect x={x+w-legT} y={y} width={legT} height={legT} fill="#5A3A1E"/>
+      <rect x={x} y={y+h-legT} width={legT} height={legT} fill="#5A3A1E"/>
+      <rect x={x+w-legT} y={y+h-legT} width={legT} height={legT} fill="#5A3A1E"/>
+      {label && <text x={x+w/2} y={y+h/2+2.5} textAnchor="middle" fill="#3B2210" fontSize={Math.min(9, h*0.35)} fontWeight="700" fontFamily="Inter,sans-serif" opacity="0.75">{label}</text>}
+    </g>
+  );
+}
+function RoundTableSVG({ x, y, w, h, label }: { x:number; y:number; w:number; h:number; label?:string }) {
+  const cx = x+w/2, cy = y+h/2, r = Math.min(w,h)/2;
+  return (
+    <g pointerEvents="none">
+      <ellipse cx={cx+1.5} cy={cy+2} rx={r} ry={r*0.98} fill="#000" opacity="0.22"/>
+      <circle cx={cx} cy={cy} r={r} fill="#C69A6B" stroke="#7A4E28" strokeWidth="1"/>
+      <circle cx={cx} cy={cy} r={r*0.82} fill="none" stroke="#A87A48" strokeWidth="0.6" opacity="0.7"/>
+      <circle cx={cx} cy={cy} r={r*0.14} fill="#5A3A1E" opacity="0.6"/>
+      {label && <text x={cx} y={cy+2.5} textAnchor="middle" fill="#3B2210" fontSize={Math.min(9, r*0.55)} fontWeight="700" fontFamily="Inter,sans-serif" opacity="0.75">{label}</text>}
+    </g>
+  );
+}
+function ChairSVG({ x, y, w, h }: { x:number; y:number; w:number; h:number }) {
+  // Small chair from above: seat + back bar
+  const backH = Math.max(1.5, h*0.22);
+  return (
+    <g pointerEvents="none">
+      <rect x={x+1} y={y+1} width={w} height={h} fill="#000" opacity="0.2" rx="1.5"/>
+      <rect x={x} y={y+backH} width={w} height={h-backH} fill="#5A6B7A" stroke="#2E3944" strokeWidth="0.6" rx="1.5"/>
+      <rect x={x} y={y} width={w} height={backH} fill="#3E4A56" stroke="#1E2632" strokeWidth="0.5" rx="1"/>
     </g>
   );
 }
@@ -350,6 +440,36 @@ function PlacedObjSVG({ o, isSel, onPointerDownBody, onPointerDownHandle }: {
       {o.kind === "text" && (
         <text x={o.x} y={o.y+o.h*0.7} fill="#fff" fontSize={Math.max(10, o.h*0.6)} fontFamily="Inter,sans-serif"
           onPointerDown={(e)=>onPointerDownBody(e, o.id)}>{o.label ?? "Text"}</text>
+      )}
+      {o.kind === "road" && (
+        <g onPointerDown={(e)=>onPointerDownBody(e, o.id)}>
+          <RoadSVG x={o.x} y={o.y} w={o.w} h={o.h}/>
+        </g>
+      )}
+      {o.kind === "walkway" && (
+        <g onPointerDown={(e)=>onPointerDownBody(e, o.id)}>
+          <WalkwaySVG x={o.x} y={o.y} w={o.w} h={o.h}/>
+        </g>
+      )}
+      {o.kind === "table6" && (
+        <g onPointerDown={(e)=>onPointerDownBody(e, o.id)}>
+          <RectTableSVG x={o.x} y={o.y} w={o.w} h={o.h} label={o.label ?? "6′"}/>
+        </g>
+      )}
+      {o.kind === "table8" && (
+        <g onPointerDown={(e)=>onPointerDownBody(e, o.id)}>
+          <RectTableSVG x={o.x} y={o.y} w={o.w} h={o.h} label={o.label ?? "8′"}/>
+        </g>
+      )}
+      {o.kind === "tableRound" && (
+        <g onPointerDown={(e)=>onPointerDownBody(e, o.id)}>
+          <RoundTableSVG x={o.x} y={o.y} w={o.w} h={o.h} label={o.label ?? "60″"}/>
+        </g>
+      )}
+      {o.kind === "chair" && (
+        <g onPointerDown={(e)=>onPointerDownBody(e, o.id)}>
+          <ChairSVG x={o.x} y={o.y} w={o.w} h={o.h}/>
+        </g>
       )}
       {isSel && (
         <>
@@ -736,11 +856,19 @@ export default function WorkspaceApp() {
       setActiveTool("select");
       return;
     }
-    const kindMap: Record<string, PlacedObj["kind"]> = { tree:"tree", building:"building", stage:"stage", parking:"parking", fence:"fence", rect:"rect", text:"text", road:"rect", walkway:"rect" };
+    const kindMap: Record<string, PlacedObj["kind"]> = {
+      tree:"tree", building:"building", stage:"stage", parking:"parking", fence:"fence",
+      rect:"rect", text:"text", road:"road", walkway:"walkway",
+      table6:"table6", table8:"table8", tableRound:"tableRound", chair:"chair",
+    };
     const kind = kindMap[tool]; if (!kind) { toast.message(`Tool "${tool}" — click canvas to place`); return; }
     const defaults: Record<string,{w:number;h:number;label?:string}> = {
       tree:{w:32,h:32}, building:{w:90,h:60,label:"BUILDING"}, stage:{w:120,h:60}, parking:{w:80,h:60,label:"PARKING"},
-      fence:{w:120,h:8}, rect:{w:80,h:60}, text:{w:80,h:20,label:"Text"}, road:{w:120,h:24}, walkway:{w:80,h:20},
+      fence:{w:120,h:8}, rect:{w:80,h:60}, text:{w:80,h:20,label:"Text"},
+      road:{w:160,h:28}, walkway:{w:120,h:20},
+      // Tables in feet: 6ft x 2.5ft, 8ft x 2.5ft, round 5ft; chairs ~1.5ft square.
+      table6:{w:60,h:25,label:"6′"}, table8:{w:80,h:25,label:"8′"},
+      tableRound:{w:50,h:50,label:"60″"}, chair:{w:14,h:14},
     };
     const d = defaults[tool] ?? { w:60,h:40 };
     const id = `p:${Date.now().toString(36)}`;
@@ -918,7 +1046,12 @@ export default function WorkspaceApp() {
     else if (lower.includes("build")) setActiveTool("building");
     else if (lower.includes("stage")) setActiveTool("stage");
     else if (lower.includes("park")) setActiveTool("parking");
-    else if (lower.includes("road") || lower.includes("walk")) setActiveTool("road");
+    else if (lower.includes("walk")) setActiveTool("walkway");
+    else if (lower.includes("road") || lower.includes("lane")) setActiveTool("road");
+    else if (lower.includes("6")) setActiveTool("table6");
+    else if (lower.includes("8")) setActiveTool("table8");
+    else if (lower.includes("round") || lower.includes("cocktail")) setActiveTool("tableRound");
+    else if (lower.includes("chair")) setActiveTool("chair");
     else if (lower.includes("fence")) setActiveTool("fence");
     else setActiveTool("rect");
     toast.message(`Click the canvas to place: ${item}`);
