@@ -856,11 +856,19 @@ export default function WorkspaceApp() {
       setActiveTool("select");
       return;
     }
-    const kindMap: Record<string, PlacedObj["kind"]> = { tree:"tree", building:"building", stage:"stage", parking:"parking", fence:"fence", rect:"rect", text:"text", road:"rect", walkway:"rect" };
+    const kindMap: Record<string, PlacedObj["kind"]> = {
+      tree:"tree", building:"building", stage:"stage", parking:"parking", fence:"fence",
+      rect:"rect", text:"text", road:"road", walkway:"walkway",
+      table6:"table6", table8:"table8", tableRound:"tableRound", chair:"chair",
+    };
     const kind = kindMap[tool]; if (!kind) { toast.message(`Tool "${tool}" — click canvas to place`); return; }
     const defaults: Record<string,{w:number;h:number;label?:string}> = {
       tree:{w:32,h:32}, building:{w:90,h:60,label:"BUILDING"}, stage:{w:120,h:60}, parking:{w:80,h:60,label:"PARKING"},
-      fence:{w:120,h:8}, rect:{w:80,h:60}, text:{w:80,h:20,label:"Text"}, road:{w:120,h:24}, walkway:{w:80,h:20},
+      fence:{w:120,h:8}, rect:{w:80,h:60}, text:{w:80,h:20,label:"Text"},
+      road:{w:160,h:28}, walkway:{w:120,h:20},
+      // Tables in feet: 6ft x 2.5ft, 8ft x 2.5ft, round 5ft; chairs ~1.5ft square.
+      table6:{w:60,h:25,label:"6′"}, table8:{w:80,h:25,label:"8′"},
+      tableRound:{w:50,h:50,label:"60″"}, chair:{w:14,h:14},
     };
     const d = defaults[tool] ?? { w:60,h:40 };
     const id = `p:${Date.now().toString(36)}`;
