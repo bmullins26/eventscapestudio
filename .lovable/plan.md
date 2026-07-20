@@ -1,107 +1,34 @@
-## Goal
-Turn the SDK preview into a real, data-backed workspace at
-`/studio/events/$eventId/workspace-sdk`, running side-by-side with today's
-v2 designer. When you're happy we can swap the routes.
+## Problem
 
-Answers baked in:
-- **Keep both** — v2 stays; SDK route becomes fully functional.
-- **Event-scoped** entry — all three tabs (Design / Reservations / Operations) live.
-- **New unified geometry table** — `workspace_objects`.
+`/studio/venue-workspace-preview` renders `src/components/venue-workspace-preview/SdkApp.tsx` — the original 1,227-line upload with **no drag/move/resize logic**. All the interactive work (drag, marquee, resize handles, alignment, shortcuts, Save/Undo/Publish, library drop) lives in a different file: `src/components/venue-workspace-sdk/App.tsx`, used only by the event-scoped route `/studio/events/$eventId/workspace-sdk`.
 
----
+So on the preview route, nothing is moveable because that code literally isn't there.
 
-## Phase 1 · Schema (single migration, awaits your approval)
+## Fix
 
-New table `public.workspace_objects`:
+Point the preview route at the interactive `venue-workspace-sdk/App.tsx` and feed it a demo data context (no event/venue in the DB required), so every button, drag, and shortcut works in preview exactly like in the wired route.
 
-| Column | Type | Notes |
-|---|---|---|
-| `id` | uuid PK | `gen_random_uuid()` |
-| `venue_id` | uuid FK → `venues` | required |
-| `event_id` | uuid FK → `events` | nullable — event overrides on venue base |
-| `layer_id` | uuid FK → `venue_layers` | nullable |
-| `kind` | text | `booth\|road\|walkway\|fence\|building\|parking\|stage\|tree\|shape\|text\|image\|measure` |
-| `geometry` | jsonb | `{x,y,w,h,rotation,points?}` in feet |
-| `props` | jsonb | kind-specific (row/col/size/category/electric/water/corner/premium/color/label…) |
-| `z_index` | int |  |
-| `locked` / `visible` | bool |  |
-| `created_by` / timestamps | | standard |
+### Changes
 
-RLS: org-members of the venue's org can CRUD; policies scoped via
-`venue_org_id(venue_id)` and `is_org_member`. Full GRANTs for `authenticated`
-+ `service_role`. Bridge column `event_booth_id` (nullable FK →
-`event_booths`) so a booth object binds to its live row.
+1. **`src/components/venue-workspace-sdk/App.tsx`**
+   - Make `onPatchBooth` / `onLayerToggle` in `WorkspaceCtx` optional (no-ops when absent).
+   - Export a `DEMO_WORKSPACE_CTX` built from the original hardcoded booth grid (rows A–F × 1–12, sample statuses/vendors/prices) and demo layers (Booths, Roads, Utilities, Landscape, Sponsors), matching the current SdkApp demo.
 
-**Backfill NOT run** — SDK route reads/writes `workspace_objects` only. v2
-keeps using `venue_layouts.elements`. Later we can port v2 over.
+2. **`src/routes/_authenticated/studio.venue-workspace-preview.tsx`**
+   - Swap the import from `SdkApp` to the interactive `WorkspaceApp` + `WorkspaceDataProvider`, wrapped with `DEMO_WORKSPACE_CTX`.
+   - Title stays "Venue Workspace Preview".
 
----
+3. **`src/components/venue-workspace-preview/SdkApp.tsx`**
+   - Delete. No other route imports it.
 
-## Phase 2 · Server functions (`src/lib/workspace-sdk.functions.ts`)
+### Result
 
-- `getEventWorkspaceSdk({eventId})` — returns event, venue, layers,
-  `workspace_objects` (event overlay + venue base merged), event_booths joined
-  with vendor/application/payment.
-- `upsertWorkspaceObject`, `deleteWorkspaceObject`, `bulkPatchWorkspaceObjects`
-  (move/resize/duplicate/align).
-- `setBoothStatus`, `assignVendorToBooth`, `checkInBooth`, `checkOutBooth`
-  (event mode). Reuse existing `event-workspace.functions.ts` where sensible.
-- `generateBoothGrid({rows, cols, size, origin, prefix})` — mirrors SDK's row/col naming.
-- All `requireSupabaseAuth`; validated with Zod.
+- `/studio/venue-workspace-preview` — fully interactive demo (drag, resize, marquee, alignment, shortcuts, Save toasts) backed by in-memory demo data. Nothing persists — refresh resets.
+- `/studio/events/$eventId/workspace-sdk` — unchanged; still writes through to `event_booths` / `venue_layers`.
+- v2 designer at `/studio/venues/$venueId/designer` — untouched.
 
----
+### Not doing
 
-## Phase 3 · Refactor SDK into wired components
-
-Copy `SdkApp.tsx` into `src/components/venue-workspace-sdk/` and split:
-- `WorkspaceShell.tsx` — layout, top bar, mode tabs, breakpoints.
-- `Canvas.tsx` — SVG canvas + pan/zoom + tool handlers, now bound to
-  `workspace_objects`.
-- `Toolbar.tsx`, `ObjectsPanel.tsx`, `LayersPanel.tsx`, `Inspector.tsx`,
-  `BoothHover.tsx`, `ReservationsSheet.tsx`, `OperationsSheet.tsx`.
-- Replace hardcoded `makeBooth` demo data with a `useWorkspaceData(eventId)`
-  hook (TanStack Query + `getEventWorkspaceSdk`).
-- Inspector fields write via `useMutation(upsertWorkspaceObject)`;
-  invalidate `["workspace", eventId]` on success.
-- Booth status colors derived from `deriveBoothState` (existing) — SDK
-  palette stays but statuses come from live data (application/payment/checked-in).
-- Undo/redo: local optimistic stack that batches server writes on commit.
-
----
-
-## Phase 4 · Route + navigation
-
-- New route `src/routes/_authenticated/studio.events.$eventId.workspace-sdk.tsx`
-  under the auth gate; loader `ensureQueryData(workspaceQueryOptions(eventId))`.
-- Add "Open workspace (new)" button on `/studio/events` list and event detail
-  next to the existing "Venue" button. v2 designer link stays.
-- Keep the preview route `/studio/venue-workspace-preview` as a static demo.
-
----
-
-## Phase 5 · Feature parity checklist per mode
-
-**Design**: create/move/resize/rotate booths + shapes, snap-to-grid, layers
-visibility/lock, generate grid, image/pdf background layer (reuses existing
-`add-background-dialog`), satellite background layer (reuses
-`satellite-map-layer`).
-**Reservations**: filter by status/category, drag vendor from dock onto
-booth, bulk price/traits edit, waitlist column.
-**Operations**: check-in/out, staff notes, live status colors, quick jump to
-booth on canvas.
-
----
-
-## What we're NOT doing this round
-- Not deleting or rewriting `venue-designer-v2/`.
-- Not migrating `venue_layouts.elements` → `workspace_objects` yet.
-- Not touching public vendor portal reservation surface.
-- Not adding AI layer 2 (Gemini) — Phase 6+.
-
----
-
-## Rollout
-Phase 1 migration → I stop for your approval. On approval I ship Phases 2–4
-in one batch, then walk you through Phase 5 parity gaps so we can prioritize.
-
-Say go and I'll draft the migration.
+- No schema changes.
+- No changes to the event-scoped wired route.
+- No removal of v2 designer.

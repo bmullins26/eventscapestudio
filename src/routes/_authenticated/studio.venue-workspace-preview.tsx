@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import SdkApp from "@/components/venue-workspace-preview/SdkApp";
+import WorkspaceApp, { WorkspaceDataProvider } from "@/components/venue-workspace-sdk/App";
+import { DEMO_WORKSPACE_CTX } from "@/components/venue-workspace-sdk/demo-data";
 
 export const Route = createFileRoute("/_authenticated/studio/venue-workspace-preview")({
   head: () => ({
@@ -11,7 +12,9 @@ export const Route = createFileRoute("/_authenticated/studio/venue-workspace-pre
 function VenueWorkspacePreviewPage() {
   return (
     <div className="fixed inset-0 z-40 overflow-hidden bg-background">
-      <SdkApp />
+      <WorkspaceDataProvider value={DEMO_WORKSPACE_CTX}>
+        <WorkspaceApp />
+      </WorkspaceDataProvider>
     </div>
   );
 }
