@@ -11,6 +11,7 @@ import {
   AlignLeft, AlignCenter, AlignRight, AlignStartVertical, AlignCenterVertical, AlignEndVertical,
   AlignHorizontalDistributeCenter, AlignVerticalDistributeCenter,
   SlidersHorizontal, Activity, Trash2, Copy,
+  Footprints, Armchair, Circle as CircleIcon, RectangleHorizontal,
 } from "lucide-react";
 import { toast } from "sonner";
 
