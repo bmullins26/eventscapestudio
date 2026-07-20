@@ -435,6 +435,36 @@ function PlacedObjSVG({ o, isSel, onPointerDownBody, onPointerDownHandle }: {
         <text x={o.x} y={o.y+o.h*0.7} fill="#fff" fontSize={Math.max(10, o.h*0.6)} fontFamily="Inter,sans-serif"
           onPointerDown={(e)=>onPointerDownBody(e, o.id)}>{o.label ?? "Text"}</text>
       )}
+      {o.kind === "road" && (
+        <g onPointerDown={(e)=>onPointerDownBody(e, o.id)}>
+          <RoadSVG x={o.x} y={o.y} w={o.w} h={o.h}/>
+        </g>
+      )}
+      {o.kind === "walkway" && (
+        <g onPointerDown={(e)=>onPointerDownBody(e, o.id)}>
+          <WalkwaySVG x={o.x} y={o.y} w={o.w} h={o.h}/>
+        </g>
+      )}
+      {o.kind === "table6" && (
+        <g onPointerDown={(e)=>onPointerDownBody(e, o.id)}>
+          <RectTableSVG x={o.x} y={o.y} w={o.w} h={o.h} label={o.label ?? "6′"}/>
+        </g>
+      )}
+      {o.kind === "table8" && (
+        <g onPointerDown={(e)=>onPointerDownBody(e, o.id)}>
+          <RectTableSVG x={o.x} y={o.y} w={o.w} h={o.h} label={o.label ?? "8′"}/>
+        </g>
+      )}
+      {o.kind === "tableRound" && (
+        <g onPointerDown={(e)=>onPointerDownBody(e, o.id)}>
+          <RoundTableSVG x={o.x} y={o.y} w={o.w} h={o.h} label={o.label ?? "60″"}/>
+        </g>
+      )}
+      {o.kind === "chair" && (
+        <g onPointerDown={(e)=>onPointerDownBody(e, o.id)}>
+          <ChairSVG x={o.x} y={o.y} w={o.w} h={o.h}/>
+        </g>
+      )}
       {isSel && (
         <>
           <rect x={o.x} y={o.y} width={o.w} height={o.h} fill="none" stroke="#3B82F6" strokeWidth={1} strokeDasharray="3 3" pointerEvents="none"/>
