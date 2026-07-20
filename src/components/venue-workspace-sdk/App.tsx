@@ -214,6 +214,86 @@ function StageSVG({ x, y, w, h }: { x:number; y:number; w:number; h:number }) {
   );
 }
 
+// ─── Roads / Walkways ────────────────────────────────────────────────────────
+function RoadSVG({ x, y, w, h }: { x:number; y:number; w:number; h:number }) {
+  const horizontal = w >= h;
+  const cx = x + w/2, cy = y + h/2;
+  return (
+    <g pointerEvents="none">
+      <rect x={x} y={y} width={w} height={h} fill="#1F1F22" stroke="#0A0A0C" strokeWidth="0.8" rx="1.5"/>
+      <rect x={x} y={y} width={w} height={Math.max(1, h*0.15)} fill="#ffffff08"/>
+      {horizontal ? (
+        <line x1={x+4} y1={cy} x2={x+w-4} y2={cy} stroke="#F5D046" strokeWidth={Math.max(1, h*0.06)} strokeDasharray={`${Math.max(8, w*0.06)} ${Math.max(6, w*0.05)}`} opacity="0.95"/>
+      ) : (
+        <line x1={cx} y1={y+4} x2={cx} y2={y+h-4} stroke="#F5D046" strokeWidth={Math.max(1, w*0.06)} strokeDasharray={`${Math.max(8, h*0.06)} ${Math.max(6, h*0.05)}`} opacity="0.95"/>
+      )}
+    </g>
+  );
+}
+function WalkwaySVG({ x, y, w, h }: { x:number; y:number; w:number; h:number }) {
+  const horizontal = w >= h;
+  const step = 14;
+  const paverId = `paver-${Math.round(x)}-${Math.round(y)}`;
+  return (
+    <g pointerEvents="none">
+      <defs>
+        <pattern id={paverId} width={step} height={step} patternUnits="userSpaceOnUse">
+          <rect width={step} height={step} fill="#C8B98F"/>
+          <path d={`M0 0 H${step} M0 ${step} H${step} M0 0 V${step} M${step} 0 V${step}`} stroke="#A99968" strokeWidth="0.6" opacity="0.6"/>
+        </pattern>
+      </defs>
+      <rect x={x} y={y} width={w} height={h} fill={`url(#${paverId})`} stroke="#8A7A55" strokeWidth="0.8" rx="1.5"/>
+      {/* subtle center scuff line */}
+      {horizontal
+        ? <line x1={x+4} y1={y+h/2} x2={x+w-4} y2={y+h/2} stroke="#8A7A55" strokeWidth="0.4" opacity="0.35"/>
+        : <line x1={x+w/2} y1={y+4} x2={x+w/2} y2={y+h-4} stroke="#8A7A55" strokeWidth="0.4" opacity="0.35"/>}
+    </g>
+  );
+}
+
+// ─── Tables & Chairs ─────────────────────────────────────────────────────────
+function RectTableSVG({ x, y, w, h, label }: { x:number; y:number; w:number; h:number; label?:string }) {
+  // Rectangular banquet table with wood top and darker legs
+  const legT = Math.max(2, Math.min(w, h) * 0.06);
+  return (
+    <g pointerEvents="none">
+      <rect x={x+2} y={y+2} width={w} height={h} fill="#000" opacity="0.22" rx="2"/>
+      <rect x={x} y={y} width={w} height={h} fill="#C69A6B" stroke="#7A4E28" strokeWidth="1" rx="2"/>
+      <rect x={x+2} y={y+2} width={w-4} height={h-4} fill="none" stroke="#A87A48" strokeWidth="0.6" rx="1.5" opacity="0.7"/>
+      <line x1={x+w*0.5} y1={y+2} x2={x+w*0.5} y2={y+h-2} stroke="#8A5A30" strokeWidth="0.5" opacity="0.5"/>
+      {/* legs (corners) */}
+      <rect x={x} y={y} width={legT} height={legT} fill="#5A3A1E"/>
+      <rect x={x+w-legT} y={y} width={legT} height={legT} fill="#5A3A1E"/>
+      <rect x={x} y={y+h-legT} width={legT} height={legT} fill="#5A3A1E"/>
+      <rect x={x+w-legT} y={y+h-legT} width={legT} height={legT} fill="#5A3A1E"/>
+      {label && <text x={x+w/2} y={y+h/2+2.5} textAnchor="middle" fill="#3B2210" fontSize={Math.min(9, h*0.35)} fontWeight="700" fontFamily="Inter,sans-serif" opacity="0.75">{label}</text>}
+    </g>
+  );
+}
+function RoundTableSVG({ x, y, w, h, label }: { x:number; y:number; w:number; h:number; label?:string }) {
+  const cx = x+w/2, cy = y+h/2, r = Math.min(w,h)/2;
+  return (
+    <g pointerEvents="none">
+      <ellipse cx={cx+1.5} cy={cy+2} rx={r} ry={r*0.98} fill="#000" opacity="0.22"/>
+      <circle cx={cx} cy={cy} r={r} fill="#C69A6B" stroke="#7A4E28" strokeWidth="1"/>
+      <circle cx={cx} cy={cy} r={r*0.82} fill="none" stroke="#A87A48" strokeWidth="0.6" opacity="0.7"/>
+      <circle cx={cx} cy={cy} r={r*0.14} fill="#5A3A1E" opacity="0.6"/>
+      {label && <text x={cx} y={cy+2.5} textAnchor="middle" fill="#3B2210" fontSize={Math.min(9, r*0.55)} fontWeight="700" fontFamily="Inter,sans-serif" opacity="0.75">{label}</text>}
+    </g>
+  );
+}
+function ChairSVG({ x, y, w, h }: { x:number; y:number; w:number; h:number }) {
+  // Small chair from above: seat + back bar
+  const backH = Math.max(1.5, h*0.22);
+  return (
+    <g pointerEvents="none">
+      <rect x={x+1} y={y+1} width={w} height={h} fill="#000" opacity="0.2" rx="1.5"/>
+      <rect x={x} y={y+backH} width={w} height={h-backH} fill="#5A6B7A" stroke="#2E3944" strokeWidth="0.6" rx="1.5"/>
+      <rect x={x} y={y} width={w} height={backH} fill="#3E4A56" stroke="#1E2632" strokeWidth="0.5" rx="1"/>
+    </g>
+  );
+}
+
 // ─── Booth SVG (interactive) ─────────────────────────────────────────────────
 function BoothShape({
   booth, isSel, isPrimary, onPointerDownBody, onPointerDownHandle,
