@@ -53,7 +53,8 @@ type Mode = "design" | "reservations" | "operations";
 type Tool =
   | "select" | "pan" | "rect" | "polygon" | "line" | "text"
   | "booth"  | "road" | "walkway" | "fence"  | "building" | "parking"
-  | "stage"  | "tree" | "measure" | "ai"    | "image";
+  | "stage"  | "tree" | "measure" | "ai"    | "image"
+  | "table6" | "table8" | "tableRound" | "chair";
 type Sheet = "objects" | "layers" | "inspector" | null;
 
 interface Booth {
