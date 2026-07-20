@@ -159,6 +159,7 @@ const OBJ_CATEGORIES = [
   { label:"Booths",     items:["Standard Booth","Corner Booth","Double Booth","Food Booth","Sponsor Booth"] },
   { label:"Structures", items:["Building","Stage","Pavilion","Tent","Ticket Booth","Info Booth"] },
   { label:"Roads",      items:["Main Road","Service Road","Walkway","Emergency Lane"] },
+  { label:"Seating",    items:["6′ Table","8′ Table","Round Table","Chair","Cocktail Table"] },
   { label:"Utilities",  items:["Electrical Panel","Generator","Water Hookup","Sewer Access"] },
   { label:"Landscape",  items:["Oak Tree","Pine Tree","Shrub","Flower Bed"] },
   { label:"Amenities",  items:["Restroom","ATM","Trash Station","Bench","Picnic Table"] },
