@@ -1137,16 +1137,28 @@ export default function WorkspaceApp() {
       tree:"tree", building:"building", stage:"stage", parking:"parking", fence:"fence",
       rect:"rect", text:"text", road:"road", walkway:"walkway",
       table6:"table6", table8:"table8", tableRound:"tableRound", chair:"chair",
+      pavilion:"pavilion", tent:"tent", ticket_booth:"ticket_booth", info_booth:"info_booth", food_truck:"food_truck",
+      restroom:"restroom", atm:"atm", trash:"trash", bench:"bench", picnic_table:"picnic_table",
+      electrical:"electrical", generator:"generator", water_hookup:"water_hookup", sewer:"sewer",
+      oak_tree:"oak_tree", pine_tree:"pine_tree", shrub:"shrub", flower_bed:"flower_bed",
+      cocktail_table:"cocktail_table", service_road:"service_road", emergency_lane:"emergency_lane",
     };
     const kind = kindMap[tool]; if (!kind) { toast.message(`Tool "${tool}" — click canvas to place`); return; }
     const defaults: Record<string,{w:number;h:number;label?:string}> = {
       tree:{w:32,h:32}, building:{w:90,h:60,label:"BUILDING"}, stage:{w:120,h:60}, parking:{w:80,h:60,label:"PARKING"},
       fence:{w:120,h:8}, rect:{w:80,h:60}, text:{w:80,h:20,label:"Text"},
       road:{w:160,h:28}, walkway:{w:120,h:20},
-      // Tables in feet: 6ft x 2.5ft, 8ft x 2.5ft, round 5ft; chairs ~1.5ft square.
       table6:{w:60,h:25,label:"6′"}, table8:{w:80,h:25,label:"8′"},
       tableRound:{w:50,h:50,label:"60″"}, chair:{w:14,h:14},
+      pavilion:{w:140,h:80}, tent:{w:80,h:70}, ticket_booth:{w:60,h:50}, info_booth:{w:56,h:50},
+      food_truck:{w:110,h:50}, restroom:{w:70,h:50}, atm:{w:36,h:44}, trash:{w:24,h:28},
+      bench:{w:48,h:16}, picnic_table:{w:70,h:36},
+      electrical:{w:28,h:28}, generator:{w:60,h:40}, water_hookup:{w:26,h:26}, sewer:{w:26,h:26},
+      oak_tree:{w:44,h:44}, pine_tree:{w:36,h:44}, shrub:{w:24,h:20}, flower_bed:{w:60,h:24},
+      cocktail_table:{w:28,h:28},
+      service_road:{w:120,h:22}, emergency_lane:{w:160,h:22},
     };
+
     const d = defaults[tool] ?? { w:60,h:40 };
     const id = `p:${Date.now().toString(36)}`;
     const obj: PlacedObj = { id, kind, x: snap(wx - d.w/2), y: snap(wy - d.h/2), w: d.w, h: d.h, label: d.label };
