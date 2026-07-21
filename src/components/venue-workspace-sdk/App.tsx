@@ -1329,22 +1329,32 @@ export default function WorkspaceApp() {
 
   // Onboard library click -> switch tool
   const onLibraryPick = (item: string) => {
-    const lower = item.toLowerCase();
-    if (lower.includes("booth")) setActiveTool("booth");
-    else if (lower.includes("tree")) setActiveTool("tree");
-    else if (lower.includes("build")) setActiveTool("building");
-    else if (lower.includes("stage")) setActiveTool("stage");
-    else if (lower.includes("park")) setActiveTool("parking");
-    else if (lower.includes("walk")) setActiveTool("walkway");
-    else if (lower.includes("road") || lower.includes("lane")) setActiveTool("road");
-    else if (lower.includes("6")) setActiveTool("table6");
-    else if (lower.includes("8")) setActiveTool("table8");
-    else if (lower.includes("round") || lower.includes("cocktail")) setActiveTool("tableRound");
-    else if (lower.includes("chair")) setActiveTool("chair");
-    else if (lower.includes("fence")) setActiveTool("fence");
-    else setActiveTool("rect");
+    const map: Record<string, Tool> = {
+      // Booths
+      "standard booth":"booth", "corner booth":"booth", "double booth":"booth",
+      "food booth":"food_truck", "sponsor booth":"booth",
+      // Structures
+      "building":"building", "stage":"stage", "pavilion":"pavilion", "tent":"tent",
+      "ticket booth":"ticket_booth", "info booth":"info_booth",
+      // Roads
+      "main road":"road", "service road":"service_road", "walkway":"walkway", "emergency lane":"emergency_lane",
+      // Seating
+      "6′ table":"table6", "8′ table":"table8", "round table":"tableRound",
+      "chair":"chair", "cocktail table":"cocktail_table",
+      // Utilities
+      "electrical panel":"electrical", "generator":"generator",
+      "water hookup":"water_hookup", "sewer access":"sewer",
+      // Landscape
+      "oak tree":"oak_tree", "pine tree":"pine_tree", "shrub":"shrub", "flower bed":"flower_bed",
+      // Amenities
+      "restroom":"restroom", "atm":"atm", "trash station":"trash",
+      "bench":"bench", "picnic table":"picnic_table",
+    };
+    const tool = map[item.toLowerCase()] ?? "rect";
+    setActiveTool(tool);
     toast.message(`Click the canvas to place: ${item}`);
   };
+
 
   const closeSheet = () => setSheet(null);
 
