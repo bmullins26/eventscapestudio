@@ -721,6 +721,33 @@ function PlacedObjSVG({ o, isSel, onPointerDownBody, onPointerDownHandle }: {
           <ChairSVG x={o.x} y={o.y} w={o.w} h={o.h}/>
         </g>
       )}
+      {o.kind === "pavilion" && (<g onPointerDown={(e)=>onPointerDownBody(e, o.id)}><PavilionSVG x={o.x} y={o.y} w={o.w} h={o.h}/></g>)}
+      {o.kind === "tent" && (<g onPointerDown={(e)=>onPointerDownBody(e, o.id)}><TentSVG x={o.x} y={o.y} w={o.w} h={o.h}/></g>)}
+      {o.kind === "ticket_booth" && (<g onPointerDown={(e)=>onPointerDownBody(e, o.id)}><TicketBoothSVG x={o.x} y={o.y} w={o.w} h={o.h}/></g>)}
+      {o.kind === "info_booth" && (<g onPointerDown={(e)=>onPointerDownBody(e, o.id)}><InfoBoothSVG x={o.x} y={o.y} w={o.w} h={o.h}/></g>)}
+      {o.kind === "food_truck" && (<g onPointerDown={(e)=>onPointerDownBody(e, o.id)}><FoodTruckSVG x={o.x} y={o.y} w={o.w} h={o.h}/></g>)}
+      {o.kind === "restroom" && (<g onPointerDown={(e)=>onPointerDownBody(e, o.id)}><RestroomSVG x={o.x} y={o.y} w={o.w} h={o.h}/></g>)}
+      {o.kind === "atm" && (<g onPointerDown={(e)=>onPointerDownBody(e, o.id)}><AtmSVG x={o.x} y={o.y} w={o.w} h={o.h}/></g>)}
+      {o.kind === "trash" && (<g onPointerDown={(e)=>onPointerDownBody(e, o.id)}><TrashSVG x={o.x} y={o.y} w={o.w} h={o.h}/></g>)}
+      {o.kind === "bench" && (<g onPointerDown={(e)=>onPointerDownBody(e, o.id)}><BenchSVG x={o.x} y={o.y} w={o.w} h={o.h}/></g>)}
+      {o.kind === "picnic_table" && (<g onPointerDown={(e)=>onPointerDownBody(e, o.id)}><PicnicTableSVG x={o.x} y={o.y} w={o.w} h={o.h}/></g>)}
+      {o.kind === "electrical" && (<g onPointerDown={(e)=>onPointerDownBody(e, o.id)}><ElectricalSVG x={o.x} y={o.y} w={o.w} h={o.h}/></g>)}
+      {o.kind === "generator" && (<g onPointerDown={(e)=>onPointerDownBody(e, o.id)}><GeneratorSVG x={o.x} y={o.y} w={o.w} h={o.h}/></g>)}
+      {o.kind === "water_hookup" && (<g onPointerDown={(e)=>onPointerDownBody(e, o.id)}><WaterHookupSVG x={o.x} y={o.y} w={o.w} h={o.h}/></g>)}
+      {o.kind === "sewer" && (<g onPointerDown={(e)=>onPointerDownBody(e, o.id)}><SewerSVG x={o.x} y={o.y} w={o.w} h={o.h}/></g>)}
+      {o.kind === "oak_tree" && (<g onPointerDown={(e)=>onPointerDownBody(e, o.id)}><OakTreeSVG cx={o.x+o.w/2} cy={o.y+o.h/2} r={Math.min(o.w,o.h)/2}/></g>)}
+      {o.kind === "pine_tree" && (<g onPointerDown={(e)=>onPointerDownBody(e, o.id)}><PineTreeSVG cx={o.x+o.w/2} cy={o.y+o.h/2} r={Math.min(o.w,o.h)/2}/></g>)}
+      {o.kind === "shrub" && (<g onPointerDown={(e)=>onPointerDownBody(e, o.id)}><ShrubSVG cx={o.x+o.w/2} cy={o.y+o.h/2}/></g>)}
+      {o.kind === "flower_bed" && (<g onPointerDown={(e)=>onPointerDownBody(e, o.id)}><FlowerBedSVG x={o.x} y={o.y} w={o.w} h={o.h}/></g>)}
+      {o.kind === "cocktail_table" && (<g onPointerDown={(e)=>onPointerDownBody(e, o.id)}><CocktailTableSVG x={o.x} y={o.y} w={o.w} h={o.h}/></g>)}
+      {o.kind === "service_road" && (<g onPointerDown={(e)=>onPointerDownBody(e, o.id)}><RoadSVG x={o.x} y={o.y} w={o.w} h={o.h}/></g>)}
+      {o.kind === "emergency_lane" && (
+        <g onPointerDown={(e)=>onPointerDownBody(e, o.id)}>
+          <rect x={o.x} y={o.y} width={o.w} height={o.h} fill="#8B1A1A" stroke="#4A0E0E" strokeWidth="1" rx="1.5"/>
+          <text x={o.x+o.w/2} y={o.y+o.h*0.62} textAnchor="middle" fill="#FDD835" fontSize={Math.min(8, o.h*0.5)} fontWeight="800" letterSpacing="2" fontFamily="Inter,sans-serif">EMERGENCY</text>
+        </g>
+      )}
+
       {isSel && (
         <>
           <rect x={o.x} y={o.y} width={o.w} height={o.h} fill="none" stroke="#3B82F6" strokeWidth={1} strokeDasharray="3 3" pointerEvents="none"/>
