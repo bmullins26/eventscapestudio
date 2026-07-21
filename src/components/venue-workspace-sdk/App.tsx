@@ -54,7 +54,13 @@ type Tool =
   | "select" | "pan" | "rect" | "polygon" | "line" | "text"
   | "booth"  | "road" | "walkway" | "fence"  | "building" | "parking"
   | "stage"  | "tree" | "measure" | "ai"    | "image"
-  | "table6" | "table8" | "tableRound" | "chair";
+  | "table6" | "table8" | "tableRound" | "chair"
+  // Extended library kinds
+  | "pavilion" | "tent" | "ticket_booth" | "info_booth" | "food_truck"
+  | "restroom" | "atm" | "trash" | "bench" | "picnic_table"
+  | "electrical" | "generator" | "water_hookup" | "sewer"
+  | "oak_tree" | "pine_tree" | "shrub" | "flower_bed"
+  | "cocktail_table" | "service_road" | "emergency_lane";
 type Sheet = "objects" | "layers" | "inspector" | null;
 
 interface Booth {
@@ -69,9 +75,15 @@ interface Booth {
 interface PlacedObj {
   id: string;
   kind: "tree" | "building" | "stage" | "parking" | "fence" | "rect" | "text"
-      | "road" | "walkway" | "table6" | "table8" | "tableRound" | "chair";
+      | "road" | "walkway" | "table6" | "table8" | "tableRound" | "chair"
+      | "pavilion" | "tent" | "ticket_booth" | "info_booth" | "food_truck"
+      | "restroom" | "atm" | "trash" | "bench" | "picnic_table"
+      | "electrical" | "generator" | "water_hookup" | "sewer"
+      | "oak_tree" | "pine_tree" | "shrub" | "flower_bed"
+      | "cocktail_table" | "service_road" | "emergency_lane";
   x: number; y: number; w: number; h: number; label?: string;
 }
+
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 const STATUS_COLORS: Record<BoothStatus, { fill: string; stroke: string; label: string }> = {
