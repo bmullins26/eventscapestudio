@@ -312,6 +312,244 @@ function ChairSVG({ x, y, w, h }: { x:number; y:number; w:number; h:number }) {
   );
 }
 
+// ─── Extended library glyphs (all unique) ────────────────────────────────────
+function PavilionSVG({ x, y, w, h }: { x:number; y:number; w:number; h:number }) {
+  const roofH = Math.max(6, h*0.32);
+  return (
+    <g pointerEvents="none">
+      <rect x={x+2} y={y+2} width={w} height={h} fill="#000" opacity="0.2" rx="3"/>
+      <path d={`M${x} ${y+roofH} L${x+w/2} ${y} L${x+w} ${y+roofH} Z`} fill="#8B2A2A" stroke="#5A1717" strokeWidth="1"/>
+      <rect x={x} y={y+roofH} width={w} height={h-roofH} fill="#F1E6D3" stroke="#8A7A55" strokeWidth="1"/>
+      {[0.2,0.5,0.8].map((f,i)=><rect key={i} x={x+w*f-1.5} y={y+roofH} width="3" height={h-roofH} fill="#7A5A3A"/>)}
+      <text x={x+w/2} y={y+roofH+ (h-roofH)/2 +3} textAnchor="middle" fill="#6B4A2A" fontSize="7" fontWeight="700" fontFamily="Inter,sans-serif" letterSpacing="1">PAVILION</text>
+    </g>
+  );
+}
+function TentSVG({ x, y, w, h }: { x:number; y:number; w:number; h:number }) {
+  const cx = x + w/2;
+  return (
+    <g pointerEvents="none">
+      <ellipse cx={cx+2} cy={y+h+1} rx={w/2} ry="3" fill="#000" opacity="0.2"/>
+      <path d={`M${x} ${y+h} L${cx} ${y} L${x+w} ${y+h} Z`} fill="#E7E2D6" stroke="#8A7A55" strokeWidth="1"/>
+      <line x1={cx} y1={y} x2={cx} y2={y+h} stroke="#8A7A55" strokeWidth="0.6" opacity="0.6"/>
+      <path d={`M${x+w*0.35} ${y+h} L${cx} ${y+h*0.55} L${x+w*0.65} ${y+h}`} fill="#B8AE95" stroke="#8A7A55" strokeWidth="0.6"/>
+    </g>
+  );
+}
+function TicketBoothSVG({ x, y, w, h }: { x:number; y:number; w:number; h:number }) {
+  return (
+    <g pointerEvents="none">
+      <rect x={x+2} y={y+2} width={w} height={h} fill="#000" opacity="0.2" rx="2"/>
+      <rect x={x} y={y} width={w} height={h} fill="#F3C74B" stroke="#8A6510" strokeWidth="1" rx="2"/>
+      <rect x={x} y={y} width={w} height={Math.max(6,h*0.22)} fill="#8A1A1A"/>
+      <rect x={x+w*0.15} y={y+h*0.4} width={w*0.7} height={h*0.28} fill="#1F1F22" rx="1"/>
+      <text x={x+w/2} y={y+h*0.6} textAnchor="middle" fill="#F3C74B" fontSize={Math.min(8, h*0.28)} fontWeight="800" fontFamily="Inter,sans-serif">TICKETS</text>
+      <circle cx={x+w*0.5} cy={y+h*0.82} r={Math.min(3, h*0.09)} fill="#8A1A1A"/>
+    </g>
+  );
+}
+function InfoBoothSVG({ x, y, w, h }: { x:number; y:number; w:number; h:number }) {
+  return (
+    <g pointerEvents="none">
+      <rect x={x+2} y={y+2} width={w} height={h} fill="#000" opacity="0.2" rx="2"/>
+      <rect x={x} y={y} width={w} height={h} fill="#1E88E5" stroke="#0D47A1" strokeWidth="1" rx="2"/>
+      <rect x={x+w*0.1} y={y+h*0.28} width={w*0.8} height={h*0.5} fill="#E3F2FD" rx="1"/>
+      <circle cx={x+w/2} cy={y+h*0.44} r={Math.min(3.5, h*0.12)} fill="#1E88E5"/>
+      <text x={x+w/2} y={y+h*0.48} textAnchor="middle" fill="#fff" fontSize={Math.min(6, h*0.2)} fontWeight="800">i</text>
+      <text x={x+w/2} y={y+h*0.7} textAnchor="middle" fill="#0D47A1" fontSize={Math.min(6, h*0.18)} fontWeight="700" fontFamily="Inter,sans-serif">INFO</text>
+    </g>
+  );
+}
+function FoodTruckSVG({ x, y, w, h }: { x:number; y:number; w:number; h:number }) {
+  // Side-view truck: cab + box + awning + wheels
+  const cabW = w*0.28;
+  const bodyX = x+cabW;
+  const bodyW = w-cabW;
+  const wheelR = Math.min(h*0.14, w*0.05);
+  const bodyH = h*0.68;
+  return (
+    <g pointerEvents="none">
+      <ellipse cx={x+w/2+2} cy={y+h+1} rx={w/2} ry="2" fill="#000" opacity="0.2"/>
+      {/* Awning */}
+      <path d={`M${bodyX} ${y+h*0.18} L${x+w} ${y+h*0.18} L${x+w-4} ${y+h*0.30} L${bodyX+4} ${y+h*0.30} Z`} fill="#D94A3C" stroke="#7A1F17" strokeWidth="0.6"/>
+      {[0.15,0.35,0.55,0.75].map((f,i)=><rect key={i} x={bodyX + bodyW*f} y={y+h*0.18} width={bodyW*0.08} height={h*0.12} fill="#F4C24A"/>)}
+      {/* Box body */}
+      <rect x={bodyX} y={y+h*0.30} width={bodyW} height={bodyH-h*0.12} fill="#F5F0E6" stroke="#7A6A4A" strokeWidth="1" rx="2"/>
+      {/* Service window */}
+      <rect x={bodyX+bodyW*0.15} y={y+h*0.38} width={bodyW*0.55} height={h*0.28} fill="#1F1F22" rx="1"/>
+      <text x={bodyX+bodyW*0.42} y={y+h*0.56} textAnchor="middle" fill="#F4C24A" fontSize={Math.min(7, h*0.2)} fontWeight="800" fontFamily="Inter,sans-serif">FOOD</text>
+      {/* Cab */}
+      <path d={`M${x} ${y+h*0.42} L${x+cabW*0.2} ${y+h*0.28} L${bodyX} ${y+h*0.28} L${bodyX} ${y+h*0.88} L${x} ${y+h*0.88} Z`} fill="#C0392B" stroke="#7A1F17" strokeWidth="1"/>
+      <path d={`M${x+cabW*0.1} ${y+h*0.34} L${bodyX-2} ${y+h*0.34} L${bodyX-2} ${y+h*0.52} L${x+cabW*0.05} ${y+h*0.52} Z`} fill="#BEE1F5" stroke="#7A1F17" strokeWidth="0.6"/>
+      {/* Wheels */}
+      <circle cx={x+cabW*0.5} cy={y+h*0.9} r={wheelR} fill="#111"/>
+      <circle cx={x+cabW*0.5} cy={y+h*0.9} r={wheelR*0.4} fill="#555"/>
+      <circle cx={x+w*0.8} cy={y+h*0.9} r={wheelR} fill="#111"/>
+      <circle cx={x+w*0.8} cy={y+h*0.9} r={wheelR*0.4} fill="#555"/>
+    </g>
+  );
+}
+function RestroomSVG({ x, y, w, h }: { x:number; y:number; w:number; h:number }) {
+  const half = w/2;
+  return (
+    <g pointerEvents="none">
+      <rect x={x+2} y={y+2} width={w} height={h} fill="#000" opacity="0.22" rx="2"/>
+      <rect x={x} y={y} width={half} height={h} fill="#1E88E5" stroke="#0D47A1" strokeWidth="1" rx="2"/>
+      <rect x={x+half} y={y} width={half} height={h} fill="#E91E63" stroke="#880E4F" strokeWidth="1" rx="2"/>
+      <text x={x+half/2} y={y+h*0.62} textAnchor="middle" fill="#fff" fontSize={Math.min(10, h*0.4)} fontWeight="800">♂</text>
+      <text x={x+half+half/2} y={y+h*0.62} textAnchor="middle" fill="#fff" fontSize={Math.min(10, h*0.4)} fontWeight="800">♀</text>
+    </g>
+  );
+}
+function AtmSVG({ x, y, w, h }: { x:number; y:number; w:number; h:number }) {
+  return (
+    <g pointerEvents="none">
+      <rect x={x+2} y={y+2} width={w} height={h} fill="#000" opacity="0.22" rx="2"/>
+      <rect x={x} y={y} width={w} height={h} fill="#37474F" stroke="#1B2A32" strokeWidth="1" rx="2"/>
+      <rect x={x+w*0.15} y={y+h*0.15} width={w*0.7} height={h*0.35} fill="#0F1720" rx="1"/>
+      <rect x={x+w*0.2} y={y+h*0.22} width={w*0.6} height={h*0.2} fill="#4FC3F7"/>
+      <rect x={x+w*0.18} y={y+h*0.62} width={w*0.28} height={h*0.08} fill="#90A4AE"/>
+      <rect x={x+w*0.55} y={y+h*0.62} width={w*0.28} height={h*0.08} fill="#90A4AE"/>
+      <text x={x+w/2} y={y+h*0.9} textAnchor="middle" fill="#4FC3F7" fontSize={Math.min(7, h*0.22)} fontWeight="800" fontFamily="Inter,sans-serif">ATM</text>
+    </g>
+  );
+}
+function TrashSVG({ x, y, w, h }: { x:number; y:number; w:number; h:number }) {
+  return (
+    <g pointerEvents="none">
+      <ellipse cx={x+w/2+1} cy={y+h+1} rx={w/2} ry="2" fill="#000" opacity="0.22"/>
+      <rect x={x+w*0.1} y={y+h*0.18} width={w*0.8} height={h*0.78} fill="#2E7D32" stroke="#1B4A1D" strokeWidth="1" rx="2"/>
+      <rect x={x} y={y+h*0.05} width={w} height={h*0.16} fill="#1B4A1D" rx="2"/>
+      <rect x={x+w*0.35} y={y-2} width={w*0.3} height="3" fill="#1B4A1D" rx="1"/>
+      {[0.3,0.5,0.7].map((f,i)=><line key={i} x1={x+w*0.2} y1={y+h*f} x2={x+w*0.8} y2={y+h*f} stroke="#1B4A1D" strokeWidth="0.5" opacity="0.5"/>)}
+    </g>
+  );
+}
+function BenchSVG({ x, y, w, h }: { x:number; y:number; w:number; h:number }) {
+  return (
+    <g pointerEvents="none">
+      <rect x={x+1} y={y+1} width={w} height={h} fill="#000" opacity="0.2" rx="1.5"/>
+      <rect x={x} y={y+h*0.25} width={w} height={h*0.5} fill="#8B5A2B" stroke="#4A2E10" strokeWidth="0.8" rx="1"/>
+      <rect x={x} y={y+h*0.25} width={w} height="1.2" fill="#6A3E1A"/>
+      <rect x={x+w*0.05} y={y+h*0.75} width={w*0.06} height={h*0.22} fill="#3A2410"/>
+      <rect x={x+w*0.89} y={y+h*0.75} width={w*0.06} height={h*0.22} fill="#3A2410"/>
+    </g>
+  );
+}
+function PicnicTableSVG({ x, y, w, h }: { x:number; y:number; w:number; h:number }) {
+  const benchH = h*0.18;
+  return (
+    <g pointerEvents="none">
+      <rect x={x+1} y={y+1} width={w} height={h} fill="#000" opacity="0.2" rx="1.5"/>
+      <rect x={x} y={y} width={w} height={benchH} fill="#8B5A2B" stroke="#4A2E10" strokeWidth="0.6" rx="1"/>
+      <rect x={x} y={y+h-benchH} width={w} height={benchH} fill="#8B5A2B" stroke="#4A2E10" strokeWidth="0.6" rx="1"/>
+      <rect x={x} y={y+benchH+2} width={w} height={h-benchH*2-4} fill="#A87A48" stroke="#4A2E10" strokeWidth="0.8" rx="1"/>
+      {[0.25,0.5,0.75].map((f,i)=><line key={i} x1={x} y1={y+benchH+2+(h-benchH*2-4)*f} x2={x+w} y2={y+benchH+2+(h-benchH*2-4)*f} stroke="#7A4E28" strokeWidth="0.4"/>)}
+    </g>
+  );
+}
+function ElectricalSVG({ x, y, w, h }: { x:number; y:number; w:number; h:number }) {
+  return (
+    <g pointerEvents="none">
+      <rect x={x+1} y={y+1} width={w} height={h} fill="#000" opacity="0.2" rx="1.5"/>
+      <rect x={x} y={y} width={w} height={h} fill="#FDD835" stroke="#8A6510" strokeWidth="1" rx="1.5"/>
+      <path d={`M${x+w*0.55} ${y+h*0.15} L${x+w*0.30} ${y+h*0.55} L${x+w*0.5} ${y+h*0.55} L${x+w*0.40} ${y+h*0.9} L${x+w*0.72} ${y+h*0.45} L${x+w*0.52} ${y+h*0.45} Z`} fill="#1F1F22"/>
+    </g>
+  );
+}
+function GeneratorSVG({ x, y, w, h }: { x:number; y:number; w:number; h:number }) {
+  return (
+    <g pointerEvents="none">
+      <rect x={x+2} y={y+2} width={w} height={h} fill="#000" opacity="0.22" rx="2"/>
+      <rect x={x} y={y} width={w} height={h} fill="#455A64" stroke="#1B2A32" strokeWidth="1" rx="2"/>
+      <rect x={x+w*0.08} y={y+h*0.15} width={w*0.84} height={h*0.4} fill="#263238" rx="1"/>
+      {[0.2,0.35,0.5,0.65,0.8].map((f,i)=><line key={i} x1={x+w*f} y1={y+h*0.2} x2={x+w*f} y2={y+h*0.5} stroke="#0F1720" strokeWidth="1"/>)}
+      <circle cx={x+w*0.25} cy={y+h*0.75} r={Math.min(3, h*0.1)} fill="#F44336"/>
+      <rect x={x+w*0.45} y={y+h*0.7} width={w*0.35} height={h*0.15} fill="#0F1720"/>
+      <text x={x+w/2} y={y+h*0.98} textAnchor="middle" fill="#B0BEC5" fontSize={Math.min(5, h*0.15)} fontWeight="700" fontFamily="Inter,sans-serif">GEN</text>
+    </g>
+  );
+}
+function WaterHookupSVG({ x, y, w, h }: { x:number; y:number; w:number; h:number }) {
+  const cx = x+w/2, cy = y+h/2, r = Math.min(w,h)/2;
+  return (
+    <g pointerEvents="none">
+      <circle cx={cx+1} cy={cy+1.5} r={r} fill="#000" opacity="0.22"/>
+      <circle cx={cx} cy={cy} r={r} fill="#0288D1" stroke="#01579B" strokeWidth="1"/>
+      <path d={`M${cx} ${cy-r*0.55} Q${cx+r*0.55} ${cy} ${cx} ${cy+r*0.5} Q${cx-r*0.55} ${cy} ${cx} ${cy-r*0.55} Z`} fill="#BAE6FD"/>
+      <text x={cx} y={cy+r*0.85} textAnchor="middle" fill="#fff" fontSize={Math.min(5, r*0.5)} fontWeight="800" fontFamily="Inter,sans-serif">H₂O</text>
+    </g>
+  );
+}
+function SewerSVG({ x, y, w, h }: { x:number; y:number; w:number; h:number }) {
+  const cx = x+w/2, cy = y+h/2, r = Math.min(w,h)/2;
+  return (
+    <g pointerEvents="none">
+      <circle cx={cx+1} cy={cy+1.5} r={r} fill="#000" opacity="0.22"/>
+      <circle cx={cx} cy={cy} r={r} fill="#5D4037" stroke="#2E1A0E" strokeWidth="1"/>
+      <circle cx={cx} cy={cy} r={r*0.75} fill="none" stroke="#2E1A0E" strokeWidth="0.6"/>
+      {Array.from({length:8}).map((_,i)=>{
+        const a = (i/8)*Math.PI*2;
+        return <line key={i} x1={cx+Math.cos(a)*r*0.35} y1={cy+Math.sin(a)*r*0.35} x2={cx+Math.cos(a)*r*0.7} y2={cy+Math.sin(a)*r*0.7} stroke="#2E1A0E" strokeWidth="0.8"/>;
+      })}
+      <text x={cx} y={cy+2} textAnchor="middle" fill="#EFE0D4" fontSize={Math.min(4, r*0.4)} fontWeight="800" fontFamily="Inter,sans-serif">SEWER</text>
+    </g>
+  );
+}
+function OakTreeSVG({ cx, cy, r }: { cx:number; cy:number; r:number }) {
+  return (
+    <g pointerEvents="none">
+      <ellipse cx={cx+r*0.35} cy={cy+r*0.4} rx={r*0.95} ry={r*0.55} fill="#000" opacity="0.2"/>
+      <circle cx={cx-r*0.35} cy={cy-r*0.1} r={r*0.7} fill="#2E5D1B"/>
+      <circle cx={cx+r*0.35} cy={cy-r*0.15} r={r*0.65} fill="#3A7020"/>
+      <circle cx={cx+r*0.05} cy={cy-r*0.45} r={r*0.55} fill="#48892A"/>
+      <circle cx={cx-r*0.1} cy={cy+r*0.25} r={r*0.5} fill="#2E5D1B"/>
+    </g>
+  );
+}
+function PineTreeSVG({ cx, cy, r }: { cx:number; cy:number; r:number }) {
+  return (
+    <g pointerEvents="none">
+      <ellipse cx={cx+r*0.3} cy={cy+r*0.75} rx={r*0.8} ry={r*0.22} fill="#000" opacity="0.2"/>
+      <polygon points={`${cx},${cy-r} ${cx-r*0.85},${cy+r*0.1} ${cx+r*0.85},${cy+r*0.1}`} fill="#1E4A14"/>
+      <polygon points={`${cx},${cy-r*0.55} ${cx-r*0.7},${cy+r*0.45} ${cx+r*0.7},${cy+r*0.45}`} fill="#276218"/>
+      <polygon points={`${cx},${cy-r*0.1} ${cx-r*0.55},${cy+r*0.75} ${cx+r*0.55},${cy+r*0.75}`} fill="#307A1E"/>
+      <rect x={cx-r*0.12} y={cy+r*0.7} width={r*0.24} height={r*0.28} fill="#5A3A1E"/>
+    </g>
+  );
+}
+function FlowerBedSVG({ x, y, w, h }: { x:number; y:number; w:number; h:number }) {
+  return (
+    <g pointerEvents="none">
+      <rect x={x+1} y={y+1} width={w} height={h} fill="#000" opacity="0.2" rx={Math.min(w,h)*0.3}/>
+      <rect x={x} y={y} width={w} height={h} fill="#6B3A1A" stroke="#3E2010" strokeWidth="0.8" rx={Math.min(w,h)*0.3}/>
+      {Array.from({length: Math.max(3, Math.floor(w*h/300))}).map((_,i)=>{
+        const fx = x + 4 + (i * 11) % Math.max(1, w-8);
+        const fy = y + 4 + Math.floor((i*11)/Math.max(1, w-8))*10 % Math.max(1, h-8);
+        const col = ["#E91E63","#F4C24A","#FFF","#8E24AA","#F06292"][i%5];
+        return <g key={i}>
+          <circle cx={fx} cy={fy} r="2.2" fill={col}/>
+          <circle cx={fx} cy={fy} r="0.9" fill="#F4C24A"/>
+        </g>;
+      })}
+    </g>
+  );
+}
+function CocktailTableSVG({ x, y, w, h }: { x:number; y:number; w:number; h:number }) {
+  const cx = x+w/2, cy = y+h/2, r = Math.min(w,h)/2;
+  return (
+    <g pointerEvents="none">
+      <ellipse cx={cx+1.5} cy={cy+2} rx={r} ry={r*0.9} fill="#000" opacity="0.22"/>
+      <circle cx={cx} cy={cy} r={r} fill="#1F1F22" stroke="#0A0A0C" strokeWidth="1"/>
+      <circle cx={cx} cy={cy} r={r*0.55} fill="#F5F1E6" stroke="#A89A70" strokeWidth="0.6"/>
+      <circle cx={cx} cy={cy} r={r*0.12} fill="#1F1F22"/>
+      <text x={cx} y={cy+r*0.85} textAnchor="middle" fill="#F5F1E6" fontSize={Math.min(4.5, r*0.4)} fontWeight="700" fontFamily="Inter,sans-serif">HI-TOP</text>
+    </g>
+  );
+}
+
+
+
 // ─── Booth SVG (interactive) ─────────────────────────────────────────────────
 function BoothShape({
   booth, isSel, isPrimary, onPointerDownBody, onPointerDownHandle,
