@@ -12,8 +12,12 @@ import {
   AlignHorizontalDistributeCenter, AlignVerticalDistributeCenter,
   SlidersHorizontal, Activity, Trash2, Copy,
   Footprints, Armchair, Circle as CircleIcon, RectangleHorizontal,
+  Map as MapIcon, Upload,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
+import { fetchSatelliteImageForWorkspace } from "@/lib/workspace-background.functions";
+
 
 // ─── Data context ────────────────────────────────────────────────────────────
 type LayerRow = { id: string; name: string; color: string | null; visible: boolean; locked: boolean; kind: string };
@@ -1012,6 +1016,54 @@ export default function WorkspaceApp() {
 
   const [placed, setPlaced] = useState<PlacedObj[]>([]);
 
+  // Background (image upload or satellite map). Rendered behind everything.
+  type Background = { url: string; x: number; y: number; w: number; h: number; opacity: number; locked: boolean; label: string } | null;
+  const [background, setBackground] = useState<Background>(null);
+  const [bgPanelOpen, setBgPanelOpen] = useState(false);
+  const [bgAddress, setBgAddress] = useState("");
+  const [bgLoading, setBgLoading] = useState(false);
+  const fetchSatFn = useServerFn(fetchSatelliteImageForWorkspace);
+
+  const placeBackground = (url: string, label: string) => {
+    // Center on world at 75% width, preserving square ratio for now.
+    const w = Math.round(WORLD_W * 0.75);
+    const h = w;
+    setBackground({
+      url,
+      x: (WORLD_W - w) / 2,
+      y: (WORLD_H - h) / 2,
+      w, h,
+      opacity: 0.9,
+      locked: true,
+      label,
+    });
+  };
+  const onUploadImage = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        placeBackground(reader.result, file.name);
+        toast.success(`Added ${file.name} as background`);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+  const onFetchSatellite = async () => {
+    if (!bgAddress.trim()) { toast.error("Enter an address"); return; }
+    setBgLoading(true);
+    try {
+      const res = await fetchSatFn({ data: { address: bgAddress.trim() } });
+      placeBackground(res.dataUrl, res.address);
+      toast.success(`Loaded satellite for ${res.address}`);
+      setBgAddress("");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Satellite load failed");
+    } finally {
+      setBgLoading(false);
+    }
+  };
+
+
   // Selection: set of ids (both booths and placed objects share id space; placed ids prefixed "p:")
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [primaryId, setPrimaryId] = useState<string | null>(null);
@@ -1391,7 +1443,10 @@ export default function WorkspaceApp() {
         <div className="hidden md:flex items-center gap-0.5 mr-3 shrink-0">
           <TBtn icon={Undo2} label="Undo (⌘Z)" onClick={undo}/>
           <TBtn icon={Redo2} label="Redo (⌘⇧Z)" onClick={redo}/>
+          <div className="w-px h-4 bg-border mx-1"/>
+          <TBtn icon={MapIcon} label="Background (map or image)" onClick={()=>setBgPanelOpen(v=>!v)}/>
         </div>
+
         <div className="flex-1"/>
         <div className="flex items-center gap-1">
           <div className="hidden sm:flex items-center gap-1.5 bg-input rounded px-2.5 py-1 mr-2">
@@ -1506,6 +1561,17 @@ export default function WorkspaceApp() {
             >
               <g transform={`translate(${pan.x} ${pan.y}) scale(${zoom})`}>
                 <CanvasChrome showGrid={showGrid}/>
+                {background && (
+                  <image
+                    href={background.url}
+                    x={background.x} y={background.y}
+                    width={background.w} height={background.h}
+                    opacity={background.opacity}
+                    preserveAspectRatio="xMidYMid slice"
+                    pointerEvents="none"
+                  />
+                )}
+
                 {placed.map(p => (
                   <PlacedObjSVG key={p.id} o={p} isSel={selectedIds.has(p.id)}
                     onPointerDownBody={onPointerDownBoothBody}
@@ -1545,7 +1611,92 @@ export default function WorkspaceApp() {
               Click canvas to place: {LEFT_TOOLS.find(t=>t.id===activeTool)?.label} · Esc to cancel
             </div>
           )}
+
+          {/* Background panel (map / image) */}
+          {bgPanelOpen && (
+            <div className="absolute top-2 left-1/2 -translate-x-1/2 z-30 w-[360px] bg-card border border-border rounded-lg shadow-xl p-3 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-[12px] font-semibold text-foreground">
+                  <MapIcon size={13}/> Background
+                </div>
+                <button onClick={()=>setBgPanelOpen(false)} className="text-muted-foreground hover:text-foreground"><X size={14}/></button>
+              </div>
+
+              <div>
+                <div className="text-[10px] font-medium text-muted-foreground mb-1 uppercase tracking-wide">Satellite from address</div>
+                <div className="flex gap-1.5">
+                  <input
+                    value={bgAddress}
+                    onChange={(e)=>setBgAddress(e.target.value)}
+                    onKeyDown={(e)=>{ if (e.key==="Enter") onFetchSatellite(); }}
+                    placeholder="123 Main St, City, State"
+                    className="flex-1 h-8 text-[11px] px-2 rounded border border-border bg-input text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                  />
+                  <button
+                    onClick={onFetchSatellite}
+                    disabled={bgLoading}
+                    className="h-8 px-2.5 text-[11px] bg-primary text-primary-foreground rounded hover:opacity-90 disabled:opacity-50"
+                  >{bgLoading ? "…" : "Load"}</button>
+                </div>
+              </div>
+
+              <div className="border-t border-border pt-2">
+                <div className="text-[10px] font-medium text-muted-foreground mb-1 uppercase tracking-wide">Upload image / PDF snapshot</div>
+                <label className="flex items-center gap-1.5 text-[11px] cursor-pointer bg-secondary hover:bg-muted border border-border rounded px-2.5 py-1.5 w-fit">
+                  <Upload size={12}/> Choose file
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e)=>{ const f = e.target.files?.[0]; if (f) onUploadImage(f); e.currentTarget.value=""; }}
+                  />
+                </label>
+              </div>
+
+              {background && (
+                <div className="border-t border-border pt-2 space-y-2">
+                  <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide truncate" title={background.label}>
+                    Current: {background.label}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-muted-foreground w-14">Opacity</span>
+                    <input
+                      type="range" min={0.1} max={1} step={0.05}
+                      value={background.opacity}
+                      onChange={(e)=>setBackground(b => b ? {...b, opacity: Number(e.target.value)} : b)}
+                      className="flex-1"
+                    />
+                    <span className="text-[10px] text-muted-foreground w-8 text-right">{Math.round(background.opacity*100)}%</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-muted-foreground w-14">Size</span>
+                    <input
+                      type="range" min={200} max={WORLD_W} step={10}
+                      value={background.w}
+                      onChange={(e)=>{
+                        const w = Number(e.target.value);
+                        setBackground(b => b ? {...b, w, h: w, x: (WORLD_W-w)/2, y: (WORLD_H-w)/2} : b);
+                      }}
+                      className="flex-1"
+                    />
+                  </div>
+                  <div className="flex gap-1.5">
+                    <button
+                      onClick={()=>setBackground(b => b ? {...b, x: (WORLD_W-b.w)/2, y: (WORLD_H-b.h)/2} : b)}
+                      className="flex-1 h-7 text-[10px] bg-secondary hover:bg-muted border border-border rounded"
+                    >Center</button>
+                    <button
+                      onClick={()=>{ setBackground(null); toast.message("Background removed"); }}
+                      className="flex-1 h-7 text-[10px] bg-destructive/10 hover:bg-destructive/20 text-destructive border border-destructive/30 rounded flex items-center justify-center gap-1"
+                    ><Trash2 size={10}/> Remove</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
+
+
 
         {/* RIGHT inspector */}
         {!isMobile && (isDesktop || (isTablet && rightOpen)) && (
