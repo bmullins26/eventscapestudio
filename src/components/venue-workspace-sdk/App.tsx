@@ -1443,7 +1443,10 @@ export default function WorkspaceApp() {
         <div className="hidden md:flex items-center gap-0.5 mr-3 shrink-0">
           <TBtn icon={Undo2} label="Undo (⌘Z)" onClick={undo}/>
           <TBtn icon={Redo2} label="Redo (⌘⇧Z)" onClick={redo}/>
+          <div className="w-px h-4 bg-border mx-1"/>
+          <TBtn icon={MapIcon} label="Background (map or image)" onClick={()=>setBgPanelOpen(v=>!v)}/>
         </div>
+
         <div className="flex-1"/>
         <div className="flex items-center gap-1">
           <div className="hidden sm:flex items-center gap-1.5 bg-input rounded px-2.5 py-1 mr-2">
