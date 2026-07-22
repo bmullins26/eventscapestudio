@@ -1016,6 +1016,54 @@ export default function WorkspaceApp() {
 
   const [placed, setPlaced] = useState<PlacedObj[]>([]);
 
+  // Background (image upload or satellite map). Rendered behind everything.
+  type Background = { url: string; x: number; y: number; w: number; h: number; opacity: number; locked: boolean; label: string } | null;
+  const [background, setBackground] = useState<Background>(null);
+  const [bgPanelOpen, setBgPanelOpen] = useState(false);
+  const [bgAddress, setBgAddress] = useState("");
+  const [bgLoading, setBgLoading] = useState(false);
+  const fetchSatFn = useServerFn(fetchSatelliteImageForWorkspace);
+
+  const placeBackground = (url: string, label: string) => {
+    // Center on world at 75% width, preserving square ratio for now.
+    const w = Math.round(WORLD_W * 0.75);
+    const h = w;
+    setBackground({
+      url,
+      x: (WORLD_W - w) / 2,
+      y: (WORLD_H - h) / 2,
+      w, h,
+      opacity: 0.9,
+      locked: true,
+      label,
+    });
+  };
+  const onUploadImage = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        placeBackground(reader.result, file.name);
+        toast.success(`Added ${file.name} as background`);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+  const onFetchSatellite = async () => {
+    if (!bgAddress.trim()) { toast.error("Enter an address"); return; }
+    setBgLoading(true);
+    try {
+      const res = await fetchSatFn({ data: { address: bgAddress.trim() } });
+      placeBackground(res.dataUrl, res.address);
+      toast.success(`Loaded satellite for ${res.address}`);
+      setBgAddress("");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Satellite load failed");
+    } finally {
+      setBgLoading(false);
+    }
+  };
+
+
   // Selection: set of ids (both booths and placed objects share id space; placed ids prefixed "p:")
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [primaryId, setPrimaryId] = useState<string | null>(null);
