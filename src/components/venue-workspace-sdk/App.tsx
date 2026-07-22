@@ -1561,6 +1561,17 @@ export default function WorkspaceApp() {
             >
               <g transform={`translate(${pan.x} ${pan.y}) scale(${zoom})`}>
                 <CanvasChrome showGrid={showGrid}/>
+                {background && (
+                  <image
+                    href={background.url}
+                    x={background.x} y={background.y}
+                    width={background.w} height={background.h}
+                    opacity={background.opacity}
+                    preserveAspectRatio="xMidYMid slice"
+                    pointerEvents="none"
+                  />
+                )}
+
                 {placed.map(p => (
                   <PlacedObjSVG key={p.id} o={p} isSel={selectedIds.has(p.id)}
                     onPointerDownBody={onPointerDownBoothBody}
