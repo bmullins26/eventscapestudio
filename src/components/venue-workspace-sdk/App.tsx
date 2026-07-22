@@ -1611,7 +1611,92 @@ export default function WorkspaceApp() {
               Click canvas to place: {LEFT_TOOLS.find(t=>t.id===activeTool)?.label} · Esc to cancel
             </div>
           )}
+
+          {/* Background panel (map / image) */}
+          {bgPanelOpen && (
+            <div className="absolute top-2 left-1/2 -translate-x-1/2 z-30 w-[360px] bg-card border border-border rounded-lg shadow-xl p-3 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-[12px] font-semibold text-foreground">
+                  <MapIcon size={13}/> Background
+                </div>
+                <button onClick={()=>setBgPanelOpen(false)} className="text-muted-foreground hover:text-foreground"><X size={14}/></button>
+              </div>
+
+              <div>
+                <div className="text-[10px] font-medium text-muted-foreground mb-1 uppercase tracking-wide">Satellite from address</div>
+                <div className="flex gap-1.5">
+                  <input
+                    value={bgAddress}
+                    onChange={(e)=>setBgAddress(e.target.value)}
+                    onKeyDown={(e)=>{ if (e.key==="Enter") onFetchSatellite(); }}
+                    placeholder="123 Main St, City, State"
+                    className="flex-1 h-8 text-[11px] px-2 rounded border border-border bg-input text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                  />
+                  <button
+                    onClick={onFetchSatellite}
+                    disabled={bgLoading}
+                    className="h-8 px-2.5 text-[11px] bg-primary text-primary-foreground rounded hover:opacity-90 disabled:opacity-50"
+                  >{bgLoading ? "…" : "Load"}</button>
+                </div>
+              </div>
+
+              <div className="border-t border-border pt-2">
+                <div className="text-[10px] font-medium text-muted-foreground mb-1 uppercase tracking-wide">Upload image / PDF snapshot</div>
+                <label className="flex items-center gap-1.5 text-[11px] cursor-pointer bg-secondary hover:bg-muted border border-border rounded px-2.5 py-1.5 w-fit">
+                  <Upload size={12}/> Choose file
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e)=>{ const f = e.target.files?.[0]; if (f) onUploadImage(f); e.currentTarget.value=""; }}
+                  />
+                </label>
+              </div>
+
+              {background && (
+                <div className="border-t border-border pt-2 space-y-2">
+                  <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide truncate" title={background.label}>
+                    Current: {background.label}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-muted-foreground w-14">Opacity</span>
+                    <input
+                      type="range" min={0.1} max={1} step={0.05}
+                      value={background.opacity}
+                      onChange={(e)=>setBackground(b => b ? {...b, opacity: Number(e.target.value)} : b)}
+                      className="flex-1"
+                    />
+                    <span className="text-[10px] text-muted-foreground w-8 text-right">{Math.round(background.opacity*100)}%</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-muted-foreground w-14">Size</span>
+                    <input
+                      type="range" min={200} max={WORLD_W} step={10}
+                      value={background.w}
+                      onChange={(e)=>{
+                        const w = Number(e.target.value);
+                        setBackground(b => b ? {...b, w, h: w, x: (WORLD_W-w)/2, y: (WORLD_H-w)/2} : b);
+                      }}
+                      className="flex-1"
+                    />
+                  </div>
+                  <div className="flex gap-1.5">
+                    <button
+                      onClick={()=>setBackground(b => b ? {...b, x: (WORLD_W-b.w)/2, y: (WORLD_H-b.h)/2} : b)}
+                      className="flex-1 h-7 text-[10px] bg-secondary hover:bg-muted border border-border rounded"
+                    >Center</button>
+                    <button
+                      onClick={()=>{ setBackground(null); toast.message("Background removed"); }}
+                      className="flex-1 h-7 text-[10px] bg-destructive/10 hover:bg-destructive/20 text-destructive border border-destructive/30 rounded flex items-center justify-center gap-1"
+                    ><Trash2 size={10}/> Remove</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
+
+
 
         {/* RIGHT inspector */}
         {!isMobile && (isDesktop || (isTablet && rightOpen)) && (
