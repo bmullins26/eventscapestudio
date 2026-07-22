@@ -658,6 +658,13 @@ function PlacedObjSVG({ o, isSel, onPointerDownBody, onPointerDownHandle }: {
   const sw = isSel ? 2 : 1;
   return (
     <g style={{cursor: isSel?"move":"pointer"}}>
+      {/* Invisible hit surface — inner glyphs use pointerEvents="none" for perf */}
+      <rect
+        x={o.x} y={o.y} width={Math.max(o.w, 1)} height={Math.max(o.h, 1)}
+        fill="transparent"
+        onPointerDown={(e)=>onPointerDownBody(e, o.id)}
+      />
+
       {o.kind === "tree" && (
         <g onPointerDown={(e)=>onPointerDownBody(e, o.id)}>
           <TreeSVG cx={o.x+o.w/2} cy={o.y+o.h/2} r={Math.min(o.w,o.h)/2}/>
