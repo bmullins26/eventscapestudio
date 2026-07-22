@@ -12,8 +12,12 @@ import {
   AlignHorizontalDistributeCenter, AlignVerticalDistributeCenter,
   SlidersHorizontal, Activity, Trash2, Copy,
   Footprints, Armchair, Circle as CircleIcon, RectangleHorizontal,
+  Map as MapIcon, Upload,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
+import { fetchSatelliteImageForWorkspace } from "@/lib/workspace-background.functions";
+
 
 // ─── Data context ────────────────────────────────────────────────────────────
 type LayerRow = { id: string; name: string; color: string | null; visible: boolean; locked: boolean; kind: string };
