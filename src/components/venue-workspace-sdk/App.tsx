@@ -1285,12 +1285,24 @@ export default function WorkspaceApp() {
       if (g.handle.includes("w")) { const nx = Math.min(g.orig.x + dx, g.orig.x + g.orig.w - 12); ww = g.orig.w + (g.orig.x - nx); x = nx; }
       if (g.handle.includes("n")) { const ny = Math.min(g.orig.y + dy, g.orig.y + g.orig.h - 12); hh = g.orig.h + (g.orig.y - ny); y = ny; }
       setObjRect(g.id, snap(x), snap(y), snap(ww), snap(hh));
+    } else if (g.kind === "bg-drag") {
+      const dx = w.x - g.startWorld.x, dy = w.y - g.startWorld.y;
+      setBackground(b => b ? { ...b, x: g.orig.x + dx, y: g.orig.y + dy } : b);
+    } else if (g.kind === "bg-resize") {
+      const dx = w.x - g.startWorld.x, dy = w.y - g.startWorld.y;
+      let { x, y, w: ww, h: hh } = g.orig;
+      if (g.handle.includes("e")) ww = Math.max(20, g.orig.w + dx);
+      if (g.handle.includes("s")) hh = Math.max(20, g.orig.h + dy);
+      if (g.handle.includes("w")) { const nx = Math.min(g.orig.x + dx, g.orig.x + g.orig.w - 20); ww = g.orig.w + (g.orig.x - nx); x = nx; }
+      if (g.handle.includes("n")) { const ny = Math.min(g.orig.y + dy, g.orig.y + g.orig.h - 20); hh = g.orig.h + (g.orig.y - ny); y = ny; }
+      setBackground(b => b ? { ...b, x, y, w: ww, h: hh } : b);
     } else if (g.kind === "marquee") {
       const x = Math.min(g.start.x, w.x), y = Math.min(g.start.y, w.y);
       const mw = Math.abs(w.x - g.start.x), mh = Math.abs(w.y - g.start.y);
       setMarquee({ x, y, w: mw, h: mh });
       g.end = w;
     }
+
   };
   const onSvgPointerUp = () => {
     const g = gestureRef.current;
