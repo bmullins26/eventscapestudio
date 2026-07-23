@@ -1018,14 +1018,32 @@ export default function WorkspaceApp() {
 
   // Background (image upload or satellite map). Rendered behind everything.
   type Background = { url: string; x: number; y: number; w: number; h: number; opacity: number; locked: boolean; label: string } | null;
+  const bgStorageKey = `ws-bg::${ctx?.venueName ?? "default"}::${ctx?.eventName ?? "default"}`;
   const [background, setBackground] = useState<Background>(null);
+  const bgLoadedRef = useRef(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = window.localStorage.getItem(bgStorageKey);
+      if (raw) setBackground(JSON.parse(raw));
+    } catch { /* ignore */ }
+    bgLoadedRef.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bgStorageKey]);
+  useEffect(() => {
+    if (!bgLoadedRef.current || typeof window === "undefined") return;
+    try {
+      if (background) window.localStorage.setItem(bgStorageKey, JSON.stringify(background));
+      else window.localStorage.removeItem(bgStorageKey);
+    } catch { /* ignore quota */ }
+  }, [background, bgStorageKey]);
+
   const [bgPanelOpen, setBgPanelOpen] = useState(false);
   const [bgAddress, setBgAddress] = useState("");
   const [bgLoading, setBgLoading] = useState(false);
   const fetchSatFn = useServerFn(fetchSatelliteImageForWorkspace);
 
   const placeBackground = (url: string, label: string) => {
-    // Center on world at 75% width, preserving square ratio for now.
     const w = Math.round(WORLD_W * 0.75);
     const h = w;
     setBackground({
@@ -1034,7 +1052,7 @@ export default function WorkspaceApp() {
       y: (WORLD_H - h) / 2,
       w, h,
       opacity: 0.9,
-      locked: true,
+      locked: false,
       label,
     });
   };
@@ -1062,6 +1080,21 @@ export default function WorkspaceApp() {
       setBgLoading(false);
     }
   };
+
+  const onBgPointerDown = (e: React.PointerEvent) => {
+    if (!background || background.locked) return;
+    if (activeTool !== "select") return;
+    e.stopPropagation();
+    (e.target as Element).setPointerCapture?.(e.pointerId);
+    gestureRef.current = { kind: "bg-drag", startWorld: clientToWorld(e.clientX, e.clientY), orig: { x: background.x, y: background.y } };
+  };
+  const onBgHandlePointerDown = (e: React.PointerEvent, handle: string) => {
+    if (!background || background.locked) return;
+    e.stopPropagation();
+    (e.target as Element).setPointerCapture?.(e.pointerId);
+    gestureRef.current = { kind: "bg-resize", handle, startWorld: clientToWorld(e.clientX, e.clientY), orig: { x: background.x, y: background.y, w: background.w, h: background.h } };
+  };
+
 
 
   // Selection: set of ids (both booths and placed objects share id space; placed ids prefixed "p:")
@@ -1113,7 +1146,9 @@ export default function WorkspaceApp() {
     | { kind: "drag"; startWorld: {x:number;y:number}; origMap: Map<string, {x:number;y:number}>; hasMoved: boolean }
     | { kind: "resize"; id: string; handle: string; startWorld: {x:number;y:number}; orig: {x:number;y:number;w:number;h:number} }
     | { kind: "marquee"; start: {x:number;y:number}; end: {x:number;y:number}; add: boolean }
-    | { kind: "pan"; startClient: {x:number;y:number}; startPan: {x:number;y:number} };
+    | { kind: "pan"; startClient: {x:number;y:number}; startPan: {x:number;y:number} }
+    | { kind: "bg-drag"; startWorld: {x:number;y:number}; orig: {x:number;y:number} }
+    | { kind: "bg-resize"; handle: string; startWorld: {x:number;y:number}; orig: {x:number;y:number;w:number;h:number} };
   const gestureRef = useRef<Gesture>({ kind: "idle" });
   const [marquee, setMarquee] = useState<null | {x:number;y:number;w:number;h:number}>(null);
 
@@ -1250,12 +1285,24 @@ export default function WorkspaceApp() {
       if (g.handle.includes("w")) { const nx = Math.min(g.orig.x + dx, g.orig.x + g.orig.w - 12); ww = g.orig.w + (g.orig.x - nx); x = nx; }
       if (g.handle.includes("n")) { const ny = Math.min(g.orig.y + dy, g.orig.y + g.orig.h - 12); hh = g.orig.h + (g.orig.y - ny); y = ny; }
       setObjRect(g.id, snap(x), snap(y), snap(ww), snap(hh));
+    } else if (g.kind === "bg-drag") {
+      const dx = w.x - g.startWorld.x, dy = w.y - g.startWorld.y;
+      setBackground(b => b ? { ...b, x: g.orig.x + dx, y: g.orig.y + dy } : b);
+    } else if (g.kind === "bg-resize") {
+      const dx = w.x - g.startWorld.x, dy = w.y - g.startWorld.y;
+      let { x, y, w: ww, h: hh } = g.orig;
+      if (g.handle.includes("e")) ww = Math.max(20, g.orig.w + dx);
+      if (g.handle.includes("s")) hh = Math.max(20, g.orig.h + dy);
+      if (g.handle.includes("w")) { const nx = Math.min(g.orig.x + dx, g.orig.x + g.orig.w - 20); ww = g.orig.w + (g.orig.x - nx); x = nx; }
+      if (g.handle.includes("n")) { const ny = Math.min(g.orig.y + dy, g.orig.y + g.orig.h - 20); hh = g.orig.h + (g.orig.y - ny); y = ny; }
+      setBackground(b => b ? { ...b, x, y, w: ww, h: hh } : b);
     } else if (g.kind === "marquee") {
       const x = Math.min(g.start.x, w.x), y = Math.min(g.start.y, w.y);
       const mw = Math.abs(w.x - g.start.x), mh = Math.abs(w.y - g.start.y);
       setMarquee({ x, y, w: mw, h: mh });
       g.end = w;
     }
+
   };
   const onSvgPointerUp = () => {
     const g = gestureRef.current;
@@ -1562,15 +1609,35 @@ export default function WorkspaceApp() {
               <g transform={`translate(${pan.x} ${pan.y}) scale(${zoom})`}>
                 <CanvasChrome showGrid={showGrid}/>
                 {background && (
-                  <image
-                    href={background.url}
-                    x={background.x} y={background.y}
-                    width={background.w} height={background.h}
-                    opacity={background.opacity}
-                    preserveAspectRatio="xMidYMid slice"
-                    pointerEvents="none"
-                  />
+                  <g>
+                    <image
+                      href={background.url}
+                      x={background.x} y={background.y}
+                      width={background.w} height={background.h}
+                      opacity={background.opacity}
+                      preserveAspectRatio="none"
+                      pointerEvents={background.locked ? "none" : "auto"}
+                      style={{ cursor: background.locked ? "default" : "move" }}
+                      onPointerDown={onBgPointerDown}
+                    />
+                    {bgPanelOpen && !background.locked && (
+                      <>
+                        <rect x={background.x} y={background.y} width={background.w} height={background.h}
+                          fill="none" stroke="#3B82F6" strokeWidth={2/zoom} strokeDasharray={`${6/zoom} ${4/zoom}`} pointerEvents="none"/>
+                        {(["nw","ne","sw","se","n","s","e","w"] as const).map(hn => {
+                          const hx = hn.includes("w") ? background.x : hn.includes("e") ? background.x+background.w : background.x+background.w/2;
+                          const hy = hn.includes("n") ? background.y : hn.includes("s") ? background.y+background.h : background.y+background.h/2;
+                          const s = 10/zoom;
+                          return <rect key={hn} x={hx-s/2} y={hy-s/2} width={s} height={s}
+                            fill="#fff" stroke="#3B82F6" strokeWidth={1.5/zoom}
+                            style={{ cursor: hn.length===2 ? `${hn}-resize` : `${hn}-resize` }}
+                            onPointerDown={(e)=>onBgHandlePointerDown(e, hn)}/>;
+                        })}
+                      </>
+                    )}
+                  </g>
                 )}
+
 
                 {placed.map(p => (
                   <PlacedObjSVG key={p.id} o={p} isSel={selectedIds.has(p.id)}
@@ -1669,27 +1736,49 @@ export default function WorkspaceApp() {
                     <span className="text-[10px] text-muted-foreground w-8 text-right">{Math.round(background.opacity*100)}%</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] text-muted-foreground w-14">Size</span>
+                    <span className="text-[10px] text-muted-foreground w-14">Width</span>
                     <input
-                      type="range" min={200} max={WORLD_W} step={10}
+                      type="range" min={100} max={WORLD_W*2} step={10}
                       value={background.w}
                       onChange={(e)=>{
                         const w = Number(e.target.value);
-                        setBackground(b => b ? {...b, w, h: w, x: (WORLD_W-w)/2, y: (WORLD_H-w)/2} : b);
+                        setBackground(b => b ? {...b, w} : b);
                       }}
                       className="flex-1"
                     />
+                    <span className="text-[10px] text-muted-foreground w-10 text-right">{Math.round(background.w)}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-muted-foreground w-14">Height</span>
+                    <input
+                      type="range" min={100} max={WORLD_H*2} step={10}
+                      value={background.h}
+                      onChange={(e)=>{
+                        const h = Number(e.target.value);
+                        setBackground(b => b ? {...b, h} : b);
+                      }}
+                      className="flex-1"
+                    />
+                    <span className="text-[10px] text-muted-foreground w-10 text-right">{Math.round(background.h)}</span>
+                  </div>
+                  <div className="text-[10px] text-muted-foreground">
+                    {background.locked ? "Locked — unlock to drag/resize on canvas" : "Drag image to move · Corner handles to resize"}
                   </div>
                   <div className="flex gap-1.5">
+                    <button
+                      onClick={()=>setBackground(b => b ? {...b, locked: !b.locked} : b)}
+                      className="flex-1 h-7 text-[10px] bg-secondary hover:bg-muted border border-border rounded"
+                    >{background.locked ? "Unlock" : "Lock"}</button>
                     <button
                       onClick={()=>setBackground(b => b ? {...b, x: (WORLD_W-b.w)/2, y: (WORLD_H-b.h)/2} : b)}
                       className="flex-1 h-7 text-[10px] bg-secondary hover:bg-muted border border-border rounded"
                     >Center</button>
                     <button
-                      onClick={()=>{ setBackground(null); toast.message("Background removed"); }}
+                      onClick={()=>{ setBackground(null); try { window.localStorage.removeItem(bgStorageKey); } catch { /* ignore */ } toast.message("Background removed"); }}
                       className="flex-1 h-7 text-[10px] bg-destructive/10 hover:bg-destructive/20 text-destructive border border-destructive/30 rounded flex items-center justify-center gap-1"
                     ><Trash2 size={10}/> Remove</button>
                   </div>
+
                 </div>
               )}
             </div>
