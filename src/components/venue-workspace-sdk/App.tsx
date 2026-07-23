@@ -1010,9 +1010,13 @@ export default function WorkspaceApp() {
   const [rightOpen, setRightOpen] = useState(true);
   const [sheet, setSheet] = useState<Sheet>(null);
 
-  // Booth state (editable copy of ctx.booths)
-  const [booths, setBooths] = useState<Booth[]>(() => ctx?.booths ?? DEMO_BOOTHS);
-  useEffect(()=>{ if (ctx?.booths) setBooths(ctx.booths); }, [ctx?.booths]);
+  // Booth state (editable copy of ctx.booths). NEVER fall back to demo data —
+  // an empty venue must render an empty canvas. Demo data is only used when a
+  // caller explicitly passes it via WorkspaceDataProvider (e.g. the preview
+  // route at /studio/venue-workspace-preview).
+  const [booths, setBooths] = useState<Booth[]>(() => ctx?.booths ?? []);
+  useEffect(()=>{ setBooths(ctx?.booths ?? []); }, [ctx?.booths]);
+
 
   const [placed, setPlaced] = useState<PlacedObj[]>([]);
 
