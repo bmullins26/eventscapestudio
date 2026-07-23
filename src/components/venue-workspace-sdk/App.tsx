@@ -1736,27 +1736,49 @@ export default function WorkspaceApp() {
                     <span className="text-[10px] text-muted-foreground w-8 text-right">{Math.round(background.opacity*100)}%</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] text-muted-foreground w-14">Size</span>
+                    <span className="text-[10px] text-muted-foreground w-14">Width</span>
                     <input
-                      type="range" min={200} max={WORLD_W} step={10}
+                      type="range" min={100} max={WORLD_W*2} step={10}
                       value={background.w}
                       onChange={(e)=>{
                         const w = Number(e.target.value);
-                        setBackground(b => b ? {...b, w, h: w, x: (WORLD_W-w)/2, y: (WORLD_H-w)/2} : b);
+                        setBackground(b => b ? {...b, w} : b);
                       }}
                       className="flex-1"
                     />
+                    <span className="text-[10px] text-muted-foreground w-10 text-right">{Math.round(background.w)}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-muted-foreground w-14">Height</span>
+                    <input
+                      type="range" min={100} max={WORLD_H*2} step={10}
+                      value={background.h}
+                      onChange={(e)=>{
+                        const h = Number(e.target.value);
+                        setBackground(b => b ? {...b, h} : b);
+                      }}
+                      className="flex-1"
+                    />
+                    <span className="text-[10px] text-muted-foreground w-10 text-right">{Math.round(background.h)}</span>
+                  </div>
+                  <div className="text-[10px] text-muted-foreground">
+                    {background.locked ? "Locked — unlock to drag/resize on canvas" : "Drag image to move · Corner handles to resize"}
                   </div>
                   <div className="flex gap-1.5">
+                    <button
+                      onClick={()=>setBackground(b => b ? {...b, locked: !b.locked} : b)}
+                      className="flex-1 h-7 text-[10px] bg-secondary hover:bg-muted border border-border rounded"
+                    >{background.locked ? "Unlock" : "Lock"}</button>
                     <button
                       onClick={()=>setBackground(b => b ? {...b, x: (WORLD_W-b.w)/2, y: (WORLD_H-b.h)/2} : b)}
                       className="flex-1 h-7 text-[10px] bg-secondary hover:bg-muted border border-border rounded"
                     >Center</button>
                     <button
-                      onClick={()=>{ setBackground(null); toast.message("Background removed"); }}
+                      onClick={()=>{ setBackground(null); try { window.localStorage.removeItem(bgStorageKey); } catch { /* ignore */ } toast.message("Background removed"); }}
                       className="flex-1 h-7 text-[10px] bg-destructive/10 hover:bg-destructive/20 text-destructive border border-destructive/30 rounded flex items-center justify-center gap-1"
                     ><Trash2 size={10}/> Remove</button>
                   </div>
+
                 </div>
               )}
             </div>
