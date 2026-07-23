@@ -1018,14 +1018,32 @@ export default function WorkspaceApp() {
 
   // Background (image upload or satellite map). Rendered behind everything.
   type Background = { url: string; x: number; y: number; w: number; h: number; opacity: number; locked: boolean; label: string } | null;
+  const bgStorageKey = `ws-bg::${ctx?.venueName ?? "default"}::${ctx?.eventName ?? "default"}`;
   const [background, setBackground] = useState<Background>(null);
+  const bgLoadedRef = useRef(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = window.localStorage.getItem(bgStorageKey);
+      if (raw) setBackground(JSON.parse(raw));
+    } catch { /* ignore */ }
+    bgLoadedRef.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bgStorageKey]);
+  useEffect(() => {
+    if (!bgLoadedRef.current || typeof window === "undefined") return;
+    try {
+      if (background) window.localStorage.setItem(bgStorageKey, JSON.stringify(background));
+      else window.localStorage.removeItem(bgStorageKey);
+    } catch { /* ignore quota */ }
+  }, [background, bgStorageKey]);
+
   const [bgPanelOpen, setBgPanelOpen] = useState(false);
   const [bgAddress, setBgAddress] = useState("");
   const [bgLoading, setBgLoading] = useState(false);
   const fetchSatFn = useServerFn(fetchSatelliteImageForWorkspace);
 
   const placeBackground = (url: string, label: string) => {
-    // Center on world at 75% width, preserving square ratio for now.
     const w = Math.round(WORLD_W * 0.75);
     const h = w;
     setBackground({
@@ -1034,7 +1052,7 @@ export default function WorkspaceApp() {
       y: (WORLD_H - h) / 2,
       w, h,
       opacity: 0.9,
-      locked: true,
+      locked: false,
       label,
     });
   };
@@ -1062,6 +1080,21 @@ export default function WorkspaceApp() {
       setBgLoading(false);
     }
   };
+
+  const onBgPointerDown = (e: React.PointerEvent) => {
+    if (!background || background.locked) return;
+    if (activeTool !== "select") return;
+    e.stopPropagation();
+    (e.target as Element).setPointerCapture?.(e.pointerId);
+    gestureRef.current = { kind: "bg-drag", startWorld: clientToWorld(e.clientX, e.clientY), orig: { x: background.x, y: background.y } };
+  };
+  const onBgHandlePointerDown = (e: React.PointerEvent, handle: string) => {
+    if (!background || background.locked) return;
+    e.stopPropagation();
+    (e.target as Element).setPointerCapture?.(e.pointerId);
+    gestureRef.current = { kind: "bg-resize", handle, startWorld: clientToWorld(e.clientX, e.clientY), orig: { x: background.x, y: background.y, w: background.w, h: background.h } };
+  };
+
 
 
   // Selection: set of ids (both booths and placed objects share id space; placed ids prefixed "p:")
