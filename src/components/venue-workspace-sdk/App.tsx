@@ -115,28 +115,11 @@ const DEFAULT_CANOPY = { top: "#3A4A5A", mid: "#4A5A6A" };
 const WORLD_W = 1110, WORLD_H = 560;
 const GRID_SIZE = 12;
 
-// ─── Demo data (fallback) ────────────────────────────────────────────────────
+// ─── Booth factory (used when the user adds new booths on the canvas) ───────
 function makeBooth(id: string, row: string, col: number, x: number, y: number, w: number, h: number, status: BoothStatus, opts: Partial<Booth> = {}): Booth {
   return { id, row, col, x, y, w, h, status, price: 150, electric: false, water: false, corner: false, premium: false, size: `${w}′×${h}′`, ...opts };
 }
-const DEMO_BOOTHS: Booth[] = [
-  makeBooth("A1","A",1, 90,78,72,58,"paid",{vendor:"Sunrise Farms",category:"Produce",price:175,electric:true}),
-  makeBooth("A2","A",2,168,78,72,58,"paid",{vendor:"Blue Ridge Honey",category:"Food",price:150}),
-  makeBooth("A3","A",3,246,78,72,58,"paid",{vendor:"The Pottery Barn",category:"Crafts",price:150,electric:true}),
-  makeBooth("A4","A",4,324,78,72,58,"reserved",{vendor:"Wildflower Soaps",category:"Beauty",price:150}),
-  makeBooth("A5","A",5,402,78,72,58,"paid",{vendor:"Ironwood Forge",category:"Art",price:200,corner:true,premium:true}),
-  makeBooth("A6","A",6,480,78,72,58,"available"),
-  makeBooth("A7","A",7,558,78,72,58,"available"),
-  makeBooth("A8","A",8,636,78,72,58,"pending",{vendor:"Maple Creek Syrups",category:"Food",water:true}),
-  makeBooth("B1","B",1, 90,148,72,58,"paid",{vendor:"Prairie Wind Candles",category:"Home"}),
-  makeBooth("B2","B",2,168,148,72,58,"available"),
-  makeBooth("B3","B",3,246,148,72,58,"paid",{vendor:"Cedar & Stone",category:"Jewelry",electric:true}),
-  makeBooth("B4","B",4,324,148,72,58,"reserved",{vendor:"Good Earth Nursery",category:"Plants",water:true}),
-  makeBooth("C1","C",1, 90,314,72,58,"paid",{vendor:"Copper Kettle Co",category:"Food",electric:true,water:true}),
-  makeBooth("C2","C",2,168,314,72,58,"paid",{vendor:"Summit Woodcraft",category:"Crafts"}),
-  makeBooth("D1","D",1, 90,384,72,58,"paid",{vendor:"Blue Sky Ceramics",category:"Art"}),
-  makeBooth("D2","D",2,168,384,72,58,"sponsor",{vendor:"Valley Credit Union",category:"Sponsor",price:500,premium:true}),
-];
+
 
 const LEFT_TOOLS: { id: Tool; icon: React.ElementType; label: string; shortcut?: string }[] = [
   { id:"select",   icon:MousePointer2, label:"Select",      shortcut:"V" },
@@ -1010,9 +993,13 @@ export default function WorkspaceApp() {
   const [rightOpen, setRightOpen] = useState(true);
   const [sheet, setSheet] = useState<Sheet>(null);
 
-  // Booth state (editable copy of ctx.booths)
-  const [booths, setBooths] = useState<Booth[]>(() => ctx?.booths ?? DEMO_BOOTHS);
-  useEffect(()=>{ if (ctx?.booths) setBooths(ctx.booths); }, [ctx?.booths]);
+  // Booth state (editable copy of ctx.booths). NEVER fall back to demo data —
+  // an empty venue must render an empty canvas. Demo data is only used when a
+  // caller explicitly passes it via WorkspaceDataProvider (e.g. the preview
+  // route at /studio/venue-workspace-preview).
+  const [booths, setBooths] = useState<Booth[]>(() => ctx?.booths ?? []);
+  useEffect(()=>{ setBooths(ctx?.booths ?? []); }, [ctx?.booths]);
+
 
   const [placed, setPlaced] = useState<PlacedObj[]>([]);
 
