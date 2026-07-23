@@ -1609,15 +1609,35 @@ export default function WorkspaceApp() {
               <g transform={`translate(${pan.x} ${pan.y}) scale(${zoom})`}>
                 <CanvasChrome showGrid={showGrid}/>
                 {background && (
-                  <image
-                    href={background.url}
-                    x={background.x} y={background.y}
-                    width={background.w} height={background.h}
-                    opacity={background.opacity}
-                    preserveAspectRatio="xMidYMid slice"
-                    pointerEvents="none"
-                  />
+                  <g>
+                    <image
+                      href={background.url}
+                      x={background.x} y={background.y}
+                      width={background.w} height={background.h}
+                      opacity={background.opacity}
+                      preserveAspectRatio="none"
+                      pointerEvents={background.locked ? "none" : "auto"}
+                      style={{ cursor: background.locked ? "default" : "move" }}
+                      onPointerDown={onBgPointerDown}
+                    />
+                    {bgPanelOpen && !background.locked && (
+                      <>
+                        <rect x={background.x} y={background.y} width={background.w} height={background.h}
+                          fill="none" stroke="#3B82F6" strokeWidth={2/zoom} strokeDasharray={`${6/zoom} ${4/zoom}`} pointerEvents="none"/>
+                        {(["nw","ne","sw","se","n","s","e","w"] as const).map(hn => {
+                          const hx = hn.includes("w") ? background.x : hn.includes("e") ? background.x+background.w : background.x+background.w/2;
+                          const hy = hn.includes("n") ? background.y : hn.includes("s") ? background.y+background.h : background.y+background.h/2;
+                          const s = 10/zoom;
+                          return <rect key={hn} x={hx-s/2} y={hy-s/2} width={s} height={s}
+                            fill="#fff" stroke="#3B82F6" strokeWidth={1.5/zoom}
+                            style={{ cursor: hn.length===2 ? `${hn}-resize` : `${hn}-resize` }}
+                            onPointerDown={(e)=>onBgHandlePointerDown(e, hn)}/>;
+                        })}
+                      </>
+                    )}
+                  </g>
                 )}
+
 
                 {placed.map(p => (
                   <PlacedObjSVG key={p.id} o={p} isSel={selectedIds.has(p.id)}
