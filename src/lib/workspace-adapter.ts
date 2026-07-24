@@ -191,9 +191,10 @@ export function toLayout(state: WorkspaceState): {
   }
 
   for (const o of state.objects) {
+    const oid = o.objectId ?? o.id.replace(/^p:/, "") ?? uuid();
     elements.push({
-      id: o.objectId,
-      objectId: o.objectId,
+      id: oid,
+      objectId: oid,
       kind: "placed",
       placedKind: o.kind,
       x: o.x, y: o.y, w: o.w, h: o.h,
@@ -230,7 +231,7 @@ export function toWorkspaceObjects(state: WorkspaceState): WorkspaceObject[] {
   }
   for (const o of state.objects) {
     out.push({
-      id: o.objectId,
+      id: o.objectId ?? o.id.replace(/^p:/, ""),
       type: o.kind,
       geometry: { x: o.x, y: o.y, w: o.w, h: o.h, rotation: o.rotation ?? 0 },
       metadata: { rentable: RENTABLE.has(o.kind), label: o.label ?? "", ...(o.meta ?? {}) },
