@@ -1,49 +1,73 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { queryOptions, useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useQuery } from "@tanstack/react-query";
-import { useCallback } from "react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { useCallback, useMemo } from "react";
+import WorkspaceApp, {
+  WorkspaceDataProvider,
+  type WorkspaceCtx,
+  type WorkspaceSaveState,
+} from "@/components/venue-workspace-sdk/App";
 import { getVenueLayout, saveVenueLayout } from "@/lib/venue-designer.functions";
-import { VenueDesignerV2 } from "@/components/venue-designer-v2/designer";
-import type { AnyElement, Layout, LayoutSettings } from "@/components/venue-designer/types";
+import { fromLayout, toLayout } from "@/lib/workspace-adapter";
+
+const layoutQuery = (venueId: string) =>
+  queryOptions({
+    queryKey: ["venue-layout", venueId],
+    queryFn: () => getVenueLayout({ data: { venueId } }),
+  });
 
 export const Route = createFileRoute("/_authenticated/studio/venues/$venueId/designer")({
-  head: () => ({ meta: [{ title: "Venue Workspace · EventScape Studio" }] }),
+  head: () => ({ meta: [{ title: "Venue Designer · EventScape Studio" }] }),
+  loader: ({ context, params }) => context.queryClient.ensureQueryData(layoutQuery(params.venueId)),
   component: VenueDesignerPage,
 });
 
 function VenueDesignerPage() {
   const { venueId } = Route.useParams();
-  const fetchLayout = useServerFn(getVenueLayout);
+  const { data } = useSuspenseQuery(layoutQuery(venueId));
+  const qc = useQueryClient();
   const save = useServerFn(saveVenueLayout);
 
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["venue-layout", venueId],
-    queryFn: () => fetchLayout({ data: { venueId } }),
-  });
+  const { booths, objects, background } = useMemo(
+    () => fromLayout(data.layout?.elements ?? [], data.layout?.settings ?? {}),
+    [data.layout],
+  );
 
-  const onSave = useCallback(async (layout: Layout) => {
-    await save({
-      data: {
-        venueId,
-        name: layout.name,
-        settings: layout.settings as Record<string, unknown>,
-        elements: layout.elements as unknown as Array<Record<string, unknown>>,
-      },
-    });
-  }, [save, venueId]);
+  const onSave = useCallback(
+    async (state: WorkspaceSaveState) => {
+      const { elements, settings } = toLayout({
+        booths: state.booths,
+        objects: state.objects,
+        background: state.background,
+      });
+      await save({
+        data: {
+          venueId,
+          name: data.layout?.name ?? data.venue.name ?? "Venue layout",
+          settings,
+          elements,
+        },
+      });
+      qc.invalidateQueries({ queryKey: ["venue-layout", venueId] });
+    },
+    [save, venueId, data.layout?.name, data.venue.name, qc],
+  );
 
-  if (isLoading) return <div className="p-6"><Skeleton className="h-8 w-64" /></div>;
-  if (error) return <div className="p-6 text-sm text-destructive">Failed to load venue.</div>;
-  if (!data) return null;
+  const ctx: WorkspaceCtx = {
+    venueName: data.venue.name ?? "Venue",
+    eventName: "", // venue mode
+    booths,
+    objects,
+    initialBackground: background,
+    layers: [],
+    onSave,
+  };
 
-  const initial: Layout = data.layout
-    ? {
-        name: data.layout.name,
-        settings: (data.layout.settings ?? {}) as LayoutSettings,
-        elements: (data.layout.elements ?? []) as unknown as AnyElement[],
-      }
-    : { name: data.venue.name ?? "Untitled layout", settings: {}, elements: [] };
-
-  return <VenueDesignerV2 venueId={venueId} organizationId={data.venue.organization_id} venueName={data.venue.name} initial={initial} onSave={onSave} />;
+  return (
+    <div className="fixed inset-0 z-40 overflow-hidden bg-background">
+      <WorkspaceDataProvider value={ctx}>
+        <WorkspaceApp />
+      </WorkspaceDataProvider>
+    </div>
+  );
 }
