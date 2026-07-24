@@ -898,6 +898,36 @@ function PlacedObjSVG({ o, isSel, onPointerDownBody, onPointerDownHandle }: {
         </g>
       )}
 
+      {/* Furniture (non-rentable) — reuse existing SVGs; add lightweight variants for the rest */}
+      {o.kind === "furn_table4" && (<g onPointerDown={(e)=>onPointerDownBody(e, o.id)}><RectTableSVG x={o.x} y={o.y} w={o.w} h={o.h} label={o.label ?? "4′"}/></g>)}
+      {o.kind === "furn_banquet" && (<g onPointerDown={(e)=>onPointerDownBody(e, o.id)}><RectTableSVG x={o.x} y={o.y} w={o.w} h={o.h} label={o.label ?? "Banquet"}/></g>)}
+      {(o.kind === "furn_folding_chair" || o.kind === "furn_banquet_chair" || o.kind === "furn_ceremony_chair" || o.kind === "furn_bar_stool") && (
+        <g onPointerDown={(e)=>onPointerDownBody(e, o.id)}>
+          <ChairSVG x={o.x} y={o.y} w={o.w} h={o.h}/>
+        </g>
+      )}
+      {(o.kind === "furn_display_table" || o.kind === "furn_display_rack" || o.kind === "furn_display_shelf") && (
+        <g onPointerDown={(e)=>onPointerDownBody(e, o.id)}>
+          <rect x={o.x} y={o.y} width={o.w} height={o.h} rx="1.5" fill="#E7E2D6" stroke="#7A4E28" strokeWidth="0.8"/>
+          <text x={o.x+o.w/2} y={o.y+o.h*0.65} textAnchor="middle" fill="#3B2210" fontSize={Math.min(8, o.h*0.55)} fontWeight="700" fontFamily="Inter,sans-serif">{o.label ?? "Display"}</text>
+        </g>
+      )}
+      {o.kind === "furn_podium" && (
+        <g onPointerDown={(e)=>onPointerDownBody(e, o.id)}>
+          <rect x={o.x+o.w*0.15} y={o.y} width={o.w*0.7} height={o.h} rx="1.5" fill="#4B5563" stroke="#1F2937" strokeWidth="0.8"/>
+          <rect x={o.x} y={o.y+o.h*0.75} width={o.w} height={o.h*0.25} rx="1" fill="#374151"/>
+        </g>
+      )}
+      {o.kind === "furn_couch" && (
+        <g onPointerDown={(e)=>onPointerDownBody(e, o.id)}>
+          <rect x={o.x} y={o.y} width={o.w} height={o.h} rx="4" fill="#8B7355" stroke="#4A3A28" strokeWidth="0.8"/>
+          <rect x={o.x+3} y={o.y+3} width={o.w-6} height={o.h*0.45} rx="3" fill="#A88E6F"/>
+          <rect x={o.x+3} y={o.y+o.h*0.55} width={(o.w-8)/2} height={o.h*0.4} rx="2" fill="#B89A7B"/>
+          <rect x={o.x+o.w/2+1} y={o.y+o.h*0.55} width={(o.w-8)/2} height={o.h*0.4} rx="2" fill="#B89A7B"/>
+        </g>
+      )}
+
+
       {isSel && (
         <>
           <rect x={o.x} y={o.y} width={o.w} height={o.h} fill="none" stroke="#3B82F6" strokeWidth={1} strokeDasharray="3 3" pointerEvents="none"/>
