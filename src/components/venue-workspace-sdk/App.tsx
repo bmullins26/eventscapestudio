@@ -142,10 +142,34 @@ const DEFAULT_CANOPY = { top: "#3A4A5A", mid: "#4A5A6A" };
 const WORLD_W = 1110, WORLD_H = 560;
 const GRID_SIZE = 12;
 
+// ─── Rental Options registry (extensible: add a variant → renderer picks it up) ─
+// px scale roughly ~7 px per foot to match the existing 10×10 booth footprint.
+const RENTAL_VARIANTS: Record<RentalVariant, {
+  label: string; libraryLabel: string; w: number; h: number;
+  sizeLabel: string; defaultPrice: number;
+}> = {
+  standard_booth:   { label:"Standard Booth",   libraryLabel:"Standard Booth",   w: 70,  h: 70, sizeLabel:"10′ × 10′",     defaultPrice: 150 },
+  table_6ft:        { label:"6 Foot Table",     libraryLabel:"6 Foot Table",     w: 42,  h: 18, sizeLabel:"6′ × 2.5′",     defaultPrice: 60  },
+  table_8ft:        { label:"8 Foot Table",     libraryLabel:"8 Foot Table",     w: 56,  h: 18, sizeLabel:"8′ × 2.5′",     defaultPrice: 80  },
+  round_table:      { label:"Round Table",      libraryLabel:"Round Table",      w: 35,  h: 35, sizeLabel:'60" diameter',  defaultPrice: 75  },
+  food_truck_space: { label:"Food Truck Space", libraryLabel:"Food Truck Space", w: 210, h: 84, sizeLabel:"30′ × 12′",     defaultPrice: 400 },
+};
+const RENTAL_TOOL_BY_VARIANT: Record<RentalVariant, Tool> = {
+  standard_booth: "rental_standard", table_6ft: "rental_table6", table_8ft: "rental_table8",
+  round_table: "rental_round", food_truck_space: "rental_foodtruck",
+};
+const RENTAL_VARIANT_BY_TOOL: Partial<Record<Tool, RentalVariant>> = {
+  rental_standard: "standard_booth", rental_table6: "table_6ft", rental_table8: "table_8ft",
+  rental_round: "round_table", rental_foodtruck: "food_truck_space",
+};
+
 // ─── Booth factory (used when the user adds new booths on the canvas) ───────
 function makeBooth(id: string, row: string, col: number, x: number, y: number, w: number, h: number, status: BoothStatus, opts: Partial<Booth> = {}): Booth {
-  return { id, row, col, x, y, w, h, status, price: 150, electric: false, water: false, corner: false, premium: false, size: `${w}′×${h}′`, ...opts };
+  const variant = opts.variant ?? "standard_booth";
+  const spec = RENTAL_VARIANTS[variant];
+  return { id, row, col, x, y, w, h, status, price: spec.defaultPrice, electric: false, water: false, corner: false, premium: false, size: spec.sizeLabel, variant, ...opts };
 }
+
 
 
 const LEFT_TOOLS: { id: Tool; icon: React.ElementType; label: string; shortcut?: string }[] = [
