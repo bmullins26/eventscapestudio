@@ -928,10 +928,11 @@ function InspectorContent({
     <div className="overflow-y-auto" style={{scrollbarWidth:"none"}}>
       <div className="px-3 py-3 border-b border-border">
         <div className="flex items-center justify-between mb-1">
-          <span className="text-xs font-semibold text-foreground">Booth {booth.id}{count>1 && ` +${count-1}`}</span>
+          <span className="text-xs font-semibold text-foreground">{(booth.variant && RENTAL_VARIANTS[booth.variant]?.label) || "Rentable Space"} · {booth.id}{count>1 && ` +${count-1}`}</span>
           <span className="text-[10px] px-1.5 py-0.5 rounded border" style={{background:c.fill, color:c.stroke, borderColor:c.stroke+"60"}}>{c.label}</span>
         </div>
-        <p className="text-[11px] text-muted-foreground">{booth.w}′×{booth.h}′ · {booth.category||"Unassigned"}</p>
+        <p className="text-[11px] text-muted-foreground">{(booth.variant && RENTAL_VARIANTS[booth.variant]?.sizeLabel) || `${booth.w}′×${booth.h}′`} · {booth.category||"Unassigned"}</p>
+
       </div>
       <Section label="Status">
         <div className="grid grid-cols-2 gap-1">
