@@ -1539,16 +1539,18 @@ export default function WorkspaceApp() {
   // Onboard library click -> switch tool
   const onLibraryPick = (item: string) => {
     const map: Record<string, Tool> = {
-      // Booths
-      "standard booth":"booth", "corner booth":"booth", "double booth":"booth",
-      "food booth":"food_truck", "sponsor booth":"booth",
-      // Structures
+      // Rental Options → each creates a Rentable Space (Booth object) with its own renderer + defaults
+      "standard booth":"rental_standard",
+      "6 foot table":"rental_table6",
+      "8 foot table":"rental_table8",
+      "round table":"rental_round",
+      "food truck space":"rental_foodtruck",
+      // Structures (planning objects)
       "building":"building", "stage":"stage", "pavilion":"pavilion", "tent":"tent",
       "ticket booth":"ticket_booth", "info booth":"info_booth",
       // Roads
       "main road":"road", "service road":"service_road", "walkway":"walkway", "emergency lane":"emergency_lane",
-      // Seating
-      "6′ table":"table6", "8′ table":"table8", "round table":"tableRound",
+      // Seating (planning objects only — rentable tables live under Rental Options)
       "chair":"chair", "cocktail table":"cocktail_table",
       // Utilities
       "electrical panel":"electrical", "generator":"generator",
@@ -1559,6 +1561,7 @@ export default function WorkspaceApp() {
       "restroom":"restroom", "atm":"atm", "trash station":"trash",
       "bench":"bench", "picnic table":"picnic_table",
     };
+
     const tool = map[item.toLowerCase()] ?? "rect";
     setActiveTool(tool);
     toast.message(`Click the canvas to place: ${item}`);
