@@ -42,7 +42,7 @@ export type PlacedKind =
 
 export interface AdapterPlaced {
   id: string;              // "p:<uuid>" — prefix required by SDK selection engine
-  objectId: string;        // stable uuid (persisted)
+  objectId?: string;       // stable uuid (persisted); derived from id when absent
   kind: PlacedKind;
   x: number; y: number; w: number; h: number;
   label?: string;
