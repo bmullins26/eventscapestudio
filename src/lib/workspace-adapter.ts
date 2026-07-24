@@ -29,6 +29,10 @@ export interface AdapterBooth {
   corner: boolean;
   premium: boolean;
   size: string;
+  variant?: string;
+  rotation?: number;
+  locked?: boolean;
+  notes?: string;
 }
 
 export type PlacedKind =
@@ -38,7 +42,11 @@ export type PlacedKind =
   | "restroom" | "atm" | "trash" | "bench" | "picnic_table"
   | "electrical" | "generator" | "water_hookup" | "sewer"
   | "oak_tree" | "pine_tree" | "shrub" | "flower_bed"
-  | "cocktail_table" | "service_road" | "emergency_lane";
+  | "cocktail_table" | "service_road" | "emergency_lane"
+  // Furniture (non-rentable)
+  | "furn_table4" | "furn_banquet" | "furn_folding_chair" | "furn_banquet_chair"
+  | "furn_ceremony_chair" | "furn_bar_stool" | "furn_display_table" | "furn_display_rack"
+  | "furn_display_shelf" | "furn_podium" | "furn_couch";
 
 export interface AdapterPlaced {
   id: string;              // "p:<uuid>" — prefix required by SDK selection engine
@@ -47,6 +55,10 @@ export interface AdapterPlaced {
   x: number; y: number; w: number; h: number;
   label?: string;
   rotation?: number;
+  locked?: boolean;
+  notes?: string;
+  tags?: string[];
+  furniture?: boolean;
   meta?: Record<string, unknown>;
 }
 
