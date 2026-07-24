@@ -1718,6 +1718,23 @@ export default function WorkspaceApp() {
             </svg>
           </div>
 
+          {/* Empty-state onboarding card */}
+          {booths.length === 0 && placed.length === 0 && !background && (
+            <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
+              <div className="pointer-events-auto max-w-md rounded-2xl border border-border/70 bg-card/95 backdrop-blur px-6 py-5 shadow-xl text-center">
+                <div className="mb-1 text-xs font-medium uppercase tracking-[0.2em] text-primary">Venue Designer</div>
+                <h2 className="text-lg font-semibold text-foreground">This venue is empty</h2>
+                <p className="mt-1 text-xs text-muted-foreground">Add objects, import a drawing, or start from a template.</p>
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <button onClick={()=>{ setLeftOpen(true); setActiveTab("objects"); }} className="rounded-lg bg-primary text-primary-foreground text-xs font-medium py-2 hover:opacity-90">Add Object</button>
+                  <button onClick={()=>setBgPanelOpen(true)} className="rounded-lg bg-secondary border border-border text-foreground text-xs font-medium py-2 hover:bg-muted">Import Drawing</button>
+                  <button onClick={()=>toast.message("AI Import — coming soon")} className="rounded-lg bg-secondary border border-border text-foreground text-xs font-medium py-2 hover:bg-muted">AI Import</button>
+                  <button onClick={()=>toast.message("Templates — coming soon")} className="rounded-lg bg-secondary border border-border text-foreground text-xs font-medium py-2 hover:bg-muted">Start From Template</button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Legend */}
           <div className="absolute bottom-14 md:bottom-10 left-3 z-10 bg-card/85 backdrop-blur-sm border border-border/50 rounded px-2.5 py-1.5">
             <Legend booths={booths}/>
