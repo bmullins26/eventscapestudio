@@ -617,30 +617,30 @@ function CanvasChrome({ showGrid }: { showGrid: boolean }) {
     <g pointerEvents="none">
       <defs>
         <pattern id="workspace-grid-minor" width={GRID_SIZE} height={GRID_SIZE} patternUnits="userSpaceOnUse">
-          <path d={`M ${GRID_SIZE} 0 L 0 0 0 ${GRID_SIZE}`} fill="none" stroke="#FFFFFF" strokeWidth="0.35" opacity="0.12"/>
+          <path d={`M ${GRID_SIZE} 0 L 0 0 0 ${GRID_SIZE}`} fill="none" stroke="var(--color-foreground)" strokeWidth="0.35" opacity="0.12"/>
         </pattern>
         <pattern id="workspace-grid-major" width={GRID_SIZE * 5} height={GRID_SIZE * 5} patternUnits="userSpaceOnUse">
-          <path d={`M ${GRID_SIZE * 5} 0 L 0 0 0 ${GRID_SIZE * 5}`} fill="none" stroke="#FFFFFF" strokeWidth="0.7" opacity="0.18"/>
+          <path d={`M ${GRID_SIZE * 5} 0 L 0 0 0 ${GRID_SIZE * 5}`} fill="none" stroke="var(--color-foreground)" strokeWidth="0.7" opacity="0.18"/>
         </pattern>
       </defs>
-      <rect width={W} height={H} fill="#181A1B"/>
+      <rect width={W} height={H} fill="var(--color-background)"/>
       {showGrid && (
         <>
           <rect width={W} height={H} fill="url(#workspace-grid-minor)"/>
           <rect width={W} height={H} fill="url(#workspace-grid-major)"/>
         </>
       )}
-      <rect width={W} height={rulerSize} fill="#0F1011" opacity="0.86"/>
-      <rect width={rulerSize} height={H} fill="#0F1011" opacity="0.86"/>
+      <rect width={W} height={rulerSize} fill="var(--color-card)" opacity="0.86"/>
+      <rect width={rulerSize} height={H} fill="var(--color-card)" opacity="0.86"/>
       {Array.from({ length: Math.floor(W / GRID_SIZE) + 1 }).map((_, i) => {
         const x = i * GRID_SIZE;
         const major = i % 5 === 0;
-        return <line key={`rt-${i}`} x1={x} y1={rulerSize} x2={x} y2={major ? 7 : 14} stroke="#FFFFFF" strokeWidth={major ? 0.8 : 0.45} opacity={major ? 0.42 : 0.24}/>;
+        return <line key={`rt-${i}`} x1={x} y1={rulerSize} x2={x} y2={major ? 7 : 14} stroke="var(--color-foreground)" strokeWidth={major ? 0.8 : 0.45} opacity={major ? 0.42 : 0.24}/>;
       })}
       {Array.from({ length: Math.floor(H / GRID_SIZE) + 1 }).map((_, i) => {
         const y = i * GRID_SIZE;
         const major = i % 5 === 0;
-        return <line key={`rl-${i}`} x1={rulerSize} y1={y} x2={major ? 7 : 14} y2={y} stroke="#FFFFFF" strokeWidth={major ? 0.8 : 0.45} opacity={major ? 0.42 : 0.24}/>;
+        return <line key={`rl-${i}`} x1={rulerSize} y1={y} x2={major ? 7 : 14} y2={y} stroke="var(--color-foreground)" strokeWidth={major ? 0.8 : 0.45} opacity={major ? 0.42 : 0.24}/>;
       })}
     </g>
   );
