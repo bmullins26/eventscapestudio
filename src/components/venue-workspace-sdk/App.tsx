@@ -1410,6 +1410,17 @@ export default function WorkspaceApp() {
       return;
     }
 
+    // Furniture tools → placed objects with furniture=true (non-rentable).
+    const furnitureKindMap: Partial<Record<Tool, PlacedObj["kind"]>> = {
+      furn_table4:"furn_table4", furn_table6:"table6", furn_table8:"table8", furn_tableRound:"tableRound",
+      furn_cocktail:"cocktail_table", furn_banquet:"furn_banquet",
+      furn_folding_chair:"furn_folding_chair", furn_banquet_chair:"furn_banquet_chair",
+      furn_ceremony_chair:"furn_ceremony_chair", furn_bar_stool:"furn_bar_stool",
+      furn_display_table:"furn_display_table", furn_display_rack:"furn_display_rack",
+      furn_display_shelf:"furn_display_shelf", furn_podium:"furn_podium",
+      furn_couch:"furn_couch", furn_bench:"bench", furn_picnic:"picnic_table",
+    };
+
     const kindMap: Record<string, PlacedObj["kind"]> = {
       tree:"tree", building:"building", stage:"stage", parking:"parking", fence:"fence",
       rect:"rect", text:"text", road:"road", walkway:"walkway",
@@ -1419,6 +1430,7 @@ export default function WorkspaceApp() {
       electrical:"electrical", generator:"generator", water_hookup:"water_hookup", sewer:"sewer",
       oak_tree:"oak_tree", pine_tree:"pine_tree", shrub:"shrub", flower_bed:"flower_bed",
       cocktail_table:"cocktail_table", service_road:"service_road", emergency_lane:"emergency_lane",
+      ...(furnitureKindMap as Record<string, PlacedObj["kind"]>),
     };
     const kind = kindMap[tool]; if (!kind) { toast.message(`Tool "${tool}" — click canvas to place`); return; }
     const defaults: Record<string,{w:number;h:number;label?:string}> = {
@@ -1434,11 +1446,20 @@ export default function WorkspaceApp() {
       oak_tree:{w:44,h:44}, pine_tree:{w:36,h:44}, shrub:{w:24,h:20}, flower_bed:{w:60,h:24},
       cocktail_table:{w:28,h:28},
       service_road:{w:120,h:22}, emergency_lane:{w:160,h:22},
+      // Furniture defaults
+      furn_table4:{w:42,h:18,label:"4′"}, furn_table6:{w:60,h:18,label:"6′"}, furn_table8:{w:80,h:18,label:"8′"},
+      furn_tableRound:{w:50,h:50,label:'60"'}, furn_cocktail:{w:28,h:28}, furn_banquet:{w:96,h:34,label:"Banquet"},
+      furn_folding_chair:{w:14,h:14}, furn_banquet_chair:{w:14,h:14},
+      furn_ceremony_chair:{w:14,h:14}, furn_bar_stool:{w:14,h:14},
+      furn_display_table:{w:60,h:22,label:"Display"}, furn_display_rack:{w:36,h:16,label:"Rack"},
+      furn_display_shelf:{w:60,h:14,label:"Shelf"}, furn_podium:{w:22,h:22,label:"Podium"},
+      furn_couch:{w:70,h:26,label:"Couch"}, furn_bench:{w:48,h:16}, furn_picnic:{w:70,h:36},
     };
 
     const d = defaults[tool] ?? { w:60,h:40 };
     const id = `p:${Date.now().toString(36)}`;
-    const obj: PlacedObj = { id, kind, x: snap(wx - d.w/2), y: snap(wy - d.h/2), w: d.w, h: d.h, label: d.label };
+    const isFurniture = tool.startsWith("furn_");
+    const obj: PlacedObj = { id, kind, x: snap(wx - d.w/2), y: snap(wy - d.h/2), w: d.w, h: d.h, label: d.label, rotation: 0, furniture: isFurniture };
     setPlaced(ps => [...ps, obj]);
     setSelectedIds(new Set([id])); setPrimaryId(id);
     toast.success(`Placed ${tool}`);
