@@ -1638,17 +1638,23 @@ export default function WorkspaceApp() {
     const map: Record<string, Tool> = {
       // Rental Options → each creates a Rentable Space (Booth object) with its own renderer + defaults
       "standard booth":"rental_standard",
-      "6 foot table":"rental_table6",
-      "8 foot table":"rental_table8",
-      "round table":"rental_round",
+      "6 foot rental table":"rental_table6",
+      "8 foot rental table":"rental_table8",
+      "round rental table":"rental_round",
       "food truck space":"rental_foodtruck",
       // Structures (planning objects)
       "building":"building", "stage":"stage", "pavilion":"pavilion", "tent":"tent",
       "ticket booth":"ticket_booth", "info booth":"info_booth",
       // Roads
       "main road":"road", "service road":"service_road", "walkway":"walkway", "emergency lane":"emergency_lane",
-      // Seating (planning objects only — rentable tables live under Rental Options)
-      "chair":"chair", "cocktail table":"cocktail_table",
+      // Furniture (non-rentable)
+      "4 foot table":"furn_table4", "6 foot table":"furn_table6", "8 foot table":"furn_table8",
+      "round table":"furn_tableRound", "cocktail table":"furn_cocktail", "banquet table":"furn_banquet",
+      "folding chair":"furn_folding_chair", "banquet chair":"furn_banquet_chair",
+      "ceremony chair":"furn_ceremony_chair", "bar stool":"furn_bar_stool",
+      "display table":"furn_display_table", "display rack":"furn_display_rack",
+      "display shelf":"furn_display_shelf", "podium":"furn_podium",
+      "couch":"furn_couch", "bench":"furn_bench", "picnic table":"furn_picnic",
       // Utilities
       "electrical panel":"electrical", "generator":"generator",
       "water hookup":"water_hookup", "sewer access":"sewer",
@@ -1656,7 +1662,6 @@ export default function WorkspaceApp() {
       "oak tree":"oak_tree", "pine tree":"pine_tree", "shrub":"shrub", "flower bed":"flower_bed",
       // Amenities
       "restroom":"restroom", "atm":"atm", "trash station":"trash",
-      "bench":"bench", "picnic table":"picnic_table",
     };
 
     const tool = map[item.toLowerCase()] ?? "rect";
