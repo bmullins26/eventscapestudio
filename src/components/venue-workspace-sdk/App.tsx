@@ -21,11 +21,24 @@ import { fetchSatelliteImageForWorkspace } from "@/lib/workspace-background.func
 
 // ─── Data context ────────────────────────────────────────────────────────────
 type LayerRow = { id: string; name: string; color: string | null; visible: boolean; locked: boolean; kind: string };
+export type WorkspaceSaveState = {
+  booths: Booth[];
+  objects: PlacedObj[];
+  background: { url: string; x: number; y: number; w: number; h: number; opacity: number; locked: boolean; label: string } | null;
+};
 export type WorkspaceCtx = {
   venueName: string;
   eventName: string;
   booths: Booth[] | null;
   layers: LayerRow[] | null;
+  /** Placed non-booth objects loaded from persistence. Optional; empty by default. */
+  objects?: PlacedObj[] | null;
+  /** Initial background layer. */
+  initialBackground?: WorkspaceSaveState["background"];
+  /** Read-only demo mode — disables save/publish. */
+  readOnly?: boolean;
+  /** Save handler. When provided, receives full workspace snapshot. */
+  onSave?: (state: WorkspaceSaveState) => Promise<void> | void;
   onPatchBooth?: (id: string, patch: Partial<Booth> & { staff_notes?: string; vendor_notes?: string }) => void;
   onCheckIn?: (id: string) => void;
   onCheckOut?: (id: string) => void;
