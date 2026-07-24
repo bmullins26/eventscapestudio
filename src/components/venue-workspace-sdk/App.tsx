@@ -1559,6 +1559,13 @@ export default function WorkspaceApp() {
       if (g.handle.includes("w")) { const nx = Math.min(g.orig.x + dx, g.orig.x + g.orig.w - 20); ww = g.orig.w + (g.orig.x - nx); x = nx; }
       if (g.handle.includes("n")) { const ny = Math.min(g.orig.y + dy, g.orig.y + g.orig.h - 20); hh = g.orig.h + (g.orig.y - ny); y = ny; }
       setBackground(b => b ? { ...b, x, y, w: ww, h: hh } : b);
+    } else if (g.kind === "rotate") {
+      const cur = Math.atan2(w.y - g.center.y, w.x - g.center.x) * 180/Math.PI;
+      let next = g.origRot + (cur - g.startAngle);
+      if (e.shiftKey) next = Math.round(next / 15) * 15;
+      next = ((next % 360) + 360) % 360;
+      if (g.id.startsWith("p:")) setPlaced(ps=>ps.map(p=>p.id===g.id?{...p,rotation:next}:p));
+      else { setBooths(bs=>bs.map(b=>b.id===g.id?{...b,rotation:next}:b)); setDirty(d=>{const n=new Set(d);n.add(g.id);return n;}); }
     } else if (g.kind === "marquee") {
       const x = Math.min(g.start.x, w.x), y = Math.min(g.start.y, w.y);
       const mw = Math.abs(w.x - g.start.x), mh = Math.abs(w.y - g.start.y);
