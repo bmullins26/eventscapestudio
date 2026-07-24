@@ -1014,29 +1014,37 @@ export default function WorkspaceApp() {
   useEffect(()=>{ setBooths(ctx?.booths ?? []); }, [ctx?.booths]);
 
 
-  const [placed, setPlaced] = useState<PlacedObj[]>([]);
+  const [placed, setPlaced] = useState<PlacedObj[]>(() => ctx?.objects ?? []);
+  useEffect(() => { setPlaced(ctx?.objects ?? []); }, [ctx?.objects]);
 
   // Background (image upload or satellite map). Rendered behind everything.
   type Background = { url: string; x: number; y: number; w: number; h: number; opacity: number; locked: boolean; label: string } | null;
   const bgStorageKey = `ws-bg::${ctx?.venueName ?? "default"}::${ctx?.eventName ?? "default"}`;
-  const [background, setBackground] = useState<Background>(null);
+  const [background, setBackground] = useState<Background>(() => ctx?.initialBackground ?? null);
   const bgLoadedRef = useRef(false);
   useEffect(() => {
     if (typeof window === "undefined") return;
+    // Persistence-backed ctx wins over per-browser localStorage.
+    if (ctx?.initialBackground !== undefined) {
+      setBackground(ctx?.initialBackground ?? null);
+      bgLoadedRef.current = true;
+      return;
+    }
     try {
       const raw = window.localStorage.getItem(bgStorageKey);
       if (raw) setBackground(JSON.parse(raw));
     } catch { /* ignore */ }
     bgLoadedRef.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bgStorageKey]);
+  }, [bgStorageKey, ctx?.initialBackground]);
   useEffect(() => {
     if (!bgLoadedRef.current || typeof window === "undefined") return;
+    if (ctx?.onSave) return; // when persistence is wired, don't shadow with localStorage
     try {
       if (background) window.localStorage.setItem(bgStorageKey, JSON.stringify(background));
       else window.localStorage.removeItem(bgStorageKey);
     } catch { /* ignore quota */ }
-  }, [background, bgStorageKey]);
+  }, [background, bgStorageKey, ctx?.onSave]);
 
   const [bgPanelOpen, setBgPanelOpen] = useState(false);
   const [bgAddress, setBgAddress] = useState("");
