@@ -245,7 +245,7 @@ export function toWorkspaceObjects(state: WorkspaceState): WorkspaceObject[] {
     out.push({
       id: b.id,
       type: "booth",
-      geometry: { x: b.x, y: b.y, w: b.w, h: b.h, rotation: 0 },
+      geometry: { x: b.x, y: b.y, w: b.w, h: b.h, rotation: b.rotation ?? 0 },
       metadata: {
         rentable: true,
         row: b.row, col: b.col,
