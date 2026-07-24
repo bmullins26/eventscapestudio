@@ -1419,6 +1419,16 @@ export default function WorkspaceApp() {
     (e.target as Element).setPointerCapture?.(e.pointerId);
     const o = getObj(id); if (!o) return;
     pushHistory();
+    if (handle === "rotate") {
+      const center = { x: o.x + o.w/2, y: o.y + o.h/2 };
+      const w = clientToWorld(e.clientX, e.clientY);
+      const startAngle = Math.atan2(w.y - center.y, w.x - center.x) * 180/Math.PI;
+      const origRot = id.startsWith("p:")
+        ? (placed.find(p=>p.id===id)?.rotation ?? 0)
+        : (booths.find(b=>b.id===id)?.rotation ?? 0);
+      gestureRef.current = { kind: "rotate", id, center, startAngle, origRot };
+      return;
+    }
     gestureRef.current = { kind: "resize", id, handle, startWorld: clientToWorld(e.clientX, e.clientY), orig: {...o} };
   };
 
