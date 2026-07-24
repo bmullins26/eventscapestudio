@@ -6,6 +6,11 @@ export const Route = createFileRoute("/_authenticated/dev/examples/$exampleId")(
   head: ({ params }) => ({
     meta: [
       { title: `${(DEMO_EXAMPLES as any)[params.exampleId]?.title ?? "Example"} · Developer Examples` },
+      { name: "description", content: "Read-only Venue Workspace example layout for development review." },
+      { property: "og:title", content: `${(DEMO_EXAMPLES as any)[params.exampleId]?.title ?? "Example"} · Developer Examples` },
+      { property: "og:description", content: "Read-only Venue Workspace example layout for development review." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },
     ],
   }),
