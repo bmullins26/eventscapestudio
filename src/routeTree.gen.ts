@@ -25,7 +25,6 @@ import { Route as AuthenticatedStudioIndexRouteImport } from './routes/_authenti
 import { Route as AuthenticatedPortalIndexRouteImport } from './routes/_authenticated/portal.index'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as AuthenticatedStudioVenuesRouteImport } from './routes/_authenticated/studio.venues'
-import { Route as AuthenticatedStudioVenueWorkspacePreviewRouteImport } from './routes/_authenticated/studio.venue-workspace-preview'
 import { Route as AuthenticatedStudioVendorsRouteImport } from './routes/_authenticated/studio.vendors'
 import { Route as AuthenticatedStudioStaffRouteImport } from './routes/_authenticated/studio.staff'
 import { Route as AuthenticatedStudioSponsorsRouteImport } from './routes/_authenticated/studio.sponsors'
@@ -51,6 +50,8 @@ import { Route as AuthenticatedAdminOrganizationsRouteImport } from './routes/_a
 import { Route as AuthenticatedAdminLogsRouteImport } from './routes/_authenticated/admin.logs'
 import { Route as AuthenticatedAdminAnalyticsRouteImport } from './routes/_authenticated/admin.analytics'
 import { Route as AuthenticatedStudioVenuesIndexRouteImport } from './routes/_authenticated/studio.venues.index'
+import { Route as AuthenticatedDevExamplesIndexRouteImport } from './routes/_authenticated/dev.examples.index'
+import { Route as AuthenticatedDevExamplesExampleIdRouteImport } from './routes/_authenticated/dev.examples.$exampleId'
 import { Route as AuthenticatedStudioVenuesVenueIdDesignerRouteImport } from './routes/_authenticated/studio.venues.$venueId.designer'
 import { Route as AuthenticatedStudioEventsEventIdWorkspaceSdkRouteImport } from './routes/_authenticated/studio.events.$eventId.workspace-sdk'
 import { Route as AuthenticatedStudioEventsEventIdVenueRouteImport } from './routes/_authenticated/studio.events.$eventId.venue'
@@ -135,12 +136,6 @@ const AuthenticatedStudioVenuesRoute =
   AuthenticatedStudioVenuesRouteImport.update({
     id: '/venues',
     path: '/venues',
-    getParentRoute: () => AuthenticatedStudioRoute,
-  } as any)
-const AuthenticatedStudioVenueWorkspacePreviewRoute =
-  AuthenticatedStudioVenueWorkspacePreviewRouteImport.update({
-    id: '/venue-workspace-preview',
-    path: '/venue-workspace-preview',
     getParentRoute: () => AuthenticatedStudioRoute,
   } as any)
 const AuthenticatedStudioVendorsRoute =
@@ -291,6 +286,18 @@ const AuthenticatedStudioVenuesIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedStudioVenuesRoute,
   } as any)
+const AuthenticatedDevExamplesIndexRoute =
+  AuthenticatedDevExamplesIndexRouteImport.update({
+    id: '/dev/examples/',
+    path: '/dev/examples/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedDevExamplesExampleIdRoute =
+  AuthenticatedDevExamplesExampleIdRouteImport.update({
+    id: '/dev/examples/$exampleId',
+    path: '/dev/examples/$exampleId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedStudioVenuesVenueIdDesignerRoute =
   AuthenticatedStudioVenuesVenueIdDesignerRouteImport.update({
     id: '/$venueId/designer',
@@ -346,11 +353,12 @@ export interface FileRoutesByFullPath {
   '/studio/sponsors': typeof AuthenticatedStudioSponsorsRoute
   '/studio/staff': typeof AuthenticatedStudioStaffRoute
   '/studio/vendors': typeof AuthenticatedStudioVendorsRoute
-  '/studio/venue-workspace-preview': typeof AuthenticatedStudioVenueWorkspacePreviewRoute
   '/studio/venues': typeof AuthenticatedStudioVenuesRouteWithChildren
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/portal/': typeof AuthenticatedPortalIndexRoute
   '/studio/': typeof AuthenticatedStudioIndexRoute
+  '/dev/examples/$exampleId': typeof AuthenticatedDevExamplesExampleIdRoute
+  '/dev/examples/': typeof AuthenticatedDevExamplesIndexRoute
   '/studio/venues/': typeof AuthenticatedStudioVenuesIndexRoute
   '/studio/events/$eventId/venue': typeof AuthenticatedStudioEventsEventIdVenueRoute
   '/studio/events/$eventId/workspace-sdk': typeof AuthenticatedStudioEventsEventIdWorkspaceSdkRoute
@@ -389,10 +397,11 @@ export interface FileRoutesByTo {
   '/studio/sponsors': typeof AuthenticatedStudioSponsorsRoute
   '/studio/staff': typeof AuthenticatedStudioStaffRoute
   '/studio/vendors': typeof AuthenticatedStudioVendorsRoute
-  '/studio/venue-workspace-preview': typeof AuthenticatedStudioVenueWorkspacePreviewRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/portal': typeof AuthenticatedPortalIndexRoute
   '/studio': typeof AuthenticatedStudioIndexRoute
+  '/dev/examples/$exampleId': typeof AuthenticatedDevExamplesExampleIdRoute
+  '/dev/examples': typeof AuthenticatedDevExamplesIndexRoute
   '/studio/venues': typeof AuthenticatedStudioVenuesIndexRoute
   '/studio/events/$eventId/venue': typeof AuthenticatedStudioEventsEventIdVenueRoute
   '/studio/events/$eventId/workspace-sdk': typeof AuthenticatedStudioEventsEventIdWorkspaceSdkRoute
@@ -436,11 +445,12 @@ export interface FileRoutesById {
   '/_authenticated/studio/sponsors': typeof AuthenticatedStudioSponsorsRoute
   '/_authenticated/studio/staff': typeof AuthenticatedStudioStaffRoute
   '/_authenticated/studio/vendors': typeof AuthenticatedStudioVendorsRoute
-  '/_authenticated/studio/venue-workspace-preview': typeof AuthenticatedStudioVenueWorkspacePreviewRoute
   '/_authenticated/studio/venues': typeof AuthenticatedStudioVenuesRouteWithChildren
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/portal/': typeof AuthenticatedPortalIndexRoute
   '/_authenticated/studio/': typeof AuthenticatedStudioIndexRoute
+  '/_authenticated/dev/examples/$exampleId': typeof AuthenticatedDevExamplesExampleIdRoute
+  '/_authenticated/dev/examples/': typeof AuthenticatedDevExamplesIndexRoute
   '/_authenticated/studio/venues/': typeof AuthenticatedStudioVenuesIndexRoute
   '/_authenticated/studio/events/$eventId/venue': typeof AuthenticatedStudioEventsEventIdVenueRoute
   '/_authenticated/studio/events/$eventId/workspace-sdk': typeof AuthenticatedStudioEventsEventIdWorkspaceSdkRoute
@@ -484,11 +494,12 @@ export interface FileRouteTypes {
     | '/studio/sponsors'
     | '/studio/staff'
     | '/studio/vendors'
-    | '/studio/venue-workspace-preview'
     | '/studio/venues'
     | '/admin/'
     | '/portal/'
     | '/studio/'
+    | '/dev/examples/$exampleId'
+    | '/dev/examples/'
     | '/studio/venues/'
     | '/studio/events/$eventId/venue'
     | '/studio/events/$eventId/workspace-sdk'
@@ -527,10 +538,11 @@ export interface FileRouteTypes {
     | '/studio/sponsors'
     | '/studio/staff'
     | '/studio/vendors'
-    | '/studio/venue-workspace-preview'
     | '/admin'
     | '/portal'
     | '/studio'
+    | '/dev/examples/$exampleId'
+    | '/dev/examples'
     | '/studio/venues'
     | '/studio/events/$eventId/venue'
     | '/studio/events/$eventId/workspace-sdk'
@@ -573,11 +585,12 @@ export interface FileRouteTypes {
     | '/_authenticated/studio/sponsors'
     | '/_authenticated/studio/staff'
     | '/_authenticated/studio/vendors'
-    | '/_authenticated/studio/venue-workspace-preview'
     | '/_authenticated/studio/venues'
     | '/_authenticated/admin/'
     | '/_authenticated/portal/'
     | '/_authenticated/studio/'
+    | '/_authenticated/dev/examples/$exampleId'
+    | '/_authenticated/dev/examples/'
     | '/_authenticated/studio/venues/'
     | '/_authenticated/studio/events/$eventId/venue'
     | '/_authenticated/studio/events/$eventId/workspace-sdk'
@@ -707,13 +720,6 @@ declare module '@tanstack/react-router' {
       path: '/venues'
       fullPath: '/studio/venues'
       preLoaderRoute: typeof AuthenticatedStudioVenuesRouteImport
-      parentRoute: typeof AuthenticatedStudioRoute
-    }
-    '/_authenticated/studio/venue-workspace-preview': {
-      id: '/_authenticated/studio/venue-workspace-preview'
-      path: '/venue-workspace-preview'
-      fullPath: '/studio/venue-workspace-preview'
-      preLoaderRoute: typeof AuthenticatedStudioVenueWorkspacePreviewRouteImport
       parentRoute: typeof AuthenticatedStudioRoute
     }
     '/_authenticated/studio/vendors': {
@@ -891,6 +897,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedStudioVenuesIndexRouteImport
       parentRoute: typeof AuthenticatedStudioVenuesRoute
     }
+    '/_authenticated/dev/examples/': {
+      id: '/_authenticated/dev/examples/'
+      path: '/dev/examples'
+      fullPath: '/dev/examples/'
+      preLoaderRoute: typeof AuthenticatedDevExamplesIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/dev/examples/$exampleId': {
+      id: '/_authenticated/dev/examples/$exampleId'
+      path: '/dev/examples/$exampleId'
+      fullPath: '/dev/examples/$exampleId'
+      preLoaderRoute: typeof AuthenticatedDevExamplesExampleIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/studio/venues/$venueId/designer': {
       id: '/_authenticated/studio/venues/$venueId/designer'
       path: '/$venueId/designer'
@@ -1012,7 +1032,6 @@ interface AuthenticatedStudioRouteChildren {
   AuthenticatedStudioSponsorsRoute: typeof AuthenticatedStudioSponsorsRoute
   AuthenticatedStudioStaffRoute: typeof AuthenticatedStudioStaffRoute
   AuthenticatedStudioVendorsRoute: typeof AuthenticatedStudioVendorsRoute
-  AuthenticatedStudioVenueWorkspacePreviewRoute: typeof AuthenticatedStudioVenueWorkspacePreviewRoute
   AuthenticatedStudioVenuesRoute: typeof AuthenticatedStudioVenuesRouteWithChildren
   AuthenticatedStudioIndexRoute: typeof AuthenticatedStudioIndexRoute
 }
@@ -1027,8 +1046,6 @@ const AuthenticatedStudioRouteChildren: AuthenticatedStudioRouteChildren = {
   AuthenticatedStudioSponsorsRoute: AuthenticatedStudioSponsorsRoute,
   AuthenticatedStudioStaffRoute: AuthenticatedStudioStaffRoute,
   AuthenticatedStudioVendorsRoute: AuthenticatedStudioVendorsRoute,
-  AuthenticatedStudioVenueWorkspacePreviewRoute:
-    AuthenticatedStudioVenueWorkspacePreviewRoute,
   AuthenticatedStudioVenuesRoute: AuthenticatedStudioVenuesRouteWithChildren,
   AuthenticatedStudioIndexRoute: AuthenticatedStudioIndexRoute,
 }
@@ -1041,6 +1058,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAppRoute: typeof AuthenticatedAppRoute
   AuthenticatedPortalRoute: typeof AuthenticatedPortalRouteWithChildren
   AuthenticatedStudioRoute: typeof AuthenticatedStudioRouteWithChildren
+  AuthenticatedDevExamplesExampleIdRoute: typeof AuthenticatedDevExamplesExampleIdRoute
+  AuthenticatedDevExamplesIndexRoute: typeof AuthenticatedDevExamplesIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -1048,6 +1067,9 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAppRoute: AuthenticatedAppRoute,
   AuthenticatedPortalRoute: AuthenticatedPortalRouteWithChildren,
   AuthenticatedStudioRoute: AuthenticatedStudioRouteWithChildren,
+  AuthenticatedDevExamplesExampleIdRoute:
+    AuthenticatedDevExamplesExampleIdRoute,
+  AuthenticatedDevExamplesIndexRoute: AuthenticatedDevExamplesIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -1066,13 +1088,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

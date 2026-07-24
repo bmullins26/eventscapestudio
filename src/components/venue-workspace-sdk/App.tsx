@@ -21,11 +21,24 @@ import { fetchSatelliteImageForWorkspace } from "@/lib/workspace-background.func
 
 // ─── Data context ────────────────────────────────────────────────────────────
 type LayerRow = { id: string; name: string; color: string | null; visible: boolean; locked: boolean; kind: string };
+export type WorkspaceSaveState = {
+  booths: Booth[];
+  objects: PlacedObj[];
+  background: { url: string; x: number; y: number; w: number; h: number; opacity: number; locked: boolean; label: string } | null;
+};
 export type WorkspaceCtx = {
   venueName: string;
   eventName: string;
   booths: Booth[] | null;
   layers: LayerRow[] | null;
+  /** Placed non-booth objects loaded from persistence. Optional; empty by default. */
+  objects?: PlacedObj[] | null;
+  /** Initial background layer. */
+  initialBackground?: WorkspaceSaveState["background"];
+  /** Read-only demo mode — disables save/publish. */
+  readOnly?: boolean;
+  /** Save handler. When provided, receives full workspace snapshot. */
+  onSave?: (state: WorkspaceSaveState) => Promise<void> | void;
   onPatchBooth?: (id: string, patch: Partial<Booth> & { staff_notes?: string; vendor_notes?: string }) => void;
   onCheckIn?: (id: string) => void;
   onCheckOut?: (id: string) => void;
@@ -76,7 +89,7 @@ interface Booth {
   corner: boolean; premium: boolean; size: string;
 }
 
-interface PlacedObj {
+export interface PlacedObj {
   id: string;
   kind: "tree" | "building" | "stage" | "parking" | "fence" | "rect" | "text"
       | "road" | "walkway" | "table6" | "table8" | "tableRound" | "chair"
@@ -1001,29 +1014,37 @@ export default function WorkspaceApp() {
   useEffect(()=>{ setBooths(ctx?.booths ?? []); }, [ctx?.booths]);
 
 
-  const [placed, setPlaced] = useState<PlacedObj[]>([]);
+  const [placed, setPlaced] = useState<PlacedObj[]>(() => ctx?.objects ?? []);
+  useEffect(() => { setPlaced(ctx?.objects ?? []); }, [ctx?.objects]);
 
   // Background (image upload or satellite map). Rendered behind everything.
   type Background = { url: string; x: number; y: number; w: number; h: number; opacity: number; locked: boolean; label: string } | null;
   const bgStorageKey = `ws-bg::${ctx?.venueName ?? "default"}::${ctx?.eventName ?? "default"}`;
-  const [background, setBackground] = useState<Background>(null);
+  const [background, setBackground] = useState<Background>(() => ctx?.initialBackground ?? null);
   const bgLoadedRef = useRef(false);
   useEffect(() => {
     if (typeof window === "undefined") return;
+    // Persistence-backed ctx wins over per-browser localStorage.
+    if (ctx?.initialBackground !== undefined) {
+      setBackground(ctx?.initialBackground ?? null);
+      bgLoadedRef.current = true;
+      return;
+    }
     try {
       const raw = window.localStorage.getItem(bgStorageKey);
       if (raw) setBackground(JSON.parse(raw));
     } catch { /* ignore */ }
     bgLoadedRef.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bgStorageKey]);
+  }, [bgStorageKey, ctx?.initialBackground]);
   useEffect(() => {
     if (!bgLoadedRef.current || typeof window === "undefined") return;
+    if (ctx?.onSave) return; // when persistence is wired, don't shadow with localStorage
     try {
       if (background) window.localStorage.setItem(bgStorageKey, JSON.stringify(background));
       else window.localStorage.removeItem(bgStorageKey);
     } catch { /* ignore quota */ }
-  }, [background, bgStorageKey]);
+  }, [background, bgStorageKey, ctx?.onSave]);
 
   const [bgPanelOpen, setBgPanelOpen] = useState(false);
   const [bgAddress, setBgAddress] = useState("");
@@ -1088,6 +1109,40 @@ export default function WorkspaceApp() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [primaryId, setPrimaryId] = useState<string | null>(null);
   const [dirty, setDirty] = useState<Set<string>>(new Set());
+
+  // ─── Unsaved-changes / session protection ─────────────────────────────────
+  const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "dirty">("saved");
+  const initialSigRef = useRef<string | null>(null);
+  const currentSig = useMemo(
+    () => JSON.stringify({ b: booths, p: placed, bg: background }),
+    [booths, placed, background],
+  );
+  useEffect(() => {
+    // Hydrate baseline after the first render receives ctx.
+    if (initialSigRef.current === null) {
+      initialSigRef.current = currentSig;
+      return;
+    }
+    if (currentSig !== initialSigRef.current && saveStatus !== "saving") {
+      setSaveStatus("dirty");
+    }
+  }, [currentSig, saveStatus]);
+  // Reset baseline whenever the incoming ctx changes (fresh load).
+  useEffect(() => {
+    initialSigRef.current = null;
+    setSaveStatus("saved");
+  }, [ctx?.venueName, ctx?.eventName, ctx?.booths, ctx?.objects]);
+
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (saveStatus === "dirty") {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [saveStatus]);
 
   // Undo/redo
   type Snapshot = { booths: Booth[]; placed: PlacedObj[] };
@@ -1401,8 +1456,24 @@ export default function WorkspaceApp() {
   };
 
   // Save
-  const handleSave = () => {
-    if (!ctx?.onPatchBooth) { toast.success("Layout saved"); setDirty(new Set()); return; }
+  const handleSave = useCallback(async () => {
+    if (ctx?.readOnly) { toast.message("Read-only example — save disabled"); return; }
+    if (ctx?.onSave) {
+      setSaveStatus("saving");
+      try {
+        await ctx.onSave({ booths, objects: placed, background });
+        initialSigRef.current = JSON.stringify({ b: booths, p: placed, bg: background });
+        setSaveStatus("saved");
+        setDirty(new Set());
+        toast.success("Layout saved");
+      } catch (err) {
+        setSaveStatus("dirty");
+        toast.error(err instanceof Error ? err.message : "Save failed");
+      }
+      return;
+    }
+    // Legacy per-booth patch fallback.
+    if (!ctx?.onPatchBooth) { toast.success("Layout saved"); setDirty(new Set()); setSaveStatus("saved"); return; }
     if (!dirty.size) { toast.message("Nothing changed"); return; }
     dirty.forEach(id => {
       const b = booths.find(x=>x.id===id); if (!b) return;
@@ -1410,7 +1481,8 @@ export default function WorkspaceApp() {
     });
     toast.success(`Saved ${dirty.size} change${dirty.size===1?"":"s"}`);
     setDirty(new Set());
-  };
+    setSaveStatus("saved");
+  }, [ctx, booths, placed, background, dirty]);
 
   const primaryBooth = primaryId && !primaryId.startsWith("p:") ? booths.find(b=>b.id===primaryId) ?? null : null;
   const patchPrimary = (patch: Partial<Booth>) => {
@@ -1490,7 +1562,7 @@ export default function WorkspaceApp() {
           <TBtn icon={Bell} label="Notifications" onClick={()=>toast.message("No new notifications")}/>
           <TBtn icon={Sparkles} label="AI" accent onClick={()=>toast.message("AI panel coming soon")}/>
           <button onClick={handleSave} className="hidden sm:flex items-center gap-1.5 text-[11px] bg-secondary border border-border text-foreground px-2.5 py-1.5 rounded hover:bg-muted transition-colors shrink-0">
-            <Save size={11}/> Save{dirty.size?` (${dirty.size})`:""}
+            <Save size={11}/> {saveStatus === "saving" ? "Saving…" : saveStatus === "dirty" ? "Save*" : "Save"}
           </button>
           <button onClick={()=>toast.success("Publishing…")} className="flex items-center gap-1.5 text-[11px] bg-primary text-primary-foreground px-2.5 py-1.5 rounded hover:opacity-90 shrink-0">
             <Play size={11}/>
@@ -1645,6 +1717,23 @@ export default function WorkspaceApp() {
               </g>
             </svg>
           </div>
+
+          {/* Empty-state onboarding card */}
+          {booths.length === 0 && placed.length === 0 && !background && (
+            <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
+              <div className="pointer-events-auto max-w-md rounded-2xl border border-border/70 bg-card/95 backdrop-blur px-6 py-5 shadow-xl text-center">
+                <div className="mb-1 text-xs font-medium uppercase tracking-[0.2em] text-primary">Venue Designer</div>
+                <h2 className="text-lg font-semibold text-foreground">This venue is empty</h2>
+                <p className="mt-1 text-xs text-muted-foreground">Add objects, import a drawing, or start from a template.</p>
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <button onClick={()=>{ setLeftOpen(true); setActiveTab("objects"); }} className="rounded-lg bg-primary text-primary-foreground text-xs font-medium py-2 hover:opacity-90">Add Object</button>
+                  <button onClick={()=>setBgPanelOpen(true)} className="rounded-lg bg-secondary border border-border text-foreground text-xs font-medium py-2 hover:bg-muted">Import Drawing</button>
+                  <button onClick={()=>toast.message("AI Import — coming soon")} className="rounded-lg bg-secondary border border-border text-foreground text-xs font-medium py-2 hover:bg-muted">AI Import</button>
+                  <button onClick={()=>toast.message("Templates — coming soon")} className="rounded-lg bg-secondary border border-border text-foreground text-xs font-medium py-2 hover:bg-muted">Start From Template</button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Legend */}
           <div className="absolute bottom-14 md:bottom-10 left-3 z-10 bg-card/85 backdrop-blur-sm border border-border/50 rounded px-2.5 py-1.5">
@@ -1809,7 +1898,7 @@ export default function WorkspaceApp() {
           : <span className="text-[10px] text-muted-foreground">{booths.length} booths · {placed.length} objects</span>}
         <div className="flex-1"/>
         <div className="flex items-center gap-1"><Activity size={11} className="text-green-500"/><span className="text-[10px] text-muted-foreground">AI Ready</span></div>
-        <div className="flex items-center gap-1"><div className={`w-1.5 h-1.5 rounded-full ${dirty.size?"bg-amber-500":"bg-green-500"}`}/><span className="text-[10px] text-muted-foreground">{dirty.size?"Unsaved":"Saved"}</span></div>
+        <div className="flex items-center gap-1"><div className={`w-1.5 h-1.5 rounded-full ${saveStatus==="saving"?"bg-blue-500 animate-pulse":saveStatus==="dirty"?"bg-amber-500":"bg-green-500"}`}/><span className="text-[10px] text-muted-foreground">{saveStatus==="saving"?"Saving…":saveStatus==="dirty"?"Unsaved Changes":"Saved"}</span></div>
       </footer>
 
       {/* Mobile dock + sheets */}
