@@ -908,7 +908,7 @@ function InspectorContent({
 
 // ─── Object Library ──────────────────────────────────────────────────────────
 function ObjectLibrary({ onPick }: { onPick: (item: string) => void }) {
-  const [open, setOpen] = useState<string[]>(["Booths"]);
+  const [open, setOpen] = useState<string[]>(["Rental Options"]);
   const toggle = (l:string) => setOpen(o=>o.includes(l)?o.filter(x=>x!==l):[...o,l]);
   return (
     <div className="flex flex-col overflow-y-auto h-full" style={{scrollbarWidth:"none"}}>
