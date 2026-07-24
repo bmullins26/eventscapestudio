@@ -797,8 +797,10 @@ function PlacedObjSVG({ o, isSel, onPointerDownBody, onPointerDownHandle }: {
 }) {
   const stroke = isSel ? "#3B82F6" : "#8A8A8A";
   const sw = isSel ? 2 : 1;
+  const cx = o.x + o.w/2, cy = o.y + o.h/2;
+  const rot = o.rotation ?? 0;
   return (
-    <g style={{cursor: isSel?"move":"pointer"}}>
+    <g style={{cursor: isSel?"move":"pointer"}} transform={rot ? `rotate(${rot} ${cx} ${cy})` : undefined}>
       {/* Invisible hit surface — inner glyphs use pointerEvents="none" for perf */}
       <rect
         x={o.x} y={o.y} width={Math.max(o.w, 1)} height={Math.max(o.h, 1)}
