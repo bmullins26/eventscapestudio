@@ -1456,8 +1456,24 @@ export default function WorkspaceApp() {
   };
 
   // Save
-  const handleSave = () => {
-    if (!ctx?.onPatchBooth) { toast.success("Layout saved"); setDirty(new Set()); return; }
+  const handleSave = useCallback(async () => {
+    if (ctx?.readOnly) { toast.message("Read-only example — save disabled"); return; }
+    if (ctx?.onSave) {
+      setSaveStatus("saving");
+      try {
+        await ctx.onSave({ booths, objects: placed, background });
+        initialSigRef.current = JSON.stringify({ b: booths, p: placed, bg: background });
+        setSaveStatus("saved");
+        setDirty(new Set());
+        toast.success("Layout saved");
+      } catch (err) {
+        setSaveStatus("dirty");
+        toast.error(err instanceof Error ? err.message : "Save failed");
+      }
+      return;
+    }
+    // Legacy per-booth patch fallback.
+    if (!ctx?.onPatchBooth) { toast.success("Layout saved"); setDirty(new Set()); setSaveStatus("saved"); return; }
     if (!dirty.size) { toast.message("Nothing changed"); return; }
     dirty.forEach(id => {
       const b = booths.find(x=>x.id===id); if (!b) return;
@@ -1465,7 +1481,8 @@ export default function WorkspaceApp() {
     });
     toast.success(`Saved ${dirty.size} change${dirty.size===1?"":"s"}`);
     setDirty(new Set());
-  };
+    setSaveStatus("saved");
+  }, [ctx, booths, placed, background, dirty]);
 
   const primaryBooth = primaryId && !primaryId.startsWith("p:") ? booths.find(b=>b.id===primaryId) ?? null : null;
   const patchPrimary = (patch: Partial<Booth>) => {
