@@ -1372,6 +1372,7 @@ export default function WorkspaceApp() {
     | { kind: "idle" }
     | { kind: "drag"; startWorld: {x:number;y:number}; origMap: Map<string, {x:number;y:number}>; hasMoved: boolean }
     | { kind: "resize"; id: string; handle: string; startWorld: {x:number;y:number}; orig: {x:number;y:number;w:number;h:number} }
+    | { kind: "rotate"; id: string; center: {x:number;y:number}; startAngle: number; origRot: number }
     | { kind: "marquee"; start: {x:number;y:number}; end: {x:number;y:number}; add: boolean }
     | { kind: "pan"; startClient: {x:number;y:number}; startPan: {x:number;y:number} }
     | { kind: "bg-drag"; startWorld: {x:number;y:number}; orig: {x:number;y:number} }
