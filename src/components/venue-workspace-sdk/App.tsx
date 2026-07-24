@@ -70,6 +70,12 @@ function useBreakpoint() {
 // ─── Types ───────────────────────────────────────────────────────────────────
 type BoothStatus = "available" | "reserved" | "paid" | "pending" | "sponsor" | "unavailable";
 type Mode = "design" | "reservations" | "operations";
+type RentalVariant =
+  | "standard_booth"
+  | "table_6ft"
+  | "table_8ft"
+  | "round_table"
+  | "food_truck_space";
 type Tool =
   | "select" | "pan" | "rect" | "polygon" | "line" | "text"
   | "booth"  | "road" | "walkway" | "fence"  | "building" | "parking"
@@ -80,7 +86,10 @@ type Tool =
   | "restroom" | "atm" | "trash" | "bench" | "picnic_table"
   | "electrical" | "generator" | "water_hookup" | "sewer"
   | "oak_tree" | "pine_tree" | "shrub" | "flower_bed"
-  | "cocktail_table" | "service_road" | "emergency_lane";
+  | "cocktail_table" | "service_road" | "emergency_lane"
+  // Rental Options (all create a Rentable Space / Booth object)
+  | "rental_standard" | "rental_table6" | "rental_table8"
+  | "rental_round" | "rental_foodtruck";
 type Sheet = "objects" | "layers" | "inspector" | null;
 
 interface Booth {
@@ -90,7 +99,9 @@ interface Booth {
   vendor?: string; category?: string;
   price: number; electric: boolean; water: boolean;
   corner: boolean; premium: boolean; size: string;
+  variant?: RentalVariant;
 }
+
 
 export interface PlacedObj {
   id: string;
