@@ -711,8 +711,12 @@ function BoothShape({
 
   // Label + footer bar (id/vendor + price) — placed just outside the frame so it never occludes tiny variants.
   const footerY = y + h + 8;
+  const rot = booth.rotation ?? 0;
   return (
-    <g style={{cursor: isSel ? "move" : "pointer"}}>
+    <g
+      style={{cursor: isSel ? "move" : "pointer"}}
+      transform={rot ? `rotate(${rot} ${cx} ${cy})` : undefined}
+    >
       {!round && <rect x={x+3} y={y+3} width={w} height={h} fill="#000" opacity="0.18" rx="3" pointerEvents="none"/>}
       {frame}
       {glyph}
@@ -736,6 +740,14 @@ function BoothShape({
           onPointerDown={(e)=>onPointerDownHandle(e, id, hName)}
         />
       ))}
+      {isSel && isPrimary && (
+        <g pointerEvents="all">
+          <line x1={cx} y1={y} x2={cx} y2={y-14} stroke="#3B82F6" strokeWidth={1} />
+          <circle cx={cx} cy={y-18} r={5} fill="white" stroke="#3B82F6" strokeWidth={1.5}
+            style={{cursor:"grab"}}
+            onPointerDown={(e)=>onPointerDownHandle(e, id, "rotate")}/>
+        </g>
+      )}
     </g>
   );
 
