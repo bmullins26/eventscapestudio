@@ -89,7 +89,13 @@ type Tool =
   | "cocktail_table" | "service_road" | "emergency_lane"
   // Rental Options (all create a Rentable Space / Booth object)
   | "rental_standard" | "rental_table6" | "rental_table8"
-  | "rental_round" | "rental_foodtruck";
+  | "rental_round" | "rental_foodtruck"
+  // Furniture (non-rentable venue furniture)
+  | "furn_table4" | "furn_table6" | "furn_table8" | "furn_tableRound"
+  | "furn_cocktail" | "furn_banquet"
+  | "furn_folding_chair" | "furn_banquet_chair" | "furn_ceremony_chair" | "furn_bar_stool"
+  | "furn_display_table" | "furn_display_rack" | "furn_display_shelf" | "furn_podium"
+  | "furn_couch" | "furn_bench" | "furn_picnic";
 type Sheet = "objects" | "layers" | "inspector" | null;
 
 interface Booth {
@@ -100,6 +106,9 @@ interface Booth {
   price: number; electric: boolean; water: boolean;
   corner: boolean; premium: boolean; size: string;
   variant?: RentalVariant;
+  rotation?: number;
+  locked?: boolean;
+  notes?: string;
 }
 
 
@@ -111,8 +120,18 @@ export interface PlacedObj {
       | "restroom" | "atm" | "trash" | "bench" | "picnic_table"
       | "electrical" | "generator" | "water_hookup" | "sewer"
       | "oak_tree" | "pine_tree" | "shrub" | "flower_bed"
-      | "cocktail_table" | "service_road" | "emergency_lane";
+      | "cocktail_table" | "service_road" | "emergency_lane"
+      // Furniture (non-rentable)
+      | "furn_table4" | "furn_banquet" | "furn_folding_chair" | "furn_banquet_chair"
+      | "furn_ceremony_chair" | "furn_bar_stool" | "furn_display_table" | "furn_display_rack"
+      | "furn_display_shelf" | "furn_podium" | "furn_couch";
   x: number; y: number; w: number; h: number; label?: string;
+  rotation?: number;
+  locked?: boolean;
+  notes?: string;
+  tags?: string[];
+  /** Furniture flag — drives inspector variant. Rental Options are Booths, not PlacedObj. */
+  furniture?: boolean;
 }
 
 
@@ -206,13 +225,18 @@ const LEFT_TABS = [
   { id:"comments",     icon:MessageSquare, label:"Comments" },
 ];
 const OBJ_CATEGORIES = [
-  { label:"Rental Options", items:["Standard Booth","6 Foot Table","8 Foot Table","Round Table","Food Truck Space"] },
+  { label:"Rental Options", items:["Standard Booth","6 Foot Rental Table","8 Foot Rental Table","Round Rental Table","Food Truck Space"] },
   { label:"Structures", items:["Building","Stage","Pavilion","Tent","Ticket Booth","Info Booth"] },
   { label:"Roads",      items:["Main Road","Service Road","Walkway","Emergency Lane"] },
-  { label:"Seating",    items:["Chair","Cocktail Table"] },
+  { label:"Furniture",  items:[
+      "4 Foot Table","6 Foot Table","8 Foot Table","Round Table","Cocktail Table","Banquet Table",
+      "Folding Chair","Banquet Chair","Ceremony Chair","Bar Stool",
+      "Display Table","Display Rack","Display Shelf","Podium",
+      "Couch","Bench","Picnic Table",
+    ] },
   { label:"Utilities",  items:["Electrical Panel","Generator","Water Hookup","Sewer Access"] },
   { label:"Landscape",  items:["Oak Tree","Pine Tree","Shrub","Flower Bed"] },
-  { label:"Amenities",  items:["Restroom","ATM","Trash Station","Bench","Picnic Table"] },
+  { label:"Amenities",  items:["Restroom","ATM","Trash Station"] },
 ];
 
 
@@ -687,8 +711,12 @@ function BoothShape({
 
   // Label + footer bar (id/vendor + price) — placed just outside the frame so it never occludes tiny variants.
   const footerY = y + h + 8;
+  const rot = booth.rotation ?? 0;
   return (
-    <g style={{cursor: isSel ? "move" : "pointer"}}>
+    <g
+      style={{cursor: isSel ? "move" : "pointer"}}
+      transform={rot ? `rotate(${rot} ${cx} ${cy})` : undefined}
+    >
       {!round && <rect x={x+3} y={y+3} width={w} height={h} fill="#000" opacity="0.18" rx="3" pointerEvents="none"/>}
       {frame}
       {glyph}
@@ -712,6 +740,14 @@ function BoothShape({
           onPointerDown={(e)=>onPointerDownHandle(e, id, hName)}
         />
       ))}
+      {isSel && isPrimary && (
+        <g pointerEvents="all">
+          <line x1={cx} y1={y} x2={cx} y2={y-14} stroke="#3B82F6" strokeWidth={1} />
+          <circle cx={cx} cy={y-18} r={5} fill="white" stroke="#3B82F6" strokeWidth={1.5}
+            style={{cursor:"grab"}}
+            onPointerDown={(e)=>onPointerDownHandle(e, id, "rotate")}/>
+        </g>
+      )}
     </g>
   );
 
@@ -761,8 +797,10 @@ function PlacedObjSVG({ o, isSel, onPointerDownBody, onPointerDownHandle }: {
 }) {
   const stroke = isSel ? "#3B82F6" : "#8A8A8A";
   const sw = isSel ? 2 : 1;
+  const cx = o.x + o.w/2, cy = o.y + o.h/2;
+  const rot = o.rotation ?? 0;
   return (
-    <g style={{cursor: isSel?"move":"pointer"}}>
+    <g style={{cursor: isSel?"move":"pointer"}} transform={rot ? `rotate(${rot} ${cx} ${cy})` : undefined}>
       {/* Invisible hit surface — inner glyphs use pointerEvents="none" for perf */}
       <rect
         x={o.x} y={o.y} width={Math.max(o.w, 1)} height={Math.max(o.h, 1)}
@@ -860,6 +898,36 @@ function PlacedObjSVG({ o, isSel, onPointerDownBody, onPointerDownHandle }: {
         </g>
       )}
 
+      {/* Furniture (non-rentable) — reuse existing SVGs; add lightweight variants for the rest */}
+      {o.kind === "furn_table4" && (<g onPointerDown={(e)=>onPointerDownBody(e, o.id)}><RectTableSVG x={o.x} y={o.y} w={o.w} h={o.h} label={o.label ?? "4′"}/></g>)}
+      {o.kind === "furn_banquet" && (<g onPointerDown={(e)=>onPointerDownBody(e, o.id)}><RectTableSVG x={o.x} y={o.y} w={o.w} h={o.h} label={o.label ?? "Banquet"}/></g>)}
+      {(o.kind === "furn_folding_chair" || o.kind === "furn_banquet_chair" || o.kind === "furn_ceremony_chair" || o.kind === "furn_bar_stool") && (
+        <g onPointerDown={(e)=>onPointerDownBody(e, o.id)}>
+          <ChairSVG x={o.x} y={o.y} w={o.w} h={o.h}/>
+        </g>
+      )}
+      {(o.kind === "furn_display_table" || o.kind === "furn_display_rack" || o.kind === "furn_display_shelf") && (
+        <g onPointerDown={(e)=>onPointerDownBody(e, o.id)}>
+          <rect x={o.x} y={o.y} width={o.w} height={o.h} rx="1.5" fill="#E7E2D6" stroke="#7A4E28" strokeWidth="0.8"/>
+          <text x={o.x+o.w/2} y={o.y+o.h*0.65} textAnchor="middle" fill="#3B2210" fontSize={Math.min(8, o.h*0.55)} fontWeight="700" fontFamily="Inter,sans-serif">{o.label ?? "Display"}</text>
+        </g>
+      )}
+      {o.kind === "furn_podium" && (
+        <g onPointerDown={(e)=>onPointerDownBody(e, o.id)}>
+          <rect x={o.x+o.w*0.15} y={o.y} width={o.w*0.7} height={o.h} rx="1.5" fill="#4B5563" stroke="#1F2937" strokeWidth="0.8"/>
+          <rect x={o.x} y={o.y+o.h*0.75} width={o.w} height={o.h*0.25} rx="1" fill="#374151"/>
+        </g>
+      )}
+      {o.kind === "furn_couch" && (
+        <g onPointerDown={(e)=>onPointerDownBody(e, o.id)}>
+          <rect x={o.x} y={o.y} width={o.w} height={o.h} rx="4" fill="#8B7355" stroke="#4A3A28" strokeWidth="0.8"/>
+          <rect x={o.x+3} y={o.y+3} width={o.w-6} height={o.h*0.45} rx="3" fill="#A88E6F"/>
+          <rect x={o.x+3} y={o.y+o.h*0.55} width={(o.w-8)/2} height={o.h*0.4} rx="2" fill="#B89A7B"/>
+          <rect x={o.x+o.w/2+1} y={o.y+o.h*0.55} width={(o.w-8)/2} height={o.h*0.4} rx="2" fill="#B89A7B"/>
+        </g>
+      )}
+
+
       {isSel && (
         <>
           <rect x={o.x} y={o.y} width={o.w} height={o.h} fill="none" stroke="#3B82F6" strokeWidth={1} strokeDasharray="3 3" pointerEvents="none"/>
@@ -871,6 +939,10 @@ function PlacedObjSVG({ o, isSel, onPointerDownBody, onPointerDownHandle }: {
               style={{cursor: (hn==="ne"||hn==="sw")?"nesw-resize":"nwse-resize"}}
               onPointerDown={(e)=>onPointerDownHandle(e, o.id, hn)}/>;
           })}
+          <line x1={o.x+o.w/2} y1={o.y} x2={o.x+o.w/2} y2={o.y-14} stroke="#3B82F6" strokeWidth={1} pointerEvents="none"/>
+          <circle cx={o.x+o.w/2} cy={o.y-18} r={5} fill="white" stroke="#3B82F6" strokeWidth={1.5}
+            style={{cursor:"grab"}}
+            onPointerDown={(e)=>onPointerDownHandle(e, o.id, "rotate")}/>
         </>
       )}
     </g>
@@ -1300,6 +1372,7 @@ export default function WorkspaceApp() {
     | { kind: "idle" }
     | { kind: "drag"; startWorld: {x:number;y:number}; origMap: Map<string, {x:number;y:number}>; hasMoved: boolean }
     | { kind: "resize"; id: string; handle: string; startWorld: {x:number;y:number}; orig: {x:number;y:number;w:number;h:number} }
+    | { kind: "rotate"; id: string; center: {x:number;y:number}; startAngle: number; origRot: number }
     | { kind: "marquee"; start: {x:number;y:number}; end: {x:number;y:number}; add: boolean }
     | { kind: "pan"; startClient: {x:number;y:number}; startPan: {x:number;y:number} }
     | { kind: "bg-drag"; startWorld: {x:number;y:number}; orig: {x:number;y:number} }
@@ -1346,6 +1419,16 @@ export default function WorkspaceApp() {
     (e.target as Element).setPointerCapture?.(e.pointerId);
     const o = getObj(id); if (!o) return;
     pushHistory();
+    if (handle === "rotate") {
+      const center = { x: o.x + o.w/2, y: o.y + o.h/2 };
+      const w = clientToWorld(e.clientX, e.clientY);
+      const startAngle = Math.atan2(w.y - center.y, w.x - center.x) * 180/Math.PI;
+      const origRot = id.startsWith("p:")
+        ? (placed.find(p=>p.id===id)?.rotation ?? 0)
+        : (booths.find(b=>b.id===id)?.rotation ?? 0);
+      gestureRef.current = { kind: "rotate", id, center, startAngle, origRot };
+      return;
+    }
     gestureRef.current = { kind: "resize", id, handle, startWorld: clientToWorld(e.clientX, e.clientY), orig: {...o} };
   };
 
@@ -1386,6 +1469,17 @@ export default function WorkspaceApp() {
       return;
     }
 
+    // Furniture tools → placed objects with furniture=true (non-rentable).
+    const furnitureKindMap: Partial<Record<Tool, PlacedObj["kind"]>> = {
+      furn_table4:"furn_table4", furn_table6:"table6", furn_table8:"table8", furn_tableRound:"tableRound",
+      furn_cocktail:"cocktail_table", furn_banquet:"furn_banquet",
+      furn_folding_chair:"furn_folding_chair", furn_banquet_chair:"furn_banquet_chair",
+      furn_ceremony_chair:"furn_ceremony_chair", furn_bar_stool:"furn_bar_stool",
+      furn_display_table:"furn_display_table", furn_display_rack:"furn_display_rack",
+      furn_display_shelf:"furn_display_shelf", furn_podium:"furn_podium",
+      furn_couch:"furn_couch", furn_bench:"bench", furn_picnic:"picnic_table",
+    };
+
     const kindMap: Record<string, PlacedObj["kind"]> = {
       tree:"tree", building:"building", stage:"stage", parking:"parking", fence:"fence",
       rect:"rect", text:"text", road:"road", walkway:"walkway",
@@ -1395,6 +1489,7 @@ export default function WorkspaceApp() {
       electrical:"electrical", generator:"generator", water_hookup:"water_hookup", sewer:"sewer",
       oak_tree:"oak_tree", pine_tree:"pine_tree", shrub:"shrub", flower_bed:"flower_bed",
       cocktail_table:"cocktail_table", service_road:"service_road", emergency_lane:"emergency_lane",
+      ...(furnitureKindMap as Record<string, PlacedObj["kind"]>),
     };
     const kind = kindMap[tool]; if (!kind) { toast.message(`Tool "${tool}" — click canvas to place`); return; }
     const defaults: Record<string,{w:number;h:number;label?:string}> = {
@@ -1410,11 +1505,20 @@ export default function WorkspaceApp() {
       oak_tree:{w:44,h:44}, pine_tree:{w:36,h:44}, shrub:{w:24,h:20}, flower_bed:{w:60,h:24},
       cocktail_table:{w:28,h:28},
       service_road:{w:120,h:22}, emergency_lane:{w:160,h:22},
+      // Furniture defaults
+      furn_table4:{w:42,h:18,label:"4′"}, furn_table6:{w:60,h:18,label:"6′"}, furn_table8:{w:80,h:18,label:"8′"},
+      furn_tableRound:{w:50,h:50,label:'60"'}, furn_cocktail:{w:28,h:28}, furn_banquet:{w:96,h:34,label:"Banquet"},
+      furn_folding_chair:{w:14,h:14}, furn_banquet_chair:{w:14,h:14},
+      furn_ceremony_chair:{w:14,h:14}, furn_bar_stool:{w:14,h:14},
+      furn_display_table:{w:60,h:22,label:"Display"}, furn_display_rack:{w:36,h:16,label:"Rack"},
+      furn_display_shelf:{w:60,h:14,label:"Shelf"}, furn_podium:{w:22,h:22,label:"Podium"},
+      furn_couch:{w:70,h:26,label:"Couch"}, furn_bench:{w:48,h:16}, furn_picnic:{w:70,h:36},
     };
 
     const d = defaults[tool] ?? { w:60,h:40 };
     const id = `p:${Date.now().toString(36)}`;
-    const obj: PlacedObj = { id, kind, x: snap(wx - d.w/2), y: snap(wy - d.h/2), w: d.w, h: d.h, label: d.label };
+    const isFurniture = tool.startsWith("furn_");
+    const obj: PlacedObj = { id, kind, x: snap(wx - d.w/2), y: snap(wy - d.h/2), w: d.w, h: d.h, label: d.label, rotation: 0, furniture: isFurniture };
     setPlaced(ps => [...ps, obj]);
     setSelectedIds(new Set([id])); setPrimaryId(id);
     toast.success(`Placed ${tool}`);
@@ -1455,6 +1559,13 @@ export default function WorkspaceApp() {
       if (g.handle.includes("w")) { const nx = Math.min(g.orig.x + dx, g.orig.x + g.orig.w - 20); ww = g.orig.w + (g.orig.x - nx); x = nx; }
       if (g.handle.includes("n")) { const ny = Math.min(g.orig.y + dy, g.orig.y + g.orig.h - 20); hh = g.orig.h + (g.orig.y - ny); y = ny; }
       setBackground(b => b ? { ...b, x, y, w: ww, h: hh } : b);
+    } else if (g.kind === "rotate") {
+      const cur = Math.atan2(w.y - g.center.y, w.x - g.center.x) * 180/Math.PI;
+      let next = g.origRot + (cur - g.startAngle);
+      if (e.shiftKey) next = Math.round(next / 15) * 15;
+      next = ((next % 360) + 360) % 360;
+      if (g.id.startsWith("p:")) setPlaced(ps=>ps.map(p=>p.id===g.id?{...p,rotation:next}:p));
+      else { setBooths(bs=>bs.map(b=>b.id===g.id?{...b,rotation:next}:b)); setDirty(d=>{const n=new Set(d);n.add(g.id);return n;}); }
     } else if (g.kind === "marquee") {
       const x = Math.min(g.start.x, w.x), y = Math.min(g.start.y, w.y);
       const mw = Math.abs(w.x - g.start.x), mh = Math.abs(w.y - g.start.y);
@@ -1493,7 +1604,17 @@ export default function WorkspaceApp() {
       if (meta && e.key.toLowerCase() === "s") { e.preventDefault(); handleSave(); return; }
       if (e.key === "Delete" || e.key === "Backspace") { if (selectedIds.size) { e.preventDefault(); deleteSelection(); } return; }
       if (e.key === "Escape") { setSelectedIds(new Set()); setPrimaryId(null); return; }
-      const map: Record<string, Tool> = { v:"select", h:"pan", b:"booth", m:"measure", r:"rect", l:"line", t:"text" };
+      if (!meta && e.key.toLowerCase() === "r" && selectedIds.size) {
+        e.preventDefault();
+        pushHistory();
+        const step = e.shiftKey ? -15 : 15;
+        selectedIds.forEach(id => {
+          if (id.startsWith("p:")) setPlaced(ps=>ps.map(p=>p.id===id?{...p, rotation: (((p.rotation ?? 0) + step) % 360 + 360) % 360}:p));
+          else { setBooths(bs=>bs.map(b=>b.id===id?{...b, rotation: (((b.rotation ?? 0) + step) % 360 + 360) % 360}:b)); setDirty(d=>{const n=new Set(d);n.add(id);return n;}); }
+        });
+        return;
+      }
+      const map: Record<string, Tool> = { v:"select", h:"pan", b:"booth", m:"measure" };
       const tool = map[e.key.toLowerCase()];
       if (tool) setActiveTool(tool);
     };
@@ -1614,17 +1735,23 @@ export default function WorkspaceApp() {
     const map: Record<string, Tool> = {
       // Rental Options → each creates a Rentable Space (Booth object) with its own renderer + defaults
       "standard booth":"rental_standard",
-      "6 foot table":"rental_table6",
-      "8 foot table":"rental_table8",
-      "round table":"rental_round",
+      "6 foot rental table":"rental_table6",
+      "8 foot rental table":"rental_table8",
+      "round rental table":"rental_round",
       "food truck space":"rental_foodtruck",
       // Structures (planning objects)
       "building":"building", "stage":"stage", "pavilion":"pavilion", "tent":"tent",
       "ticket booth":"ticket_booth", "info booth":"info_booth",
       // Roads
       "main road":"road", "service road":"service_road", "walkway":"walkway", "emergency lane":"emergency_lane",
-      // Seating (planning objects only — rentable tables live under Rental Options)
-      "chair":"chair", "cocktail table":"cocktail_table",
+      // Furniture (non-rentable)
+      "4 foot table":"furn_table4", "6 foot table":"furn_table6", "8 foot table":"furn_table8",
+      "round table":"furn_tableRound", "cocktail table":"furn_cocktail", "banquet table":"furn_banquet",
+      "folding chair":"furn_folding_chair", "banquet chair":"furn_banquet_chair",
+      "ceremony chair":"furn_ceremony_chair", "bar stool":"furn_bar_stool",
+      "display table":"furn_display_table", "display rack":"furn_display_rack",
+      "display shelf":"furn_display_shelf", "podium":"furn_podium",
+      "couch":"furn_couch", "bench":"furn_bench", "picnic table":"furn_picnic",
       // Utilities
       "electrical panel":"electrical", "generator":"generator",
       "water hookup":"water_hookup", "sewer access":"sewer",
@@ -1632,7 +1759,6 @@ export default function WorkspaceApp() {
       "oak tree":"oak_tree", "pine tree":"pine_tree", "shrub":"shrub", "flower bed":"flower_bed",
       // Amenities
       "restroom":"restroom", "atm":"atm", "trash station":"trash",
-      "bench":"bench", "picnic table":"picnic_table",
     };
 
     const tool = map[item.toLowerCase()] ?? "rect";

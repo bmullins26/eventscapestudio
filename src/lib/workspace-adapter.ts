@@ -29,6 +29,10 @@ export interface AdapterBooth {
   corner: boolean;
   premium: boolean;
   size: string;
+  variant?: "standard_booth" | "table_6ft" | "table_8ft" | "round_table" | "food_truck_space";
+  rotation?: number;
+  locked?: boolean;
+  notes?: string;
 }
 
 export type PlacedKind =
@@ -38,7 +42,11 @@ export type PlacedKind =
   | "restroom" | "atm" | "trash" | "bench" | "picnic_table"
   | "electrical" | "generator" | "water_hookup" | "sewer"
   | "oak_tree" | "pine_tree" | "shrub" | "flower_bed"
-  | "cocktail_table" | "service_road" | "emergency_lane";
+  | "cocktail_table" | "service_road" | "emergency_lane"
+  // Furniture (non-rentable)
+  | "furn_table4" | "furn_banquet" | "furn_folding_chair" | "furn_banquet_chair"
+  | "furn_ceremony_chair" | "furn_bar_stool" | "furn_display_table" | "furn_display_rack"
+  | "furn_display_shelf" | "furn_podium" | "furn_couch";
 
 export interface AdapterPlaced {
   id: string;              // "p:<uuid>" — prefix required by SDK selection engine
@@ -47,6 +55,10 @@ export interface AdapterPlaced {
   x: number; y: number; w: number; h: number;
   label?: string;
   rotation?: number;
+  locked?: boolean;
+  notes?: string;
+  tags?: string[];
+  furniture?: boolean;
   meta?: Record<string, unknown>;
 }
 
@@ -124,6 +136,10 @@ export function fromLayout(elements: Array<Record<string, unknown>> | null | und
         corner: Boolean(el.isCorner ?? el.corner),
         premium: Boolean(el.isPremium ?? el.premium),
         size: String(el.size ?? `${Math.round(w)}′×${Math.round(h)}′`),
+        variant: (el.variant as AdapterBooth["variant"]) ?? undefined,
+        rotation: Number(el.rotation ?? 0),
+        locked: Boolean(el.locked),
+        notes: (el.notes as string | undefined) ?? undefined,
       });
       continue;
     }
@@ -141,6 +157,10 @@ export function fromLayout(elements: Array<Record<string, unknown>> | null | und
       x, y, w, h,
       label: (el.name as string | undefined) ?? (el.label as string | undefined) ?? undefined,
       rotation: Number(el.rotation ?? 0),
+      locked: Boolean(el.locked),
+      notes: (el.notes as string | undefined) ?? undefined,
+      tags: Array.isArray(el.tags) ? (el.tags as string[]) : undefined,
+      furniture: Boolean(el.furniture),
       meta: (el.meta as Record<string, unknown> | undefined) ?? undefined,
     });
   }
@@ -176,7 +196,7 @@ export function toLayout(state: WorkspaceState): {
       objectId: b.id,
       kind: "booth",
       x: b.x, y: b.y, w: b.w, h: b.h,
-      rotation: 0,
+      rotation: b.rotation ?? 0,
       label: `${b.row}${b.col || ""}`,
       name: `${b.row}${b.col || ""}`,
       status: b.status,
@@ -187,6 +207,9 @@ export function toLayout(state: WorkspaceState): {
       isCorner: b.corner,
       isPremium: b.premium,
       size: b.size,
+      variant: b.variant ?? null,
+      locked: b.locked ?? false,
+      notes: b.notes ?? null,
     });
   }
 
@@ -200,6 +223,10 @@ export function toLayout(state: WorkspaceState): {
       x: o.x, y: o.y, w: o.w, h: o.h,
       rotation: o.rotation ?? 0,
       name: o.label ?? "",
+      locked: o.locked ?? false,
+      notes: o.notes ?? null,
+      tags: o.tags ?? [],
+      furniture: o.furniture ?? false,
       meta: o.meta ?? {},
     });
   }
@@ -218,7 +245,7 @@ export function toWorkspaceObjects(state: WorkspaceState): WorkspaceObject[] {
     out.push({
       id: b.id,
       type: "booth",
-      geometry: { x: b.x, y: b.y, w: b.w, h: b.h, rotation: 0 },
+      geometry: { x: b.x, y: b.y, w: b.w, h: b.h, rotation: b.rotation ?? 0 },
       metadata: {
         rentable: true,
         row: b.row, col: b.col,
