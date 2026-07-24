@@ -589,7 +589,9 @@ function CocktailTableSVG({ x, y, w, h }: { x:number; y:number; w:number; h:numb
 
 
 
-// ─── Booth SVG (interactive) ─────────────────────────────────────────────────
+// ─── Rentable Space SVG (interactive) ───────────────────────────────────────
+// Every rental variant renders through this component so status color, selection,
+// utilities, price, and vendor labels stay consistent across booth/table/food-truck.
 function BoothShape({
   booth, isSel, isPrimary, onPointerDownBody, onPointerDownHandle,
 }: {
@@ -598,37 +600,106 @@ function BoothShape({
   onPointerDownHandle: (e: React.PointerEvent, id: string, handle: string) => void;
 }) {
   const { x, y, w, h, id, vendor, category, status, electric, water, premium } = booth;
+  const variant: RentalVariant = booth.variant ?? "standard_booth";
   const sc = STATUS_COLORS[status];
   const cp = CANOPY_COLORS[category ?? ""] ?? DEFAULT_CANOPY;
-  const cH = Math.round(h * 0.33);
+  const cx = x + w/2, cy = y + h/2;
+  const round = variant === "round_table";
+  const strokeColor = isSel ? "#3B82F6" : sc.stroke;
+  const strokeW = isSel ? 2.5 : 1.4;
+  const idLabel = vendor && vendor.length ? (vendor.length>16?vendor.slice(0,15)+"…":vendor) : id;
+
+  // Shared status-colored reservable frame — communicates "rentable" for every variant.
+  const frame = round ? (
+    <ellipse cx={cx} cy={cy} rx={w/2} ry={h/2}
+      fill={status==="unavailable"?"#D0CCC8":sc.fill}
+      stroke={strokeColor} strokeWidth={strokeW}
+      strokeDasharray={status==="available" ? "4 3" : undefined}
+      onPointerDown={(e)=>onPointerDownBody(e, id)}/>
+  ) : (
+    <rect x={x} y={y} width={w} height={h} rx="3"
+      fill={status==="unavailable"?"#D0CCC8":sc.fill}
+      stroke={strokeColor} strokeWidth={strokeW}
+      strokeDasharray={status==="available" ? "4 3" : undefined}
+      onPointerDown={(e)=>onPointerDownBody(e, id)}/>
+  );
+
+  // Variant-specific inner glyph (visual difference only — behavior is identical).
+  let glyph: React.ReactNode = null;
+  if (variant === "standard_booth") {
+    const cH = Math.max(10, Math.round(h * 0.33));
+    glyph = (
+      <g pointerEvents="none">
+        <defs>
+          <linearGradient id={`c-${id}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={cp.top}/>
+            <stop offset="100%" stopColor={cp.mid}/>
+          </linearGradient>
+        </defs>
+        <rect x={x} y={y} width={w} height={cH} fill={`url(#c-${id})`} rx="3"/>
+        <text x={cx} y={y+cH*0.72} textAnchor="middle" fill="white"
+          fontSize={Math.min(10, cH*0.7)} fontWeight="700" fontFamily="Inter,sans-serif"
+          style={{filter:"drop-shadow(0 1px 1px rgba(0,0,0,0.6))"}}>{id}</text>
+      </g>
+    );
+  } else if (variant === "table_6ft" || variant === "table_8ft") {
+    const label = variant === "table_6ft" ? "6′" : "8′";
+    glyph = (
+      <g pointerEvents="none">
+        <rect x={x+3} y={y+3} width={w-6} height={h-6} rx="2"
+          fill="#C69A6B" stroke="#7A4E28" strokeWidth="0.8" opacity="0.95"/>
+        <line x1={x+w*0.5} y1={y+4} x2={x+w*0.5} y2={y+h-4} stroke="#8A5A30" strokeWidth="0.5" opacity="0.5"/>
+        <text x={cx} y={cy+2.5} textAnchor="middle" fill="#3B2210"
+          fontSize={Math.min(9, h*0.45)} fontWeight="700" fontFamily="Inter,sans-serif">{label}</text>
+      </g>
+    );
+  } else if (variant === "round_table") {
+    const r = Math.min(w,h)/2;
+    glyph = (
+      <g pointerEvents="none">
+        <circle cx={cx} cy={cy} r={r*0.78} fill="#C69A6B" stroke="#7A4E28" strokeWidth="0.8"/>
+        <circle cx={cx} cy={cy} r={r*0.14} fill="#5A3A1E" opacity="0.6"/>
+        <text x={cx} y={cy+2.5} textAnchor="middle" fill="#3B2210"
+          fontSize={Math.min(8, r*0.5)} fontWeight="700" fontFamily="Inter,sans-serif">60″</text>
+      </g>
+    );
+  } else if (variant === "food_truck_space") {
+    // Parking-style striped stall for a food truck.
+    const stripes = 6;
+    glyph = (
+      <g pointerEvents="none">
+        {Array.from({length: stripes}).map((_,i)=>(
+          <line key={i}
+            x1={x + (w * (i+1))/(stripes+1)} y1={y+4}
+            x2={x + (w * (i+1))/(stripes+1)} y2={y+h-4}
+            stroke={sc.stroke} strokeWidth="0.6" opacity="0.35"/>
+        ))}
+        <rect x={x+w*0.18} y={y+h*0.28} width={w*0.64} height={h*0.44} rx="2"
+          fill="#F5F1E6" stroke="#8A6510" strokeWidth="1"/>
+        <rect x={x+w*0.18} y={y+h*0.28} width={w*0.16} height={h*0.44} fill="#8A1A1A" rx="2"/>
+        <circle cx={x+w*0.30} cy={y+h*0.75} r={Math.min(4, h*0.09)} fill="#1F1F22"/>
+        <circle cx={x+w*0.70} cy={y+h*0.75} r={Math.min(4, h*0.09)} fill="#1F1F22"/>
+        <text x={cx} y={cy+2.5} textAnchor="middle" fill="#3B2210"
+          fontSize={Math.min(10, h*0.22)} fontWeight="800" fontFamily="Inter,sans-serif" letterSpacing="1">FOOD TRUCK</text>
+      </g>
+    );
+  }
+
+  // Label + footer bar (id/vendor + price) — placed just outside the frame so it never occludes tiny variants.
+  const footerY = y + h + 8;
   return (
     <g style={{cursor: isSel ? "move" : "pointer"}}>
-      <rect x={x+3} y={y+3} width={w} height={h} fill="#000" opacity="0.2" rx="3"/>
-      <rect
-        x={x} y={y} width={w} height={h}
-        fill={status==="unavailable"?"#D0CCC8":sc.fill}
-        stroke={isSel?"#3B82F6":sc.stroke}
-        strokeWidth={isSel?2.5:1} rx="3"
-        onPointerDown={(e)=>onPointerDownBody(e, id)}
-      />
-      <defs>
-        <linearGradient id={`c-${id}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={cp.top}/>
-          <stop offset="100%" stopColor={cp.mid}/>
-        </linearGradient>
-      </defs>
-      <rect x={x} y={y} width={w} height={cH} fill={`url(#c-${id})`} rx="3" pointerEvents="none"/>
-      {premium && <polygon points={`${x+w-14},${y} ${x+w},${y} ${x+w},${y+14}`} fill="#F59E0B" opacity="0.9" pointerEvents="none"/>}
-      {status!=="available" && <rect x={x} y={y} width={4} height={h} fill={sc.stroke} rx="2" opacity="0.85" pointerEvents="none"/>}
-      <text x={x+w/2} y={y+cH*0.7} textAnchor="middle" fill="white" fontSize="8.5" fontWeight="700" fontFamily="Inter,sans-serif" pointerEvents="none" style={{filter:"drop-shadow(0 1px 1px rgba(0,0,0,0.6))"}}>{id}</text>
-      {vendor ? (
-        <text x={x+5} y={y+cH+13} fill="#1A1410" fontSize="6" fontFamily="Inter,sans-serif" fontWeight="600" pointerEvents="none">
-          {vendor.length>13?vendor.slice(0,12)+"…":vendor}
-        </text>
-      ) : (
-        <text x={x+w/2} y={y+cH+18} textAnchor="middle" fill="#6B7280" fontSize="6.5" fontFamily="Inter,sans-serif" fontStyle="italic" pointerEvents="none">Available</text>
-      )}
-      <text x={x+w-4} y={y+cH+14} textAnchor="end" fill={sc.stroke} fontSize="6" fontFamily="Inter,sans-serif" fontWeight="700" pointerEvents="none">${booth.price}</text>
+      {!round && <rect x={x+3} y={y+3} width={w} height={h} fill="#000" opacity="0.18" rx="3" pointerEvents="none"/>}
+      {frame}
+      {glyph}
+      {premium && !round && <polygon points={`${x+w-14},${y} ${x+w},${y} ${x+w},${y+14}`} fill="#F59E0B" opacity="0.9" pointerEvents="none"/>}
+      {status!=="available" && !round && <rect x={x} y={y} width={4} height={h} fill={sc.stroke} rx="2" opacity="0.85" pointerEvents="none"/>}
+      <text x={x} y={footerY} fill={sc.stroke} fontSize={Math.max(6.5, Math.min(9, w*0.12))} fontFamily="Inter,sans-serif" fontWeight="700" pointerEvents="none">
+        {idLabel}
+      </text>
+      <text x={x+w} y={footerY} textAnchor="end" fill={sc.stroke} fontSize={Math.max(6.5, Math.min(9, w*0.12))} fontFamily="Inter,sans-serif" fontWeight="700" pointerEvents="none">
+        ${booth.price}
+      </text>
       {electric && <g transform={`translate(${x+6},${y+h-10})`} pointerEvents="none"><circle r="4.5" fill="#FEF08A" stroke="#CA8A04" strokeWidth="0.8"/><text textAnchor="middle" y="1.8" fill="#92400E" fontSize="5.5" fontWeight="700">⚡</text></g>}
       {water && <g transform={`translate(${x+(electric?17:6)},${y+h-10})`} pointerEvents="none"><circle r="4.5" fill="#BAE6FD" stroke="#0284C7" strokeWidth="0.8"/><text textAnchor="middle" y="1.8" fill="#0369A1" fontSize="5.5">💧</text></g>}
       {isSel && isPrimary && ([
@@ -643,6 +714,7 @@ function BoothShape({
       ))}
     </g>
   );
+
 }
 
 // ─── Blank canvas chrome (non-interactive, never creates venue objects) ──────
