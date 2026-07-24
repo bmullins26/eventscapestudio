@@ -196,7 +196,7 @@ export function toLayout(state: WorkspaceState): {
       objectId: b.id,
       kind: "booth",
       x: b.x, y: b.y, w: b.w, h: b.h,
-      rotation: 0,
+      rotation: b.rotation ?? 0,
       label: `${b.row}${b.col || ""}`,
       name: `${b.row}${b.col || ""}`,
       status: b.status,
@@ -207,6 +207,9 @@ export function toLayout(state: WorkspaceState): {
       isCorner: b.corner,
       isPremium: b.premium,
       size: b.size,
+      variant: b.variant ?? null,
+      locked: b.locked ?? false,
+      notes: b.notes ?? null,
     });
   }
 
@@ -220,6 +223,10 @@ export function toLayout(state: WorkspaceState): {
       x: o.x, y: o.y, w: o.w, h: o.h,
       rotation: o.rotation ?? 0,
       name: o.label ?? "",
+      locked: o.locked ?? false,
+      notes: o.notes ?? null,
+      tags: o.tags ?? [],
+      furniture: o.furniture ?? false,
       meta: o.meta ?? {},
     });
   }
