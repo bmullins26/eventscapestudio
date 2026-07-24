@@ -29,7 +29,7 @@ export interface AdapterBooth {
   corner: boolean;
   premium: boolean;
   size: string;
-  variant?: string;
+  variant?: "standard_booth" | "table_6ft" | "table_8ft" | "round_table" | "food_truck_space";
   rotation?: number;
   locked?: boolean;
   notes?: string;
