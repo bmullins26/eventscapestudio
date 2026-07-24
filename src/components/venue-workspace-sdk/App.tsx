@@ -939,6 +939,10 @@ function PlacedObjSVG({ o, isSel, onPointerDownBody, onPointerDownHandle }: {
               style={{cursor: (hn==="ne"||hn==="sw")?"nesw-resize":"nwse-resize"}}
               onPointerDown={(e)=>onPointerDownHandle(e, o.id, hn)}/>;
           })}
+          <line x1={o.x+o.w/2} y1={o.y} x2={o.x+o.w/2} y2={o.y-14} stroke="#3B82F6" strokeWidth={1} pointerEvents="none"/>
+          <circle cx={o.x+o.w/2} cy={o.y-18} r={5} fill="white" stroke="#3B82F6" strokeWidth={1.5}
+            style={{cursor:"grab"}}
+            onPointerDown={(e)=>onPointerDownHandle(e, o.id, "rotate")}/>
         </>
       )}
     </g>
