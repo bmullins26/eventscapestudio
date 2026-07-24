@@ -7,6 +7,10 @@ export const Route = createFileRoute("/_authenticated/dev/examples/")({
     meta: [
       { title: "Developer Examples · EventScape" },
       { name: "description", content: "Read-only Venue Workspace demonstration layouts." },
+      { property: "og:title", content: "Developer Examples · EventScape" },
+      { property: "og:description", content: "Read-only Venue Workspace demonstration layouts." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },
     ],
   }),

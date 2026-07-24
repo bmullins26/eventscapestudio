@@ -17,7 +17,16 @@ const layoutQuery = (venueId: string) =>
   });
 
 export const Route = createFileRoute("/_authenticated/studio/venues/$venueId/designer")({
-  head: () => ({ meta: [{ title: "Venue Designer · EventScape Studio" }] }),
+  head: () => ({
+    meta: [
+      { title: "Venue Workspace · EventScape Studio" },
+      { name: "description", content: "Build an empty, production venue workspace with saved objects, layers, and reference backgrounds." },
+      { property: "og:title", content: "Venue Workspace · EventScape Studio" },
+      { property: "og:description", content: "Build an empty, production venue workspace with saved objects, layers, and reference backgrounds." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   loader: ({ context, params }) => context.queryClient.ensureQueryData(layoutQuery(params.venueId)),
   component: VenueDesignerPage,
 });
@@ -59,6 +68,7 @@ function VenueDesignerPage() {
     booths,
     objects,
     initialBackground: background,
+    workspaceMode: "blank",
     layers: [],
     onSave,
   };

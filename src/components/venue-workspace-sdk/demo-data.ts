@@ -94,6 +94,7 @@ export const DEMO_EXAMPLES: Record<string, WorkspaceCtx & { title: string; blurb
     blurb: "72-booth outdoor market on a 6×12 grid with sponsor row.",
     venueName: "Riverside Fairgrounds",
     eventName: "Summer Farmers Market",
+    workspaceMode: "example",
     booths: farmersMarketBooths(),
     objects: [
       placed("tree1", "oak_tree", 40, 60, 60, 60, "Oak"),
@@ -107,6 +108,7 @@ export const DEMO_EXAMPLES: Record<string, WorkspaceCtx & { title: string; blurb
     blurb: "Fairground with midway, food court, and vendor rows.",
     venueName: "County Fairgrounds",
     eventName: "Autumn County Fair",
+    workspaceMode: "example",
     booths: simpleBoothGrid(4, 10, "cf", 300),
     objects: [
       placed("stage", "stage", 400, 20, 320, 80, "Main Stage"),
@@ -122,6 +124,7 @@ export const DEMO_EXAMPLES: Record<string, WorkspaceCtx & { title: string; blurb
     blurb: "Cozy holiday market with pavilions and heated tents.",
     venueName: "Town Square",
     eventName: "Holiday Market",
+    workspaceMode: "example",
     booths: simpleBoothGrid(3, 8, "xm", 250),
     objects: [
       placed("pav1", "pavilion", 60, 40, 180, 120, "Warming Pavilion"),
@@ -136,6 +139,7 @@ export const DEMO_EXAMPLES: Record<string, WorkspaceCtx & { title: string; blurb
     blurb: "Indoor convention floor with double booths and info kiosks.",
     venueName: "Convention Center Hall B",
     eventName: "Spring Trade Show",
+    workspaceMode: "example",
     booths: simpleBoothGrid(5, 10, "ts", 500),
     objects: [
       placed("info", "info_booth", 500, 20, 80, 60, "Info"),
@@ -149,6 +153,7 @@ export const DEMO_EXAMPLES: Record<string, WorkspaceCtx & { title: string; blurb
     blurb: "Two stages, food trucks, sponsor tents.",
     venueName: "Riverside Park",
     eventName: "Summer Music Festival",
+    workspaceMode: "example",
     booths: simpleBoothGrid(2, 8, "mf", 400),
     objects: [
       placed("stage-main", "stage", 120, 20, 400, 100, "Main Stage"),

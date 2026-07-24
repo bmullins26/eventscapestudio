@@ -21,6 +21,7 @@ import { fetchSatelliteImageForWorkspace } from "@/lib/workspace-background.func
 
 // ─── Data context ────────────────────────────────────────────────────────────
 type LayerRow = { id: string; name: string; color: string | null; visible: boolean; locked: boolean; kind: string };
+type WorkspaceMode = "blank" | "example";
 export type WorkspaceSaveState = {
   booths: Booth[];
   objects: PlacedObj[];
@@ -35,6 +36,8 @@ export type WorkspaceCtx = {
   objects?: PlacedObj[] | null;
   /** Initial background layer. */
   initialBackground?: WorkspaceSaveState["background"];
+  /** Blank is production default; examples must opt in explicitly. */
+  workspaceMode?: WorkspaceMode;
   /** Read-only demo mode — disables save/publish. */
   readOnly?: boolean;
   /** Save handler. When provided, receives full workspace snapshot. */
@@ -606,44 +609,38 @@ function BoothShape({
   );
 }
 
-// ─── Chrome (non-interactive art) ────────────────────────────────────────────
+// ─── Blank canvas chrome (non-interactive, never creates venue objects) ──────
 function CanvasChrome({ showGrid }: { showGrid: boolean }) {
   const W = WORLD_W, H = WORLD_H;
+  const rulerSize = 24;
   return (
     <g pointerEvents="none">
       <defs>
-        <pattern id="grass" width="6" height="6" patternUnits="userSpaceOnUse">
-          <rect width="6" height="6" fill="#3A5E28"/>
-          <line x1="0" y1="3" x2="3" y2="6" stroke="#344F22" strokeWidth="0.5" opacity="0.4"/>
+        <pattern id="workspace-grid-minor" width={GRID_SIZE} height={GRID_SIZE} patternUnits="userSpaceOnUse">
+          <path d={`M ${GRID_SIZE} 0 L 0 0 0 ${GRID_SIZE}`} fill="none" stroke="var(--color-foreground)" strokeWidth="0.35" opacity="0.12"/>
         </pattern>
-        <pattern id="griddots" width="24" height="24" patternUnits="userSpaceOnUse">
-          <circle cx="0" cy="0" r="0.7" fill="#ffffff14"/>
-          <circle cx="24" cy="24" r="0.7" fill="#ffffff14"/>
-        </pattern>
-        <pattern id="gravel" width="8" height="8" patternUnits="userSpaceOnUse">
-          <rect width="8" height="8" fill="#B8A882"/>
-          <circle cx="2" cy="2" r="0.8" fill="#A89870" opacity="0.4"/>
-        </pattern>
-        <pattern id="asphalt" width="10" height="10" patternUnits="userSpaceOnUse">
-          <rect width="10" height="10" fill="#2A2A2E"/>
+        <pattern id="workspace-grid-major" width={GRID_SIZE * 5} height={GRID_SIZE * 5} patternUnits="userSpaceOnUse">
+          <path d={`M ${GRID_SIZE * 5} 0 L 0 0 0 ${GRID_SIZE * 5}`} fill="none" stroke="var(--color-foreground)" strokeWidth="0.7" opacity="0.18"/>
         </pattern>
       </defs>
-      <rect width={W} height={H} fill="url(#grass)"/>
-      {showGrid && <rect width={W} height={H} fill="url(#griddots)"/>}
-      <rect x="5" y="5" width={W-10} height={H-10} fill="none" stroke="#8B9E7A" strokeWidth="2.5" strokeDasharray="8 5" rx="4" opacity="0.7"/>
-      <ParkingLot x={10} y={10} w={72} h={58} label="PARKING"/>
-      <ParkingLot x={W-82} y={10} w={72} h={58} label="PARKING"/>
-      <StageSVG x={12} y={82} w={70} h={230}/>
-      <BuildingSVG x={W-90} y={82} w={78} h={68} label="REGISTRATION"/>
-      <BuildingSVG x={W-90} y={160} w={78} h={52} label="INFO BOOTH"/>
-      <rect x={82} y={248} width={W-180} height={55} fill="url(#gravel)"/>
-      <text x={(82+W-98)/2} y={278} textAnchor="middle" fill="#A09070" fontSize="8.5" letterSpacing="6" fontFamily="Inter,sans-serif" fontWeight="500">MAIN AISLE</text>
-      <rect x={870} y={10} width={38} height={H-20} fill="url(#asphalt)"/>
-      <TreeSVG cx={44} cy={54} r={14}/><TreeSVG cx={W-44} cy={54} r={14}/>
-      <TreeSVG cx={46} cy={H-50} r={14}/><TreeSVG cx={W-46} cy={H-50} r={14}/>
-      {["A","B","C","D"].map((row,i)=>{
-        const yPos=[92,162,328,398][i];
-        return <text key={row} x={82} y={yPos} textAnchor="middle" fill="#8A9E7A" fontSize="8" fontWeight="700" fontFamily="Inter,sans-serif" opacity="0.6">{row}</text>;
+      <rect width={W} height={H} fill="var(--color-background)"/>
+      {showGrid && (
+        <>
+          <rect width={W} height={H} fill="url(#workspace-grid-minor)"/>
+          <rect width={W} height={H} fill="url(#workspace-grid-major)"/>
+        </>
+      )}
+      <rect width={W} height={rulerSize} fill="var(--color-card)" opacity="0.86"/>
+      <rect width={rulerSize} height={H} fill="var(--color-card)" opacity="0.86"/>
+      {Array.from({ length: Math.floor(W / GRID_SIZE) + 1 }).map((_, i) => {
+        const x = i * GRID_SIZE;
+        const major = i % 5 === 0;
+        return <line key={`rt-${i}`} x1={x} y1={rulerSize} x2={x} y2={major ? 7 : 14} stroke="var(--color-foreground)" strokeWidth={major ? 0.8 : 0.45} opacity={major ? 0.42 : 0.24}/>;
+      })}
+      {Array.from({ length: Math.floor(H / GRID_SIZE) + 1 }).map((_, i) => {
+        const y = i * GRID_SIZE;
+        const major = i % 5 === 0;
+        return <line key={`rl-${i}`} x1={rulerSize} y1={y} x2={major ? 7 : 14} y2={y} stroke="var(--color-foreground)" strokeWidth={major ? 0.8 : 0.45} opacity={major ? 0.42 : 0.24}/>;
       })}
     </g>
   );
@@ -1006,10 +1003,11 @@ export default function WorkspaceApp() {
   const [rightOpen, setRightOpen] = useState(true);
   const [sheet, setSheet] = useState<Sheet>(null);
 
+  const workspaceMode: WorkspaceMode = ctx?.workspaceMode ?? "blank";
+
   // Booth state (editable copy of ctx.booths). NEVER fall back to demo data —
-  // an empty venue must render an empty canvas. Demo data is only used when a
-  // caller explicitly passes it via WorkspaceDataProvider (e.g. the preview
-  // route at /studio/venue-workspace-preview).
+  // an empty venue must render an empty canvas. Example data is only used when a
+  // caller explicitly passes it via WorkspaceDataProvider in example mode.
   const [booths, setBooths] = useState<Booth[]>(() => ctx?.booths ?? []);
   useEffect(()=>{ setBooths(ctx?.booths ?? []); }, [ctx?.booths]);
 
@@ -1024,9 +1022,15 @@ export default function WorkspaceApp() {
   const bgLoadedRef = useRef(false);
   useEffect(() => {
     if (typeof window === "undefined") return;
-    // Persistence-backed ctx wins over per-browser localStorage.
+    // Production blank workspaces are persistence-backed. Do not hydrate any
+    // implicit browser fallback that could make a new venue look pre-populated.
     if (ctx?.initialBackground !== undefined) {
       setBackground(ctx?.initialBackground ?? null);
+      bgLoadedRef.current = true;
+      return;
+    }
+    if (workspaceMode === "blank") {
+      setBackground(null);
       bgLoadedRef.current = true;
       return;
     }
@@ -1036,15 +1040,15 @@ export default function WorkspaceApp() {
     } catch { /* ignore */ }
     bgLoadedRef.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bgStorageKey, ctx?.initialBackground]);
+  }, [bgStorageKey, ctx?.initialBackground, workspaceMode]);
   useEffect(() => {
     if (!bgLoadedRef.current || typeof window === "undefined") return;
-    if (ctx?.onSave) return; // when persistence is wired, don't shadow with localStorage
+    if (ctx?.onSave || workspaceMode === "blank") return; // blank/persisted workspaces don't shadow with localStorage
     try {
       if (background) window.localStorage.setItem(bgStorageKey, JSON.stringify(background));
       else window.localStorage.removeItem(bgStorageKey);
     } catch { /* ignore quota */ }
-  }, [background, bgStorageKey, ctx?.onSave]);
+  }, [background, bgStorageKey, ctx?.onSave, workspaceMode]);
 
   const [bgPanelOpen, setBgPanelOpen] = useState(false);
   const [bgAddress, setBgAddress] = useState("");
@@ -1537,9 +1541,9 @@ export default function WorkspaceApp() {
           <span className="text-xs font-semibold text-foreground whitespace-nowrap hidden sm:inline">EventScape</span>
         </div>
         <div className="flex items-center gap-1 text-xs text-muted-foreground mr-2 sm:mr-3 min-w-0 overflow-hidden">
-          <span className="hidden sm:inline shrink-0">{ctx?.venueName ?? "Riverside Fairgrounds"}</span>
+          <span className="hidden sm:inline shrink-0">{ctx?.venueName ?? "Untitled Venue"}</span>
           <ChevronRight size={12} className="hidden sm:inline shrink-0"/>
-          <span className="text-foreground font-medium truncate">{ctx?.eventName ?? "Summer Market 2025"}</span>
+          <span className="text-foreground font-medium truncate">{ctx?.eventName || (workspaceMode === "example" ? "Example Workspace" : "Venue Workspace")}</span>
         </div>
         <div className="hidden md:flex items-center gap-0.5 bg-secondary rounded p-0.5 mr-4 shrink-0">
           {(["design","reservations","operations"] as Mode[]).map((m)=>(
