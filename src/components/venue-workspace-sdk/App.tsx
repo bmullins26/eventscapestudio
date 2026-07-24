@@ -1297,18 +1297,22 @@ export default function WorkspaceApp() {
 
   const placeObjectAt = (tool: Tool, wx: number, wy: number) => {
     pushHistory();
-    if (tool === "booth") {
-      const w = 72, h = 58;
+    // Rental Options — all placements create a Rentable Space (Booth object).
+    const rentalVariant: RentalVariant | undefined =
+      tool === "booth" ? "standard_booth" : RENTAL_VARIANT_BY_TOOL[tool];
+    if (rentalVariant) {
+      const spec = RENTAL_VARIANTS[rentalVariant];
       const nextIdx = booths.length + 1;
       const id = `NB${nextIdx}`;
-      const nb: Booth = makeBooth(id, "N", nextIdx, snap(wx - w/2), snap(wy - h/2), w, h, "available");
+      const nb: Booth = makeBooth(id, "N", nextIdx, snap(wx - spec.w/2), snap(wy - spec.h/2), spec.w, spec.h, "available", { variant: rentalVariant });
       setBooths(bs => [...bs, nb]);
       setSelectedIds(new Set([id])); setPrimaryId(id);
       setDirty(d=>{const n=new Set(d);n.add(id);return n;});
-      toast.success(`Added booth ${id}`);
+      toast.success(`Added ${spec.label} ${id}`);
       setActiveTool("select");
       return;
     }
+
     const kindMap: Record<string, PlacedObj["kind"]> = {
       tree:"tree", building:"building", stage:"stage", parking:"parking", fence:"fence",
       rect:"rect", text:"text", road:"road", walkway:"walkway",
