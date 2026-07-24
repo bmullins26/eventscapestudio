@@ -136,6 +136,10 @@ export function fromLayout(elements: Array<Record<string, unknown>> | null | und
         corner: Boolean(el.isCorner ?? el.corner),
         premium: Boolean(el.isPremium ?? el.premium),
         size: String(el.size ?? `${Math.round(w)}′×${Math.round(h)}′`),
+        variant: (el.variant as AdapterBooth["variant"]) ?? undefined,
+        rotation: Number(el.rotation ?? 0),
+        locked: Boolean(el.locked),
+        notes: (el.notes as string | undefined) ?? undefined,
       });
       continue;
     }
@@ -153,6 +157,10 @@ export function fromLayout(elements: Array<Record<string, unknown>> | null | und
       x, y, w, h,
       label: (el.name as string | undefined) ?? (el.label as string | undefined) ?? undefined,
       rotation: Number(el.rotation ?? 0),
+      locked: Boolean(el.locked),
+      notes: (el.notes as string | undefined) ?? undefined,
+      tags: Array.isArray(el.tags) ? (el.tags as string[]) : undefined,
+      furniture: Boolean(el.furniture),
       meta: (el.meta as Record<string, unknown> | undefined) ?? undefined,
     });
   }
