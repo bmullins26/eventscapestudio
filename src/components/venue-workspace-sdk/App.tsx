@@ -89,7 +89,7 @@ interface Booth {
   corner: boolean; premium: boolean; size: string;
 }
 
-interface PlacedObj {
+export interface PlacedObj {
   id: string;
   kind: "tree" | "building" | "stage" | "parking" | "fence" | "rect" | "text"
       | "road" | "walkway" | "table6" | "table8" | "tableRound" | "chair"
