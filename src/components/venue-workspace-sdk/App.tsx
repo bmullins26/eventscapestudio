@@ -1110,6 +1110,40 @@ export default function WorkspaceApp() {
   const [primaryId, setPrimaryId] = useState<string | null>(null);
   const [dirty, setDirty] = useState<Set<string>>(new Set());
 
+  // ─── Unsaved-changes / session protection ─────────────────────────────────
+  const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "dirty">("saved");
+  const initialSigRef = useRef<string | null>(null);
+  const currentSig = useMemo(
+    () => JSON.stringify({ b: booths, p: placed, bg: background }),
+    [booths, placed, background],
+  );
+  useEffect(() => {
+    // Hydrate baseline after the first render receives ctx.
+    if (initialSigRef.current === null) {
+      initialSigRef.current = currentSig;
+      return;
+    }
+    if (currentSig !== initialSigRef.current && saveStatus !== "saving") {
+      setSaveStatus("dirty");
+    }
+  }, [currentSig, saveStatus]);
+  // Reset baseline whenever the incoming ctx changes (fresh load).
+  useEffect(() => {
+    initialSigRef.current = null;
+    setSaveStatus("saved");
+  }, [ctx?.venueName, ctx?.eventName, ctx?.booths, ctx?.objects]);
+
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (saveStatus === "dirty") {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [saveStatus]);
+
   // Undo/redo
   type Snapshot = { booths: Booth[]; placed: PlacedObj[] };
   const historyRef = useRef<Snapshot[]>([]);
