@@ -1562,7 +1562,7 @@ export default function WorkspaceApp() {
           <TBtn icon={Bell} label="Notifications" onClick={()=>toast.message("No new notifications")}/>
           <TBtn icon={Sparkles} label="AI" accent onClick={()=>toast.message("AI panel coming soon")}/>
           <button onClick={handleSave} className="hidden sm:flex items-center gap-1.5 text-[11px] bg-secondary border border-border text-foreground px-2.5 py-1.5 rounded hover:bg-muted transition-colors shrink-0">
-            <Save size={11}/> Save{dirty.size?` (${dirty.size})`:""}
+            <Save size={11}/> {saveStatus === "saving" ? "Saving…" : saveStatus === "dirty" ? "Save*" : "Save"}
           </button>
           <button onClick={()=>toast.success("Publishing…")} className="flex items-center gap-1.5 text-[11px] bg-primary text-primary-foreground px-2.5 py-1.5 rounded hover:opacity-90 shrink-0">
             <Play size={11}/>
@@ -1881,7 +1881,7 @@ export default function WorkspaceApp() {
           : <span className="text-[10px] text-muted-foreground">{booths.length} booths · {placed.length} objects</span>}
         <div className="flex-1"/>
         <div className="flex items-center gap-1"><Activity size={11} className="text-green-500"/><span className="text-[10px] text-muted-foreground">AI Ready</span></div>
-        <div className="flex items-center gap-1"><div className={`w-1.5 h-1.5 rounded-full ${dirty.size?"bg-amber-500":"bg-green-500"}`}/><span className="text-[10px] text-muted-foreground">{dirty.size?"Unsaved":"Saved"}</span></div>
+        <div className="flex items-center gap-1"><div className={`w-1.5 h-1.5 rounded-full ${saveStatus==="saving"?"bg-blue-500 animate-pulse":saveStatus==="dirty"?"bg-amber-500":"bg-green-500"}`}/><span className="text-[10px] text-muted-foreground">{saveStatus==="saving"?"Saving…":saveStatus==="dirty"?"Unsaved Changes":"Saved"}</span></div>
       </footer>
 
       {/* Mobile dock + sheets */}
