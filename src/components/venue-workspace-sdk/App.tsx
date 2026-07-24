@@ -89,7 +89,13 @@ type Tool =
   | "cocktail_table" | "service_road" | "emergency_lane"
   // Rental Options (all create a Rentable Space / Booth object)
   | "rental_standard" | "rental_table6" | "rental_table8"
-  | "rental_round" | "rental_foodtruck";
+  | "rental_round" | "rental_foodtruck"
+  // Furniture (non-rentable venue furniture)
+  | "furn_table4" | "furn_table6" | "furn_table8" | "furn_tableRound"
+  | "furn_cocktail" | "furn_banquet"
+  | "furn_folding_chair" | "furn_banquet_chair" | "furn_ceremony_chair" | "furn_bar_stool"
+  | "furn_display_table" | "furn_display_rack" | "furn_display_shelf" | "furn_podium"
+  | "furn_couch" | "furn_bench" | "furn_picnic";
 type Sheet = "objects" | "layers" | "inspector" | null;
 
 interface Booth {
@@ -100,6 +106,9 @@ interface Booth {
   price: number; electric: boolean; water: boolean;
   corner: boolean; premium: boolean; size: string;
   variant?: RentalVariant;
+  rotation?: number;
+  locked?: boolean;
+  notes?: string;
 }
 
 
@@ -111,8 +120,18 @@ export interface PlacedObj {
       | "restroom" | "atm" | "trash" | "bench" | "picnic_table"
       | "electrical" | "generator" | "water_hookup" | "sewer"
       | "oak_tree" | "pine_tree" | "shrub" | "flower_bed"
-      | "cocktail_table" | "service_road" | "emergency_lane";
+      | "cocktail_table" | "service_road" | "emergency_lane"
+      // Furniture (non-rentable)
+      | "furn_table4" | "furn_banquet" | "furn_folding_chair" | "furn_banquet_chair"
+      | "furn_ceremony_chair" | "furn_bar_stool" | "furn_display_table" | "furn_display_rack"
+      | "furn_display_shelf" | "furn_podium" | "furn_couch";
   x: number; y: number; w: number; h: number; label?: string;
+  rotation?: number;
+  locked?: boolean;
+  notes?: string;
+  tags?: string[];
+  /** Furniture flag — drives inspector variant. Rental Options are Booths, not PlacedObj. */
+  furniture?: boolean;
 }
 
 
