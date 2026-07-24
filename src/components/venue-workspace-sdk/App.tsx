@@ -1604,7 +1604,17 @@ export default function WorkspaceApp() {
       if (meta && e.key.toLowerCase() === "s") { e.preventDefault(); handleSave(); return; }
       if (e.key === "Delete" || e.key === "Backspace") { if (selectedIds.size) { e.preventDefault(); deleteSelection(); } return; }
       if (e.key === "Escape") { setSelectedIds(new Set()); setPrimaryId(null); return; }
-      const map: Record<string, Tool> = { v:"select", h:"pan", b:"booth", m:"measure", r:"rect", l:"line", t:"text" };
+      if (!meta && e.key.toLowerCase() === "r" && selectedIds.size) {
+        e.preventDefault();
+        pushHistory();
+        const step = e.shiftKey ? -15 : 15;
+        selectedIds.forEach(id => {
+          if (id.startsWith("p:")) setPlaced(ps=>ps.map(p=>p.id===id?{...p, rotation: (((p.rotation ?? 0) + step) % 360 + 360) % 360}:p));
+          else { setBooths(bs=>bs.map(b=>b.id===id?{...b, rotation: (((b.rotation ?? 0) + step) % 360 + 360) % 360}:b)); setDirty(d=>{const n=new Set(d);n.add(id);return n;}); }
+        });
+        return;
+      }
+      const map: Record<string, Tool> = { v:"select", h:"pan", b:"booth", m:"measure" };
       const tool = map[e.key.toLowerCase()];
       if (tool) setActiveTool(tool);
     };
