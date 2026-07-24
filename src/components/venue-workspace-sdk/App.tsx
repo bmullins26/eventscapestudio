@@ -206,14 +206,15 @@ const LEFT_TABS = [
   { id:"comments",     icon:MessageSquare, label:"Comments" },
 ];
 const OBJ_CATEGORIES = [
-  { label:"Booths",     items:["Standard Booth","Corner Booth","Double Booth","Food Booth","Sponsor Booth"] },
+  { label:"Rental Options", items:["Standard Booth","6 Foot Table","8 Foot Table","Round Table","Food Truck Space"] },
   { label:"Structures", items:["Building","Stage","Pavilion","Tent","Ticket Booth","Info Booth"] },
   { label:"Roads",      items:["Main Road","Service Road","Walkway","Emergency Lane"] },
-  { label:"Seating",    items:["6′ Table","8′ Table","Round Table","Chair","Cocktail Table"] },
+  { label:"Seating",    items:["Chair","Cocktail Table"] },
   { label:"Utilities",  items:["Electrical Panel","Generator","Water Hookup","Sewer Access"] },
   { label:"Landscape",  items:["Oak Tree","Pine Tree","Shrub","Flower Bed"] },
   { label:"Amenities",  items:["Restroom","ATM","Trash Station","Bench","Picnic Table"] },
 ];
+
 
 // ─── Small deco SVGs ─────────────────────────────────────────────────────────
 function TreeSVG({ cx, cy, r = 16 }: { cx:number; cy:number; r?:number }) {
