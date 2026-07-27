@@ -183,10 +183,16 @@ export function fromLayout(elements: Array<Record<string, unknown>> | null | und
         opacity: Number(bgSrc.opacity ?? 0.9),
         locked: Boolean(bgSrc.locked),
         label: String(bgSrc.label ?? bgSrc.attribution ?? "Background"),
+        rotation: Number(bgSrc.rotation ?? 0),
       }
     : null;
 
-  return { booths, objects, background };
+  const canvasSrc = (settings?.canvas ?? null) as Record<string, unknown> | null;
+  const canvas: WorkspaceCanvas | undefined = canvasSrc && (canvasSrc.w || canvasSrc.h)
+    ? { w: Number(canvasSrc.w ?? 1110), h: Number(canvasSrc.h ?? 560) }
+    : undefined;
+
+  return { booths, objects, background, canvas };
 }
 
 /* ------------------------------- To persistence ----------------------------- */
