@@ -2116,8 +2116,23 @@ export default function WorkspaceApp() {
                     />
                     <span className="text-[10px] text-muted-foreground w-10 text-right">{Math.round(background.h)}</span>
                   </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-muted-foreground w-14">Rotation</span>
+                    <input
+                      type="range" min={0} max={360} step={1}
+                      value={background.rotation ?? 0}
+                      onChange={(e)=>{ const r = Number(e.target.value); setBackground(b => b ? {...b, rotation: r} : b); }}
+                      className="flex-1"
+                    />
+                    <input
+                      type="number" min={0} max={360}
+                      value={Math.round(background.rotation ?? 0)}
+                      onChange={(e)=>{ const r = Number(e.target.value); setBackground(b => b ? {...b, rotation: isNaN(r)?0:r} : b); }}
+                      className="w-14 h-6 text-[10px] px-1 rounded border border-border bg-input text-foreground text-right"
+                    />
+                  </div>
                   <div className="text-[10px] text-muted-foreground">
-                    {background.locked ? "Locked — unlock to drag/resize on canvas" : "Drag image to move · Corner handles to resize"}
+                    {background.locked ? "Locked — unlock to move, resize, and rotate on canvas" : "Drag image to move · Corner handles resize · Top handle rotates"}
                   </div>
                   <div className="flex gap-1.5">
                     <button
