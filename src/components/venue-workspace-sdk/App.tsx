@@ -1919,7 +1919,7 @@ export default function WorkspaceApp() {
               }}
             >
               <g transform={`translate(${pan.x} ${pan.y}) scale(${zoom})`}>
-                <CanvasChrome showGrid={showGrid}/>
+                <CanvasChrome showGrid={showGrid} worldW={WORLD_W} worldH={WORLD_H}/>
                 {background && (
                   <g>
                     <image
