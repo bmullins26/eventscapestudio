@@ -37,7 +37,7 @@ function VenueDesignerPage() {
   const qc = useQueryClient();
   const save = useServerFn(saveVenueLayout);
 
-  const { booths, objects, background } = useMemo(
+  const { booths, objects, background, canvas } = useMemo(
     () => fromLayout(data.layout?.elements ?? [], data.layout?.settings ?? {}),
     [data.layout],
   );
@@ -48,6 +48,7 @@ function VenueDesignerPage() {
         booths: state.booths,
         objects: state.objects,
         background: state.background,
+        canvas: state.canvas,
       });
       await save({
         data: {
@@ -68,6 +69,7 @@ function VenueDesignerPage() {
     booths,
     objects,
     initialBackground: background,
+    initialCanvas: canvas,
     workspaceMode: "blank",
     layers: [],
     onSave,
