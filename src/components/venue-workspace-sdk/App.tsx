@@ -1706,8 +1706,8 @@ export default function WorkspaceApp() {
     if (ctx?.onSave) {
       setSaveStatus("saving");
       try {
-        await ctx.onSave({ booths, objects: placed, background });
-        initialSigRef.current = JSON.stringify({ b: booths, p: placed, bg: background });
+        await ctx.onSave({ booths, objects: placed, background, canvas: canvasSize });
+        initialSigRef.current = JSON.stringify({ b: booths, p: placed, bg: background, cv: canvasSize });
         setSaveStatus("saved");
         setDirty(new Set());
         toast.success("Layout saved");
