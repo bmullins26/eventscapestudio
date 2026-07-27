@@ -68,12 +68,19 @@ export interface AdapterBackground {
   opacity: number;
   locked: boolean;
   label: string;
+  rotation?: number;
+}
+
+export interface WorkspaceCanvas {
+  w: number;
+  h: number;
 }
 
 export interface WorkspaceState {
   booths: AdapterBooth[];
   objects: AdapterPlaced[];
   background: AdapterBackground | null;
+  canvas?: WorkspaceCanvas;
 }
 
 /** Unified external model — one collection, one shape. */
