@@ -757,8 +757,8 @@ function BoothShape({
 }
 
 // ─── Blank canvas chrome (non-interactive, never creates venue objects) ──────
-function CanvasChrome({ showGrid }: { showGrid: boolean }) {
-  const W = WORLD_W, H = WORLD_H;
+function CanvasChrome({ showGrid, worldW, worldH }: { showGrid: boolean; worldW: number; worldH: number }) {
+  const W = worldW, H = worldH;
   const rulerSize = 24;
   return (
     <g pointerEvents="none">
