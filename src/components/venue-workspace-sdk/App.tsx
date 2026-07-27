@@ -1200,9 +1200,13 @@ export default function WorkspaceApp() {
   useEffect(() => { setPlaced(ctx?.objects ?? []); }, [ctx?.objects]);
 
   // Background (image upload or satellite map). Rendered behind everything.
-  type Background = { url: string; x: number; y: number; w: number; h: number; opacity: number; locked: boolean; label: string } | null;
+  type Background = { url: string; x: number; y: number; w: number; h: number; opacity: number; locked: boolean; label: string; rotation?: number } | null;
   const bgStorageKey = `ws-bg::${ctx?.venueName ?? "default"}::${ctx?.eventName ?? "default"}`;
   const [background, setBackground] = useState<Background>(() => ctx?.initialBackground ?? null);
+  const [canvasSize, setCanvasSize] = useState<{ w: number; h: number }>(() => ctx?.initialCanvas ?? { w: DEFAULT_WORLD_W, h: DEFAULT_WORLD_H });
+  useEffect(() => { if (ctx?.initialCanvas) setCanvasSize(ctx.initialCanvas); }, [ctx?.initialCanvas]);
+  const WORLD_W = canvasSize.w;
+  const WORLD_H = canvasSize.h;
   const bgLoadedRef = useRef(false);
   useEffect(() => {
     if (typeof window === "undefined") return;
