@@ -246,6 +246,7 @@ export function toLayout(state: WorkspaceState): {
 
   const settings: Record<string, unknown> = {};
   if (state.background) settings.background = { ...state.background };
+  if (state.canvas) settings.canvas = { ...state.canvas };
 
   return { elements, settings };
 }
