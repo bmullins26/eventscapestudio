@@ -1383,7 +1383,8 @@ export default function WorkspaceApp() {
     | { kind: "marquee"; start: {x:number;y:number}; end: {x:number;y:number}; add: boolean }
     | { kind: "pan"; startClient: {x:number;y:number}; startPan: {x:number;y:number} }
     | { kind: "bg-drag"; startWorld: {x:number;y:number}; orig: {x:number;y:number} }
-    | { kind: "bg-resize"; handle: string; startWorld: {x:number;y:number}; orig: {x:number;y:number;w:number;h:number} };
+    | { kind: "bg-resize"; handle: string; startWorld: {x:number;y:number}; orig: {x:number;y:number;w:number;h:number} }
+    | { kind: "bg-rotate"; center: {x:number;y:number}; startAngle: number; origRot: number };
   const gestureRef = useRef<Gesture>({ kind: "idle" });
   const [marquee, setMarquee] = useState<null | {x:number;y:number;w:number;h:number}>(null);
 
