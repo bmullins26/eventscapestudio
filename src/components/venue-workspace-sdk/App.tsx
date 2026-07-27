@@ -37,6 +37,8 @@ export type WorkspaceCtx = {
   objects?: PlacedObj[] | null;
   /** Initial background layer. */
   initialBackground?: WorkspaceSaveState["background"];
+  /** Initial world canvas dimensions (world units). Optional; defaults to 1110×560. */
+  initialCanvas?: { w: number; h: number };
   /** Blank is production default; examples must opt in explicitly. */
   workspaceMode?: WorkspaceMode;
   /** Read-only demo mode — disables save/publish. */
