@@ -1306,8 +1306,8 @@ export default function WorkspaceApp() {
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "dirty">("saved");
   const initialSigRef = useRef<string | null>(null);
   const currentSig = useMemo(
-    () => JSON.stringify({ b: booths, p: placed, bg: background }),
-    [booths, placed, background],
+    () => JSON.stringify({ b: booths, p: placed, bg: background, cv: canvasSize }),
+    [booths, placed, background, canvasSize],
   );
   useEffect(() => {
     // Hydrate baseline after the first render receives ctx.
