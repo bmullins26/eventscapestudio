@@ -161,7 +161,7 @@ const CANOPY_COLORS: Record<string, { top: string; mid: string }> = {
   "Sponsor":  { top: "#8B0000", mid: "#A01010" },
 };
 const DEFAULT_CANOPY = { top: "#3A4A5A", mid: "#4A5A6A" };
-const WORLD_W = 1110, WORLD_H = 560;
+const DEFAULT_WORLD_W = 1110, DEFAULT_WORLD_H = 560;
 const GRID_SIZE = 12;
 
 // ─── Rental Options registry (extensible: add a variant → renderer picks it up) ─
