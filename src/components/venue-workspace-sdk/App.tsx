@@ -2151,6 +2151,40 @@ export default function WorkspaceApp() {
 
                 </div>
               )}
+
+              <div className="border-t border-border pt-2 space-y-2">
+                <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Canvas size</div>
+                <div className="flex items-center gap-1.5">
+                  <label className="text-[10px] text-muted-foreground w-10">Width</label>
+                  <input
+                    type="number" min={200} max={20000} step={10}
+                    value={canvasSize.w}
+                    onChange={(e)=>{ const w = Number(e.target.value); if (!isNaN(w) && w>=200) setCanvasSize(s=>({ ...s, w })); }}
+                    className="flex-1 h-7 text-[11px] px-2 rounded border border-border bg-input text-foreground"
+                  />
+                  <label className="text-[10px] text-muted-foreground w-10 pl-1">Height</label>
+                  <input
+                    type="number" min={200} max={20000} step={10}
+                    value={canvasSize.h}
+                    onChange={(e)=>{ const h = Number(e.target.value); if (!isNaN(h) && h>=200) setCanvasSize(s=>({ ...s, h })); }}
+                    className="flex-1 h-7 text-[11px] px-2 rounded border border-border bg-input text-foreground"
+                  />
+                </div>
+                <div className="flex gap-1.5">
+                  {[
+                    { label: "Small", w: 800, h: 500 },
+                    { label: "Default", w: DEFAULT_WORLD_W, h: DEFAULT_WORLD_H },
+                    { label: "Large", w: 2000, h: 1200 },
+                    { label: "Huge", w: 4000, h: 2400 },
+                  ].map(p => (
+                    <button key={p.label}
+                      onClick={()=>setCanvasSize({ w: p.w, h: p.h })}
+                      className="flex-1 h-7 text-[10px] bg-secondary hover:bg-muted border border-border rounded"
+                    >{p.label}</button>
+                  ))}
+                </div>
+                <div className="text-[10px] text-muted-foreground">World units (feet-ish). Change resizes the workspace stage.</div>
+              </div>
             </div>
           )}
         </div>
