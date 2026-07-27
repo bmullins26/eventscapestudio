@@ -25,7 +25,8 @@ type WorkspaceMode = "blank" | "example";
 export type WorkspaceSaveState = {
   booths: Booth[];
   objects: PlacedObj[];
-  background: { url: string; x: number; y: number; w: number; h: number; opacity: number; locked: boolean; label: string } | null;
+  background: { url: string; x: number; y: number; w: number; h: number; opacity: number; locked: boolean; label: string; rotation?: number } | null;
+  canvas?: { w: number; h: number };
 };
 export type WorkspaceCtx = {
   venueName: string;
@@ -36,6 +37,8 @@ export type WorkspaceCtx = {
   objects?: PlacedObj[] | null;
   /** Initial background layer. */
   initialBackground?: WorkspaceSaveState["background"];
+  /** Initial world canvas dimensions (world units). Optional; defaults to 1110×560. */
+  initialCanvas?: { w: number; h: number };
   /** Blank is production default; examples must opt in explicitly. */
   workspaceMode?: WorkspaceMode;
   /** Read-only demo mode — disables save/publish. */
@@ -158,7 +161,7 @@ const CANOPY_COLORS: Record<string, { top: string; mid: string }> = {
   "Sponsor":  { top: "#8B0000", mid: "#A01010" },
 };
 const DEFAULT_CANOPY = { top: "#3A4A5A", mid: "#4A5A6A" };
-const WORLD_W = 1110, WORLD_H = 560;
+const DEFAULT_WORLD_W = 1110, DEFAULT_WORLD_H = 560;
 const GRID_SIZE = 12;
 
 // ─── Rental Options registry (extensible: add a variant → renderer picks it up) ─
@@ -754,8 +757,8 @@ function BoothShape({
 }
 
 // ─── Blank canvas chrome (non-interactive, never creates venue objects) ──────
-function CanvasChrome({ showGrid }: { showGrid: boolean }) {
-  const W = WORLD_W, H = WORLD_H;
+function CanvasChrome({ showGrid, worldW, worldH }: { showGrid: boolean; worldW: number; worldH: number }) {
+  const W = worldW, H = worldH;
   const rulerSize = 24;
   return (
     <g pointerEvents="none">
@@ -1197,9 +1200,13 @@ export default function WorkspaceApp() {
   useEffect(() => { setPlaced(ctx?.objects ?? []); }, [ctx?.objects]);
 
   // Background (image upload or satellite map). Rendered behind everything.
-  type Background = { url: string; x: number; y: number; w: number; h: number; opacity: number; locked: boolean; label: string } | null;
+  type Background = { url: string; x: number; y: number; w: number; h: number; opacity: number; locked: boolean; label: string; rotation?: number } | null;
   const bgStorageKey = `ws-bg::${ctx?.venueName ?? "default"}::${ctx?.eventName ?? "default"}`;
   const [background, setBackground] = useState<Background>(() => ctx?.initialBackground ?? null);
+  const [canvasSize, setCanvasSize] = useState<{ w: number; h: number }>(() => ctx?.initialCanvas ?? { w: DEFAULT_WORLD_W, h: DEFAULT_WORLD_H });
+  useEffect(() => { if (ctx?.initialCanvas) setCanvasSize(ctx.initialCanvas); }, [ctx?.initialCanvas]);
+  const WORLD_W = canvasSize.w;
+  const WORLD_H = canvasSize.h;
   const bgLoadedRef = useRef(false);
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -1285,6 +1292,13 @@ export default function WorkspaceApp() {
     if (!background || background.locked) return;
     e.stopPropagation();
     (e.target as Element).setPointerCapture?.(e.pointerId);
+    if (handle === "rotate") {
+      const center = { x: background.x + background.w/2, y: background.y + background.h/2 };
+      const w = clientToWorld(e.clientX, e.clientY);
+      const startAngle = Math.atan2(w.y - center.y, w.x - center.x) * 180/Math.PI;
+      gestureRef.current = { kind: "bg-rotate", center, startAngle, origRot: background.rotation ?? 0 };
+      return;
+    }
     gestureRef.current = { kind: "bg-resize", handle, startWorld: clientToWorld(e.clientX, e.clientY), orig: { x: background.x, y: background.y, w: background.w, h: background.h } };
   };
 
@@ -1299,8 +1313,8 @@ export default function WorkspaceApp() {
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "dirty">("saved");
   const initialSigRef = useRef<string | null>(null);
   const currentSig = useMemo(
-    () => JSON.stringify({ b: booths, p: placed, bg: background }),
-    [booths, placed, background],
+    () => JSON.stringify({ b: booths, p: placed, bg: background, cv: canvasSize }),
+    [booths, placed, background, canvasSize],
   );
   useEffect(() => {
     // Hydrate baseline after the first render receives ctx.
@@ -1376,7 +1390,8 @@ export default function WorkspaceApp() {
     | { kind: "marquee"; start: {x:number;y:number}; end: {x:number;y:number}; add: boolean }
     | { kind: "pan"; startClient: {x:number;y:number}; startPan: {x:number;y:number} }
     | { kind: "bg-drag"; startWorld: {x:number;y:number}; orig: {x:number;y:number} }
-    | { kind: "bg-resize"; handle: string; startWorld: {x:number;y:number}; orig: {x:number;y:number;w:number;h:number} };
+    | { kind: "bg-resize"; handle: string; startWorld: {x:number;y:number}; orig: {x:number;y:number;w:number;h:number} }
+    | { kind: "bg-rotate"; center: {x:number;y:number}; startAngle: number; origRot: number };
   const gestureRef = useRef<Gesture>({ kind: "idle" });
   const [marquee, setMarquee] = useState<null | {x:number;y:number;w:number;h:number}>(null);
 
@@ -1559,6 +1574,12 @@ export default function WorkspaceApp() {
       if (g.handle.includes("w")) { const nx = Math.min(g.orig.x + dx, g.orig.x + g.orig.w - 20); ww = g.orig.w + (g.orig.x - nx); x = nx; }
       if (g.handle.includes("n")) { const ny = Math.min(g.orig.y + dy, g.orig.y + g.orig.h - 20); hh = g.orig.h + (g.orig.y - ny); y = ny; }
       setBackground(b => b ? { ...b, x, y, w: ww, h: hh } : b);
+    } else if (g.kind === "bg-rotate") {
+      const cur = Math.atan2(w.y - g.center.y, w.x - g.center.x) * 180/Math.PI;
+      let next = g.origRot + (cur - g.startAngle);
+      if (e.shiftKey) next = Math.round(next / 15) * 15;
+      next = ((next % 360) + 360) % 360;
+      setBackground(b => b ? { ...b, rotation: next } : b);
     } else if (g.kind === "rotate") {
       const cur = Math.atan2(w.y - g.center.y, w.x - g.center.x) * 180/Math.PI;
       let next = g.origRot + (cur - g.startAngle);
@@ -1699,8 +1720,8 @@ export default function WorkspaceApp() {
     if (ctx?.onSave) {
       setSaveStatus("saving");
       try {
-        await ctx.onSave({ booths, objects: placed, background });
-        initialSigRef.current = JSON.stringify({ b: booths, p: placed, bg: background });
+        await ctx.onSave({ booths, objects: placed, background, canvas: canvasSize });
+        initialSigRef.current = JSON.stringify({ b: booths, p: placed, bg: background, cv: canvasSize });
         setSaveStatus("saved");
         setDirty(new Set());
         toast.success("Layout saved");
@@ -1912,9 +1933,13 @@ export default function WorkspaceApp() {
               }}
             >
               <g transform={`translate(${pan.x} ${pan.y}) scale(${zoom})`}>
-                <CanvasChrome showGrid={showGrid}/>
-                {background && (
-                  <g>
+                <CanvasChrome showGrid={showGrid} worldW={WORLD_W} worldH={WORLD_H}/>
+                {background && (() => {
+                  const cx = background.x + background.w/2;
+                  const cy = background.y + background.h/2;
+                  const rot = background.rotation ?? 0;
+                  return (
+                  <g transform={`rotate(${rot} ${cx} ${cy})`}>
                     <image
                       href={background.url}
                       x={background.x} y={background.y}
@@ -1938,10 +1963,18 @@ export default function WorkspaceApp() {
                             style={{ cursor: hn.length===2 ? `${hn}-resize` : `${hn}-resize` }}
                             onPointerDown={(e)=>onBgHandlePointerDown(e, hn)}/>;
                         })}
+                        {/* rotate handle above top edge */}
+                        <line x1={cx} y1={background.y} x2={cx} y2={background.y - 22/zoom}
+                          stroke="#3B82F6" strokeWidth={1.5/zoom} pointerEvents="none"/>
+                        <circle cx={cx} cy={background.y - 22/zoom} r={7/zoom}
+                          fill="#fff" stroke="#3B82F6" strokeWidth={1.5/zoom}
+                          style={{ cursor: "grab" }}
+                          onPointerDown={(e)=>onBgHandlePointerDown(e, "rotate")}/>
                       </>
                     )}
                   </g>
-                )}
+                  );
+                })()}
 
 
                 {placed.map(p => (
@@ -2083,8 +2116,23 @@ export default function WorkspaceApp() {
                     />
                     <span className="text-[10px] text-muted-foreground w-10 text-right">{Math.round(background.h)}</span>
                   </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-muted-foreground w-14">Rotation</span>
+                    <input
+                      type="range" min={0} max={360} step={1}
+                      value={background.rotation ?? 0}
+                      onChange={(e)=>{ const r = Number(e.target.value); setBackground(b => b ? {...b, rotation: r} : b); }}
+                      className="flex-1"
+                    />
+                    <input
+                      type="number" min={0} max={360}
+                      value={Math.round(background.rotation ?? 0)}
+                      onChange={(e)=>{ const r = Number(e.target.value); setBackground(b => b ? {...b, rotation: isNaN(r)?0:r} : b); }}
+                      className="w-14 h-6 text-[10px] px-1 rounded border border-border bg-input text-foreground text-right"
+                    />
+                  </div>
                   <div className="text-[10px] text-muted-foreground">
-                    {background.locked ? "Locked — unlock to drag/resize on canvas" : "Drag image to move · Corner handles to resize"}
+                    {background.locked ? "Locked — unlock to move, resize, and rotate on canvas" : "Drag image to move · Corner handles resize · Top handle rotates"}
                   </div>
                   <div className="flex gap-1.5">
                     <button
@@ -2103,6 +2151,40 @@ export default function WorkspaceApp() {
 
                 </div>
               )}
+
+              <div className="border-t border-border pt-2 space-y-2">
+                <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Canvas size</div>
+                <div className="flex items-center gap-1.5">
+                  <label className="text-[10px] text-muted-foreground w-10">Width</label>
+                  <input
+                    type="number" min={200} max={20000} step={10}
+                    value={canvasSize.w}
+                    onChange={(e)=>{ const w = Number(e.target.value); if (!isNaN(w) && w>=200) setCanvasSize(s=>({ ...s, w })); }}
+                    className="flex-1 h-7 text-[11px] px-2 rounded border border-border bg-input text-foreground"
+                  />
+                  <label className="text-[10px] text-muted-foreground w-10 pl-1">Height</label>
+                  <input
+                    type="number" min={200} max={20000} step={10}
+                    value={canvasSize.h}
+                    onChange={(e)=>{ const h = Number(e.target.value); if (!isNaN(h) && h>=200) setCanvasSize(s=>({ ...s, h })); }}
+                    className="flex-1 h-7 text-[11px] px-2 rounded border border-border bg-input text-foreground"
+                  />
+                </div>
+                <div className="flex gap-1.5">
+                  {[
+                    { label: "Small", w: 800, h: 500 },
+                    { label: "Default", w: DEFAULT_WORLD_W, h: DEFAULT_WORLD_H },
+                    { label: "Large", w: 2000, h: 1200 },
+                    { label: "Huge", w: 4000, h: 2400 },
+                  ].map(p => (
+                    <button key={p.label}
+                      onClick={()=>setCanvasSize({ w: p.w, h: p.h })}
+                      className="flex-1 h-7 text-[10px] bg-secondary hover:bg-muted border border-border rounded"
+                    >{p.label}</button>
+                  ))}
+                </div>
+                <div className="text-[10px] text-muted-foreground">World units (feet-ish). Change resizes the workspace stage.</div>
+              </div>
             </div>
           )}
         </div>

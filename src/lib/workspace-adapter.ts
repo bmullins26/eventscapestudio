@@ -68,12 +68,19 @@ export interface AdapterBackground {
   opacity: number;
   locked: boolean;
   label: string;
+  rotation?: number;
+}
+
+export interface WorkspaceCanvas {
+  w: number;
+  h: number;
 }
 
 export interface WorkspaceState {
   booths: AdapterBooth[];
   objects: AdapterPlaced[];
   background: AdapterBackground | null;
+  canvas?: WorkspaceCanvas;
 }
 
 /** Unified external model — one collection, one shape. */
@@ -176,10 +183,16 @@ export function fromLayout(elements: Array<Record<string, unknown>> | null | und
         opacity: Number(bgSrc.opacity ?? 0.9),
         locked: Boolean(bgSrc.locked),
         label: String(bgSrc.label ?? bgSrc.attribution ?? "Background"),
+        rotation: Number(bgSrc.rotation ?? 0),
       }
     : null;
 
-  return { booths, objects, background };
+  const canvasSrc = (settings?.canvas ?? null) as Record<string, unknown> | null;
+  const canvas: WorkspaceCanvas | undefined = canvasSrc && (canvasSrc.w || canvasSrc.h)
+    ? { w: Number(canvasSrc.w ?? 1110), h: Number(canvasSrc.h ?? 560) }
+    : undefined;
+
+  return { booths, objects, background, canvas };
 }
 
 /* ------------------------------- To persistence ----------------------------- */
@@ -233,6 +246,7 @@ export function toLayout(state: WorkspaceState): {
 
   const settings: Record<string, unknown> = {};
   if (state.background) settings.background = { ...state.background };
+  if (state.canvas) settings.canvas = { ...state.canvas };
 
   return { elements, settings };
 }
