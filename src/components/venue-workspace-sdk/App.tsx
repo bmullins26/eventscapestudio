@@ -1574,6 +1574,12 @@ export default function WorkspaceApp() {
       if (g.handle.includes("w")) { const nx = Math.min(g.orig.x + dx, g.orig.x + g.orig.w - 20); ww = g.orig.w + (g.orig.x - nx); x = nx; }
       if (g.handle.includes("n")) { const ny = Math.min(g.orig.y + dy, g.orig.y + g.orig.h - 20); hh = g.orig.h + (g.orig.y - ny); y = ny; }
       setBackground(b => b ? { ...b, x, y, w: ww, h: hh } : b);
+    } else if (g.kind === "bg-rotate") {
+      const cur = Math.atan2(w.y - g.center.y, w.x - g.center.x) * 180/Math.PI;
+      let next = g.origRot + (cur - g.startAngle);
+      if (e.shiftKey) next = Math.round(next / 15) * 15;
+      next = ((next % 360) + 360) % 360;
+      setBackground(b => b ? { ...b, rotation: next } : b);
     } else if (g.kind === "rotate") {
       const cur = Math.atan2(w.y - g.center.y, w.x - g.center.x) * 180/Math.PI;
       let next = g.origRot + (cur - g.startAngle);
