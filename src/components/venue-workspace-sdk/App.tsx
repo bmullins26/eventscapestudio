@@ -25,7 +25,8 @@ type WorkspaceMode = "blank" | "example";
 export type WorkspaceSaveState = {
   booths: Booth[];
   objects: PlacedObj[];
-  background: { url: string; x: number; y: number; w: number; h: number; opacity: number; locked: boolean; label: string } | null;
+  background: { url: string; x: number; y: number; w: number; h: number; opacity: number; locked: boolean; label: string; rotation?: number } | null;
+  canvas?: { w: number; h: number };
 };
 export type WorkspaceCtx = {
   venueName: string;
