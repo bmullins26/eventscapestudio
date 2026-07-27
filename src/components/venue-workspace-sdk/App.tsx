@@ -1292,6 +1292,13 @@ export default function WorkspaceApp() {
     if (!background || background.locked) return;
     e.stopPropagation();
     (e.target as Element).setPointerCapture?.(e.pointerId);
+    if (handle === "rotate") {
+      const center = { x: background.x + background.w/2, y: background.y + background.h/2 };
+      const w = clientToWorld(e.clientX, e.clientY);
+      const startAngle = Math.atan2(w.y - center.y, w.x - center.x) * 180/Math.PI;
+      gestureRef.current = { kind: "bg-rotate", center, startAngle, origRot: background.rotation ?? 0 };
+      return;
+    }
     gestureRef.current = { kind: "bg-resize", handle, startWorld: clientToWorld(e.clientX, e.clientY), orig: { x: background.x, y: background.y, w: background.w, h: background.h } };
   };
 
