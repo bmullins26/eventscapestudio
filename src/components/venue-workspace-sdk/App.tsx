@@ -1934,8 +1934,12 @@ export default function WorkspaceApp() {
             >
               <g transform={`translate(${pan.x} ${pan.y}) scale(${zoom})`}>
                 <CanvasChrome showGrid={showGrid} worldW={WORLD_W} worldH={WORLD_H}/>
-                {background && (
-                  <g>
+                {background && (() => {
+                  const cx = background.x + background.w/2;
+                  const cy = background.y + background.h/2;
+                  const rot = background.rotation ?? 0;
+                  return (
+                  <g transform={`rotate(${rot} ${cx} ${cy})`}>
                     <image
                       href={background.url}
                       x={background.x} y={background.y}
@@ -1959,10 +1963,18 @@ export default function WorkspaceApp() {
                             style={{ cursor: hn.length===2 ? `${hn}-resize` : `${hn}-resize` }}
                             onPointerDown={(e)=>onBgHandlePointerDown(e, hn)}/>;
                         })}
+                        {/* rotate handle above top edge */}
+                        <line x1={cx} y1={background.y} x2={cx} y2={background.y - 22/zoom}
+                          stroke="#3B82F6" strokeWidth={1.5/zoom} pointerEvents="none"/>
+                        <circle cx={cx} cy={background.y - 22/zoom} r={7/zoom}
+                          fill="#fff" stroke="#3B82F6" strokeWidth={1.5/zoom}
+                          style={{ cursor: "grab" }}
+                          onPointerDown={(e)=>onBgHandlePointerDown(e, "rotate")}/>
                       </>
                     )}
                   </g>
-                )}
+                  );
+                })()}
 
 
                 {placed.map(p => (
