@@ -155,6 +155,7 @@ const PatchBoothInput = z.object({
   staff_notes: z.string().nullable().optional(),
   vendor_notes: z.string().nullable().optional(),
   status: z.enum(["available", "held", "assigned", "occupied", "blocked"]).optional(),
+  vendor_profile_id: z.string().uuid().nullable().optional(),
 });
 
 export const patchEventBooth = createServerFn({ method: "POST" })
