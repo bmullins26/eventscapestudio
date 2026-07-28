@@ -991,6 +991,81 @@ function Toggle({ label, icon:Icon, active, onClick }: { label:string; icon:Reac
   );
 }
 
+// ─── Vendor section (inside Inspector) ──────────────────────────────────────
+function VendorInspectorSection({
+  booth,
+  onPatch,
+}: {
+  booth: Booth;
+  onPatch?: (patch: Partial<Booth>) => void;
+}) {
+  const ctx = useWorkspaceCtx();
+  const [open, setOpen] = useState(false);
+  const canPick = !!ctx?.organizationId && !!ctx?.onAssignVendor;
+
+  return (
+    <>
+      <Section label="Vendor">
+        {booth.vendor ? (
+          <>
+            <Row label="Business" value={booth.vendor} />
+            <Row label="Category" value={booth.category || "—"} />
+            {canPick && (
+              <div className="flex gap-1.5 mt-1.5">
+                <button
+                  onClick={() => setOpen(true)}
+                  className="flex-1 text-[11px] py-1.5 rounded border border-border text-foreground bg-secondary hover:bg-muted"
+                >
+                  Change
+                </button>
+                <button
+                  onClick={() => {
+                    ctx!.onAssignVendor!(booth.id, { vendor_profile_id: null, vendor_name: null });
+                    onPatch?.({ vendor: undefined, status: "available" });
+                    toast.success("Vendor removed");
+                  }}
+                  className="flex-1 text-[11px] py-1.5 rounded border border-destructive/40 text-destructive hover:bg-destructive/10"
+                >
+                  Remove
+                </button>
+              </div>
+            )}
+          </>
+        ) : (
+          <button
+            className="w-full text-xs text-primary border border-dashed border-primary/30 rounded py-2 hover:bg-primary/10"
+            onClick={() => {
+              if (!canPick) return toast.message("Vendor picker unavailable in venue mode");
+              setOpen(true);
+            }}
+          >
+            + Assign Vendor
+          </button>
+        )}
+      </Section>
+      {canPick && (
+        <VendorPickerDialog
+          open={open}
+          onOpenChange={setOpen}
+          organizationId={ctx!.organizationId!}
+          currentVendorName={booth.vendor ?? null}
+          onSelect={(v) => {
+            const category = v.categories[0] ?? booth.category ?? null;
+            ctx!.onAssignVendor!(booth.id, {
+              vendor_profile_id: v.vendor_profile_id,
+              vendor_name: v.business_name,
+              category,
+            });
+            onPatch?.({ vendor: v.business_name, category: category ?? undefined, status: "reserved" });
+            toast.success(`Assigned ${v.business_name}`);
+          }}
+        />
+      )}
+    </>
+  );
+}
+
+
 // ─── Inspector ───────────────────────────────────────────────────────────────
 function InspectorContent({
   booth, count, onPatch, onDelete, onDuplicate,
