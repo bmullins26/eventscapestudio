@@ -50,6 +50,13 @@ export type WorkspaceCtx = {
   onCheckOut?: (id: string) => void;
   onOpenVendor?: (vendorProfileId: string) => void;
   onLayerToggle?: (id: string, patch: { visible?: boolean; locked?: boolean }) => void;
+  /** Organization id — required to enable vendor picker. */
+  organizationId?: string;
+  /** Assign or clear a vendor for a booth. Pass null to clear. */
+  onAssignVendor?: (
+    boothSdkId: string,
+    args: { vendor_profile_id: string | null; vendor_name: string | null; category?: string | null },
+  ) => void;
 };
 const WorkspaceDataContext = createContext<WorkspaceCtx | null>(null);
 export function WorkspaceDataProvider({ value, children }: { value: WorkspaceCtx; children: React.ReactNode }) {
