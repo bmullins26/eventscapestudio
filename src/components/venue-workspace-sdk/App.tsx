@@ -17,6 +17,7 @@ import {
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { fetchSatelliteImageForWorkspace } from "@/lib/workspace-background.functions";
+import { VendorPickerDialog } from "./VendorPickerDialog";
 
 
 // ─── Data context ────────────────────────────────────────────────────────────
@@ -1026,13 +1027,8 @@ function InspectorContent({
           ))}
         </div>
       </Section>
-      <Section label="Vendor">
-        {booth.vendor ? (
-          <><Row label="Business" value={booth.vendor}/><Row label="Category" value={booth.category||"—"}/></>
-        ) : (
-          <button className="w-full text-xs text-primary border border-dashed border-primary/30 rounded py-2 hover:bg-primary/10" onClick={()=>toast.message("Vendor picker coming soon")}>+ Assign Vendor</button>
-        )}
-      </Section>
+      <VendorInspectorSection booth={booth} onPatch={onPatch} />
+
       <Section label="Reservation">
         <Row label="Price" value={`$${booth.price}`}/>
         <input type="number" defaultValue={booth.price} onBlur={(e)=>{
