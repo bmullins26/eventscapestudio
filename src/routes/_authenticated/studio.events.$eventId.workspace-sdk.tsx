@@ -88,6 +88,7 @@ function WorkspaceRoute() {
   const ctx: WorkspaceCtx = {
     venueName: data.venue?.name ?? "Venue",
     eventName: data.event?.name ?? "Event",
+    organizationId: data.event?.organization_id,
     booths,
     layers,
     onPatchBooth: (sdkId, patch) => {
@@ -104,6 +105,18 @@ function WorkspaceRoute() {
           ...(patch.corner !== undefined ? { is_corner: !!patch.corner } : {}),
           ...(patch.staff_notes !== undefined ? { staff_notes: patch.staff_notes } : {}),
           ...(patch.vendor_notes !== undefined ? { vendor_notes: patch.vendor_notes } : {}),
+        },
+      });
+    },
+    onAssignVendor: (sdkId, args) => {
+      const src = (data.booths ?? []).find((b: any) => (b.code ?? b.id) === sdkId);
+      if (!src) return;
+      boothMut.mutate({
+        data: {
+          id: src.id,
+          vendor_profile_id: args.vendor_profile_id,
+          status: args.vendor_profile_id ? "assigned" : "available",
+          ...(args.category !== undefined ? { category: args.category } : {}),
         },
       });
     },
