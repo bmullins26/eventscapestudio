@@ -114,6 +114,7 @@ interface Booth {
   x: number;  y: number;  w: number;  h: number;
   status: BoothStatus;
   vendor?: string; category?: string;
+  vendor_profile_id?: string | null;
   price: number; electric: boolean; water: boolean;
   corner: boolean; premium: boolean; size: string;
   variant?: RentalVariant;
