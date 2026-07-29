@@ -22,6 +22,7 @@ export interface AdapterBooth {
   x: number; y: number; w: number; h: number;
   status: BoothStatus;
   vendor?: string;
+  vendor_profile_id?: string | null;
   category?: string;
   price: number;
   electric: boolean;
@@ -136,6 +137,7 @@ export function fromLayout(elements: Array<Record<string, unknown>> | null | und
         x, y, w, h,
         status: (el.status as BoothStatus | undefined) ?? "available",
         vendor: (el.vendor as string | undefined) ?? undefined,
+        vendor_profile_id: (el.vendor_profile_id as string | null | undefined) ?? null,
         category: (el.category as string | undefined) ?? undefined,
         price: Number(el.price ?? 0),
         electric: Boolean(el.isElectric ?? el.electric),
@@ -215,6 +217,8 @@ export function toLayout(state: WorkspaceState): {
       status: b.status,
       price: b.price,
       category: b.category ?? null,
+      vendor: b.vendor ?? null,
+      vendor_profile_id: b.vendor_profile_id ?? null,
       isElectric: b.electric,
       isWater: b.water,
       isCorner: b.corner,
