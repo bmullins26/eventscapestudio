@@ -65,7 +65,8 @@ function VenueDesignerPage() {
 
   const ctx: WorkspaceCtx = {
     venueName: data.venue.name ?? "Venue",
-    eventName: "", // venue mode
+    eventName: "", // venue mode — vendor assignments persist as Venue Assignments
+    organizationId: data.venue.organization_id,
     booths,
     objects,
     initialBackground: background,
