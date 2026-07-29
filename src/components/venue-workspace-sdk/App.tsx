@@ -1002,7 +1002,16 @@ function VendorInspectorSection({
 }) {
   const ctx = useWorkspaceCtx();
   const [open, setOpen] = useState(false);
-  const canPick = !!ctx?.organizationId && !!ctx?.onAssignVendor;
+  // Vendor picker is available whenever we know the organization.
+  // In Event Mode the parent wires onAssignVendor to persist an event
+  // reservation; in Venue Mode we simply record a Venue Assignment on the
+  // booth (persisted through the workspace save/onPatch pipeline).
+  const canPick = !!ctx?.organizationId;
+  const clearAssignment = () => {
+    ctx?.onAssignVendor?.(booth.id, { vendor_profile_id: null, vendor_name: null });
+    onPatch?.({ vendor: undefined, vendor_profile_id: null, status: "available" });
+    toast.success("Vendor removed");
+  };
 
   return (
     <>
@@ -1020,11 +1029,7 @@ function VendorInspectorSection({
                   Change
                 </button>
                 <button
-                  onClick={() => {
-                    ctx!.onAssignVendor!(booth.id, { vendor_profile_id: null, vendor_name: null });
-                    onPatch?.({ vendor: undefined, status: "available" });
-                    toast.success("Vendor removed");
-                  }}
+                  onClick={clearAssignment}
                   className="flex-1 text-[11px] py-1.5 rounded border border-destructive/40 text-destructive hover:bg-destructive/10"
                 >
                   Remove
@@ -1034,9 +1039,10 @@ function VendorInspectorSection({
           </>
         ) : (
           <button
-            className="w-full text-xs text-primary border border-dashed border-primary/30 rounded py-2 hover:bg-primary/10"
+            className="w-full text-xs text-primary border border-dashed border-primary/30 rounded py-2 hover:bg-primary/10 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={!canPick}
             onClick={() => {
-              if (!canPick) return toast.message("Vendor picker unavailable in venue mode");
+              if (!canPick) return;
               setOpen(true);
             }}
           >
@@ -1052,12 +1058,17 @@ function VendorInspectorSection({
           currentVendorName={booth.vendor ?? null}
           onSelect={(v) => {
             const category = v.categories[0] ?? booth.category ?? null;
-            ctx!.onAssignVendor!(booth.id, {
+            ctx?.onAssignVendor?.(booth.id, {
               vendor_profile_id: v.vendor_profile_id,
               vendor_name: v.business_name,
               category,
             });
-            onPatch?.({ vendor: v.business_name, category: category ?? undefined, status: "reserved" });
+            onPatch?.({
+              vendor: v.business_name,
+              vendor_profile_id: v.vendor_profile_id,
+              category: category ?? undefined,
+              status: "reserved",
+            });
             toast.success(`Assigned ${v.business_name}`);
           }}
         />
