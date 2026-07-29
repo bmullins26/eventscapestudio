@@ -217,6 +217,8 @@ export function toLayout(state: WorkspaceState): {
       status: b.status,
       price: b.price,
       category: b.category ?? null,
+      vendor: b.vendor ?? null,
+      vendor_profile_id: b.vendor_profile_id ?? null,
       isElectric: b.electric,
       isWater: b.water,
       isCorner: b.corner,
