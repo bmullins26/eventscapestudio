@@ -137,6 +137,7 @@ export function fromLayout(elements: Array<Record<string, unknown>> | null | und
         x, y, w, h,
         status: (el.status as BoothStatus | undefined) ?? "available",
         vendor: (el.vendor as string | undefined) ?? undefined,
+        vendor_profile_id: (el.vendor_profile_id as string | null | undefined) ?? null,
         category: (el.category as string | undefined) ?? undefined,
         price: Number(el.price ?? 0),
         electric: Boolean(el.isElectric ?? el.electric),
