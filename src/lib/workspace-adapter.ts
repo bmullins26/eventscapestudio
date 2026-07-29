@@ -22,6 +22,7 @@ export interface AdapterBooth {
   x: number; y: number; w: number; h: number;
   status: BoothStatus;
   vendor?: string;
+  vendor_profile_id?: string | null;
   category?: string;
   price: number;
   electric: boolean;
