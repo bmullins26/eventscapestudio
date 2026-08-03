@@ -81,7 +81,9 @@ export const ensureDevelopmentWorkspace = createServerFn({ method: "POST" })
     if (!ENABLE_DEV_ACCESS) return { seeded: false, reason: "development-access-disabled" as const };
 
     const { supabase, userId } = context;
-    const organization = await requireSuccess(await supabase
+    const deterministicSlug = `developer-${userId.replace(/-/g, "").slice(0, 12)}`;
+
+    let organization = await requireSuccess(await supabase
       .from("organizations")
       .select("id, name")
       .eq("owner_id", userId)
@@ -90,8 +92,47 @@ export const ensureDevelopmentWorkspace = createServerFn({ method: "POST" })
       .maybeSingle());
 
     if (!organization) {
+      try {
+        organization = await requireSuccess(await supabase
+          .from("organizations")
+          .insert({
+            name: "Developer Studio",
+            slug: deterministicSlug,
+            owner_id: userId,
+            subscription_tier: "starter",
+          })
+          .select("id, name")
+          .single());
+      } catch (error) {
+        if (error instanceof Error && error.message.includes("duplicate key")) {
+          organization = await requireSuccess(await supabase
+            .from("organizations")
+            .select("id, name")
+            .eq("owner_id", userId)
+            .order("created_at", { ascending: true })
+            .limit(1)
+            .maybeSingle());
+        } else {
+          throw error;
+        }
+      }
+    }
+
+    if (!organization) {
       return { seeded: false, reason: "no-user-owned-organization" as const };
     }
+
+    await requireSuccess(await supabase.from("user_roles").upsert({
+      user_id: userId,
+      role: "super_admin",
+    }, { onConflict: "user_id,role" }).select("role").maybeSingle());
+
+    await requireSuccess(await supabase.from("organization_members").upsert({
+      organization_id: organization.id,
+      user_id: userId,
+      title: "Owner",
+      joined_at: new Date().toISOString(),
+    }, { onConflict: "organization_id,user_id" }).select("id").maybeSingle());
 
     const venue = await requireSuccess(await supabase
       .from("venues")

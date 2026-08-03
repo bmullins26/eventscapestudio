@@ -17,14 +17,14 @@ function RoleRouter() {
     if (primarySurface === "admin") navigate({ to: "/admin", replace: true });
     else if (primarySurface === "portal") navigate({ to: "/portal", replace: true });
     else if (primarySurface === "studio") navigate({ to: "/studio", replace: true });
-  }, [loading, primarySurface, navigate]);
+  }, [loading, primarySurface, contextError, bootstrapMessage, navigate]);
 
   // If authenticated but roles haven't landed yet (race after SIGNED_IN), retry a couple of times.
   useEffect(() => {
     if (loading || contextError || bootstrapMessage || !isAuthenticated || roles.length > 0) return;
     const t = setTimeout(() => { void refresh(); }, 600);
     return () => clearTimeout(t);
-  }, [loading, isAuthenticated, roles.length, refresh]);
+  }, [loading, contextError, bootstrapMessage, isAuthenticated, roles.length, refresh]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">

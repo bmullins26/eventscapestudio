@@ -180,22 +180,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<AuthState>(() => {
     const activeOrg = organizations.find((o) => o.organizationId === activeOrgId) ?? null;
-    // DEVELOPMENT ONLY
     const hasDevelopmentAccess = ENABLE_DEV_ACCESS && !!session;
-    // DEVELOPMENT ONLY
-    // RLS determines the organizations in this list; do not query organizations
-    // that the authenticated user cannot already access.
-    const bootstrapMessage = hasDevelopmentAccess && organizations.length === 0
-      ? "No test organization is available to this account. Add the user to an existing test organization, or create test data first."
-      : null;
+    const bootstrapMessage = hasDevelopmentAccess ? null : contextError ? "We couldn't load your Studio access." : null;
     const effectiveContextError = hasDevelopmentAccess ? null : contextError;
-    const hasRole = (role: AppRole) => hasDevelopmentAccess || roles.includes(role);
-    const primaryRole = hasDevelopmentAccess
-      ? "organizer"
-      : ROLE_PRIORITY.find((r) => roles.includes(r)) ?? null;
+    const effectiveRoles = hasDevelopmentAccess ? Array.from(new Set([...(roles.includes("super_admin") ? ["super_admin" as AppRole] : []), ...(roles.includes("organizer") ? ["organizer" as AppRole] : [])])) : roles;
+    const hasRole = (role: AppRole) => hasDevelopmentAccess || effectiveRoles.includes(role);
+    const primaryRole = hasDevelopmentAccess ? "super_admin" : ROLE_PRIORITY.find((r) => effectiveRoles.includes(r)) ?? null;
     const hasPermission = (permission: string) => {
       if (hasDevelopmentAccess) return true;
-      if (roles.includes("super_admin")) return true;
+      if (effectiveRoles.includes("super_admin")) return true;
       if (!activeOrg) return false;
       if (activeOrg.isOwner) return true;
       return activeOrg.permissions.includes(permission);
@@ -206,18 +199,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       bootstrapMessage,
       user: session?.user ?? null,
       session,
-      roles,
+      roles: effectiveRoles,
       organizations,
       activeOrg,
       activeEventId,
       isAuthenticated: !!session,
       hasRole,
-      hasAnyRole: (list) => hasDevelopmentAccess || list.some((r) => roles.includes(r)),
+      hasAnyRole: (list) => hasDevelopmentAccess || list.some((r) => effectiveRoles.includes(r)),
       hasPermission,
       primaryRole,
-      primarySurface: roleToSurface(primaryRole),
-      setActiveOrgId,
-      setActiveEventId,
+      primarySurface: hasDevelopmentAccess ? "studio" : roleToSurface(primaryRole),
       refresh,
       signOut,
     };
