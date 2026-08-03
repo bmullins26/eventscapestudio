@@ -33,8 +33,12 @@ export interface AdapterBooth {
   variant?: "standard_booth" | "table_6ft" | "table_8ft" | "round_table" | "food_truck_space";
   rotation?: number;
   locked?: boolean;
+  hidden?: boolean;
   notes?: string;
+  tags?: string[];
+  layer_id?: string;
 }
+
 
 export type PlacedKind =
   | "tree" | "building" | "stage" | "parking" | "fence" | "rect" | "text"
@@ -57,11 +61,14 @@ export interface AdapterPlaced {
   label?: string;
   rotation?: number;
   locked?: boolean;
+  hidden?: boolean;
   notes?: string;
   tags?: string[];
+  layer_id?: string;
   furniture?: boolean;
   meta?: Record<string, unknown>;
 }
+
 
 export interface AdapterBackground {
   url: string;
@@ -127,7 +134,7 @@ export function fromLayout(elements: Array<Record<string, unknown>> | null | und
     const w = Number(el.w ?? 0);
     const h = Number(el.h ?? 0);
 
-    if (kind === "booth") {
+        if (kind === "booth") {
       const label = String(el.label ?? el.name ?? "");
       const { row, col } = parseRowCol(label);
       booths.push({
@@ -148,7 +155,10 @@ export function fromLayout(elements: Array<Record<string, unknown>> | null | und
         variant: (el.variant as AdapterBooth["variant"]) ?? undefined,
         rotation: Number(el.rotation ?? 0),
         locked: Boolean(el.locked),
+        hidden: Boolean(el.hidden),
         notes: (el.notes as string | undefined) ?? undefined,
+        tags: Array.isArray(el.tags) ? (el.tags as string[]) : undefined,
+        layer_id: el.layer_id ? String(el.layer_id) : undefined,
       });
       continue;
     }
@@ -167,11 +177,14 @@ export function fromLayout(elements: Array<Record<string, unknown>> | null | und
       label: (el.name as string | undefined) ?? (el.label as string | undefined) ?? undefined,
       rotation: Number(el.rotation ?? 0),
       locked: Boolean(el.locked),
+      hidden: Boolean(el.hidden),
       notes: (el.notes as string | undefined) ?? undefined,
       tags: Array.isArray(el.tags) ? (el.tags as string[]) : undefined,
+      layer_id: el.layer_id ? String(el.layer_id) : undefined,
       furniture: Boolean(el.furniture),
       meta: (el.meta as Record<string, unknown> | undefined) ?? undefined,
     });
+
   }
 
   const bgSrc = (settings?.background ?? null) as Record<string, unknown> | null;
@@ -224,9 +237,12 @@ export function toLayout(state: WorkspaceState): {
       isCorner: b.corner,
       isPremium: b.premium,
       size: b.size,
-      variant: b.variant ?? null,
+            variant: b.variant ?? null,
       locked: b.locked ?? false,
+      hidden: b.hidden ?? false,
       notes: b.notes ?? null,
+      tags: b.tags ?? [],
+      layer_id: b.layer_id ?? null,
     });
   }
 
@@ -241,11 +257,14 @@ export function toLayout(state: WorkspaceState): {
       rotation: o.rotation ?? 0,
       name: o.label ?? "",
       locked: o.locked ?? false,
+      hidden: o.hidden ?? false,
       notes: o.notes ?? null,
       tags: o.tags ?? [],
+      layer_id: o.layer_id ?? null,
       furniture: o.furniture ?? false,
       meta: o.meta ?? {},
     });
+
   }
 
   const settings: Record<string, unknown> = {};
