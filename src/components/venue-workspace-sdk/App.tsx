@@ -1739,6 +1739,32 @@ export default function WorkspaceApp() {
     return () => window.removeEventListener("keydown", onKey);
   });
 
+  const handleSave = async () => {
+    if (ctx?.onSave) {
+      setSaveStatus("saving");
+      try {
+        await ctx.onSave({
+          booths,
+          objects: placed,
+          background,
+          canvas: canvasSize,
+        });
+        setSaveStatus("saved");
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Save failed");
+        setSaveStatus("dirty");
+      }
+      return;
+    }
+
+    if (workspaceMode === "blank") {
+      setSaveStatus("saved");
+      return;
+    }
+
+    setSaveStatus("saved");
+  };
+
   const duplicateSelection = () => {
     if (!selectedIds.size) return;
     pushHistory();
@@ -1797,4 +1823,18 @@ export default function WorkspaceApp() {
     if (items.length < 3) { toast.message("Select 3+ to distribute"); return; }
     pushHistory();
     const sorted = [...items].sort((a,b)=> axis==="x" ? (a.x+a.w/2)-(b.x+b.w/2) : (a.y+a.h/2)-(b.y+b.h/2));
-  
+    const first = sorted[0];
+    const last = sorted[sorted.length - 1];
+    const firstC = axis === "x" ? first.x + first.w / 2 : first.y + first.h / 2;
+    const lastC = axis === "x" ? last.x + last.w / 2 : last.y + last.h / 2;
+    const step = (lastC - firstC) / (sorted.length - 1);
+    sorted.forEach((item, i) => {
+      if (i === 0 || i === sorted.length - 1) return;
+      const target = firstC + step * i;
+      const nx = axis === "x" ? target - item.w / 2 : item.x;
+      const ny = axis === "y" ? target - item.h / 2 : item.y;
+      setObjPos(item.id, nx, ny);
+    });
+  };
+}
+
