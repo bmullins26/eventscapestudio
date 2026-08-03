@@ -5,6 +5,7 @@ import { LogOut } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { Brand } from "@/components/shared/brand";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
 export interface NavItem {
@@ -33,7 +34,7 @@ const VARIANT_ACCENT: Record<AppShellProps["variant"], string> = {
 };
 
 export function AppShell({ variant, title, sections, children }: AppShellProps) {
-  const { user, primaryRole, activeOrg, hasPermission, signOut } = useAuth();
+  const { user, primaryRole, organizations, activeOrg, setActiveOrgId, hasPermission, signOut } = useAuth();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   const visibleSections = sections
@@ -57,7 +58,22 @@ export function AppShell({ variant, title, sections, children }: AppShellProps) 
         {activeOrg && variant === "studio" && (
           <div className="mt-3 rounded-lg bg-secondary/60 px-3 py-2 text-xs">
             <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Organization</p>
-            <p className="truncate font-medium text-foreground">{activeOrg.organizationName}</p>
+            {organizations.length > 1 ? (
+              <Select value={activeOrg.organizationId} onValueChange={setActiveOrgId}>
+                <SelectTrigger className="mt-1 h-7 w-full border-0 bg-transparent px-0 text-xs font-medium shadow-none focus:ring-0">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {organizations.map((organization) => (
+                    <SelectItem key={organization.organizationId} value={organization.organizationId}>
+                      {organization.organizationName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <p className="truncate font-medium text-foreground">{activeOrg.organizationName}</p>
+            )}
           </div>
         )}
 

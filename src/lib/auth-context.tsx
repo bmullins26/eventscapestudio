@@ -5,6 +5,10 @@ import { supabase } from "@/integrations/supabase/client";
 export type AppRole = "super_admin" | "organizer" | "staff" | "vendor";
 export type AppSurface = "studio" | "portal" | "admin";
 
+// DEVELOPMENT ONLY
+// Development Only - Remove before Production
+export const ENABLE_DEV_ACCESS = true;
+
 export interface OrgMembership {
   organizationId: string;
   organizationName: string;
@@ -14,6 +18,8 @@ export interface OrgMembership {
 
 export interface AuthState {
   loading: boolean;
+  contextError: string | null;
+  bootstrapMessage: string | null;
   user: User | null;
   session: Session | null;
   roles: AppRole[];
@@ -50,12 +56,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [activeOrgId, setActiveOrgId] = useState<string | null>(null);
   const [activeEventId, setActiveEventIdState] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [contextError, setContextError] = useState<string | null>(null);
 
   const loadContext = useCallback(async (userId: string | undefined) => {
     if (!userId) {
       setRoles([]);
       setOrganizations([]);
       setActiveOrgId(null);
+      setContextError(null);
       return;
     }
 
@@ -85,11 +93,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const merged = [...owned, ...memberships.filter((m) => !owned.some((o) => o.organizationId === m.organizationId))];
       setOrganizations(merged);
       setActiveOrgId((current) => current && merged.some((o) => o.organizationId === current) ? current : merged[0]?.organizationId ?? null);
+      setContextError(null);
     } catch (error) {
       console.error("Failed to load auth context", error);
-      setRoles(["organizer"]);
+      setRoles([]);
       setOrganizations([]);
       setActiveOrgId(null);
+      setContextError(error instanceof Error ? error.message : "Unable to load your Studio access.");
     }
   }, []);
 
@@ -105,6 +115,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setRoles([]);
       setOrganizations([]);
       setActiveOrgId(null);
+      setContextError(error instanceof Error ? error.message : "Unable to refresh your Studio access.");
     } finally {
       setLoading(false);
     }
@@ -146,14 +157,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
-    setSession(null); setRoles([]); setOrganizations([]); setActiveOrgId(null); setActiveEventIdState(null);
+    setSession(null); setRoles([]); setOrganizations([]); setActiveOrgId(null); setActiveEventIdState(null); setContextError(null);
   }, []);
 
   const value = useMemo<AuthState>(() => {
     const activeOrg = organizations.find((o) => o.organizationId === activeOrgId) ?? null;
-    const hasRole = (role: AppRole) => roles.includes(role);
-    const primaryRole = ROLE_PRIORITY.find((r) => roles.includes(r)) ?? null;
+    // DEVELOPMENT ONLY
+    const hasDevelopmentAccess = ENABLE_DEV_ACCESS && !!session;
+    // DEVELOPMENT ONLY
+    // RLS determines the organizations in this list; do not query organizations
+    // that the authenticated user cannot already access.
+    const bootstrapMessage = hasDevelopmentAccess && organizations.length === 0
+      ? "No test organization is available to this account. Add the user to an existing test organization, or create test data first."
+      : null;
+    const effectiveContextError = hasDevelopmentAccess ? null : contextError;
+    const hasRole = (role: AppRole) => hasDevelopmentAccess || roles.includes(role);
+    const primaryRole = hasDevelopmentAccess
+      ? "organizer"
+      : ROLE_PRIORITY.find((r) => roles.includes(r)) ?? null;
     const hasPermission = (permission: string) => {
+      if (hasDevelopmentAccess) return true;
       if (roles.includes("super_admin")) return true;
       if (!activeOrg) return false;
       if (activeOrg.isOwner) return true;
@@ -161,6 +184,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
     return {
       loading,
+      contextError: effectiveContextError,
+      bootstrapMessage,
       user: session?.user ?? null,
       session,
       roles,
@@ -169,7 +194,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       activeEventId,
       isAuthenticated: !!session,
       hasRole,
-      hasAnyRole: (list) => list.some((r) => roles.includes(r)),
+      hasAnyRole: (list) => hasDevelopmentAccess || list.some((r) => roles.includes(r)),
       hasPermission,
       primaryRole,
       primarySurface: roleToSurface(primaryRole),
@@ -178,7 +203,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       refresh,
       signOut,
     };
-  }, [session, roles, organizations, activeOrgId, activeEventId, loading, refresh, signOut, setActiveEventId]);
+  }, [session, roles, organizations, activeOrgId, activeEventId, loading, contextError, refresh, signOut, setActiveEventId]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
