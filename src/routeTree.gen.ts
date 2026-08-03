@@ -16,6 +16,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as ApplyEventSlugRouteImport } from './routes/apply.$eventSlug'
 import { Route as AuthenticatedStudioRouteImport } from './routes/_authenticated/studio'
 import { Route as AuthenticatedPortalRouteImport } from './routes/_authenticated/portal'
@@ -89,6 +90,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/callback',
+  path: '/callback',
+  getParentRoute: () => AuthRoute,
 } as any)
 const ApplyEventSlugRoute = ApplyEventSlugRouteImport.update({
   id: '/apply/$eventSlug',
@@ -320,7 +326,7 @@ const AuthenticatedStudioEventsEventIdVenueRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/auth': typeof AuthRoute
+  '/auth': typeof AuthRouteWithChildren
   '/contact': typeof ContactRoute
   '/features': typeof FeaturesRoute
   '/pricing': typeof PricingRoute
@@ -329,6 +335,7 @@ export interface FileRoutesByFullPath {
   '/portal': typeof AuthenticatedPortalRouteWithChildren
   '/studio': typeof AuthenticatedStudioRouteWithChildren
   '/apply/$eventSlug': typeof ApplyEventSlugRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/admin/logs': typeof AuthenticatedAdminLogsRoute
   '/admin/organizations': typeof AuthenticatedAdminOrganizationsRoute
@@ -367,12 +374,13 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/auth': typeof AuthRoute
+  '/auth': typeof AuthRouteWithChildren
   '/contact': typeof ContactRoute
   '/features': typeof FeaturesRoute
   '/pricing': typeof PricingRoute
   '/app': typeof AuthenticatedAppRoute
   '/apply/$eventSlug': typeof ApplyEventSlugRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/admin/logs': typeof AuthenticatedAdminLogsRoute
   '/admin/organizations': typeof AuthenticatedAdminOrganizationsRoute
@@ -412,7 +420,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/about': typeof AboutRoute
-  '/auth': typeof AuthRoute
+  '/auth': typeof AuthRouteWithChildren
   '/contact': typeof ContactRoute
   '/features': typeof FeaturesRoute
   '/pricing': typeof PricingRoute
@@ -421,6 +429,7 @@ export interface FileRoutesById {
   '/_authenticated/portal': typeof AuthenticatedPortalRouteWithChildren
   '/_authenticated/studio': typeof AuthenticatedStudioRouteWithChildren
   '/apply/$eventSlug': typeof ApplyEventSlugRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/_authenticated/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/_authenticated/admin/logs': typeof AuthenticatedAdminLogsRoute
   '/_authenticated/admin/organizations': typeof AuthenticatedAdminOrganizationsRoute
@@ -470,6 +479,7 @@ export interface FileRouteTypes {
     | '/portal'
     | '/studio'
     | '/apply/$eventSlug'
+    | '/auth/callback'
     | '/admin/analytics'
     | '/admin/logs'
     | '/admin/organizations'
@@ -514,6 +524,7 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/app'
     | '/apply/$eventSlug'
+    | '/auth/callback'
     | '/admin/analytics'
     | '/admin/logs'
     | '/admin/organizations'
@@ -561,6 +572,7 @@ export interface FileRouteTypes {
     | '/_authenticated/portal'
     | '/_authenticated/studio'
     | '/apply/$eventSlug'
+    | '/auth/callback'
     | '/_authenticated/admin/analytics'
     | '/_authenticated/admin/logs'
     | '/_authenticated/admin/organizations'
@@ -601,7 +613,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AboutRoute: typeof AboutRoute
-  AuthRoute: typeof AuthRoute
+  AuthRoute: typeof AuthRouteWithChildren
   ContactRoute: typeof ContactRoute
   FeaturesRoute: typeof FeaturesRoute
   PricingRoute: typeof PricingRoute
@@ -658,6 +670,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof AuthRoute
     }
     '/apply/$eventSlug': {
       id: '/apply/$eventSlug'
@@ -1075,11 +1094,21 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
 const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
+interface AuthRouteChildren {
+  AuthCallbackRoute: typeof AuthCallbackRoute
+}
+
+const AuthRouteChildren: AuthRouteChildren = {
+  AuthCallbackRoute: AuthCallbackRoute,
+}
+
+const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AboutRoute: AboutRoute,
-  AuthRoute: AuthRoute,
+  AuthRoute: AuthRouteWithChildren,
   ContactRoute: ContactRoute,
   FeaturesRoute: FeaturesRoute,
   PricingRoute: PricingRoute,
