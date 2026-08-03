@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import { ENABLE_DEV_ACCESS } from "@/lib/development-access";
+import { ENABLE_DEV_ACCESS, isDevelopmentSuperAdminUser } from "@/lib/development-access";
 import { ensureDevelopmentWorkspace } from "@/lib/development-bootstrap.functions";
 
 export type AppRole = "super_admin" | "organizer" | "staff" | "vendor";
@@ -181,9 +181,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AuthState>(() => {
     const activeOrg = organizations.find((o) => o.organizationId === activeOrgId) ?? null;
     const hasDevelopmentAccess = ENABLE_DEV_ACCESS && !!session;
+    const isExplicitDeveloperSuperAdmin = hasDevelopmentAccess && isDevelopmentSuperAdminUser(session?.user ?? null);
     const bootstrapMessage = hasDevelopmentAccess ? null : contextError ? "We couldn't load your Studio access." : null;
     const effectiveContextError = hasDevelopmentAccess ? null : contextError;
-    const effectiveRoles = hasDevelopmentAccess ? Array.from(new Set([...(roles.includes("super_admin") ? ["super_admin" as AppRole] : []), ...(roles.includes("organizer") ? ["organizer" as AppRole] : [])])) : roles;
+    const effectiveRoles = hasDevelopmentAccess
+      ? Array.from(new Set([
+          ...(roles.includes("super_admin") || isExplicitDeveloperSuperAdmin ? ["super_admin" as AppRole] : []),
+          ...(roles.includes("organizer") || isExplicitDeveloperSuperAdmin ? ["organizer" as AppRole] : []),
+        ]))
+      : roles;
     const hasRole = (role: AppRole) => hasDevelopmentAccess || effectiveRoles.includes(role);
     const primaryRole = hasDevelopmentAccess ? "super_admin" : ROLE_PRIORITY.find((r) => effectiveRoles.includes(r)) ?? null;
     const hasPermission = (permission: string) => {

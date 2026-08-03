@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { ENABLE_DEV_ACCESS } from "@/lib/development-access";
+import { ENABLE_DEV_ACCESS, isDevelopmentSuperAdminUser } from "@/lib/development-access";
 import type { Json } from "@/integrations/supabase/types";
 
 const Input = z.object({});
@@ -80,8 +80,9 @@ export const ensureDevelopmentWorkspace = createServerFn({ method: "POST" })
   .handler(async ({ context }) => {
     if (!ENABLE_DEV_ACCESS) return { seeded: false, reason: "development-access-disabled" as const };
 
-    const { supabase, userId } = context;
+    const { supabase, userId, claims } = context;
     const deterministicSlug = `developer-${userId.replace(/-/g, "").slice(0, 12)}`;
+    const isExplicitDeveloperSuperAdmin = isDevelopmentSuperAdminUser({ email: claims?.email as string | undefined });
 
     let organization = await requireSuccess(await supabase
       .from("organizations")
@@ -122,10 +123,12 @@ export const ensureDevelopmentWorkspace = createServerFn({ method: "POST" })
       return { seeded: false, reason: "no-user-owned-organization" as const };
     }
 
-    await requireSuccess(await supabase.from("user_roles").upsert({
-      user_id: userId,
-      role: "super_admin",
-    }, { onConflict: "user_id,role" }).select("role").maybeSingle());
+    if (isExplicitDeveloperSuperAdmin) {
+      await requireSuccess(await supabase.from("user_roles").upsert({
+        user_id: userId,
+        role: "super_admin",
+      }, { onConflict: "user_id,role" }).select("role").maybeSingle());
+    }
 
     await requireSuccess(await supabase.from("organization_members").upsert({
       organization_id: organization.id,
