@@ -13,21 +13,29 @@ function AuthCallbackPage() {
     let cancelled = false;
 
     const completeAuth = async () => {
-      const { error } = await supabase.auth.getSession();
+      try {
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        if (cancelled) return;
+        if (sessionError) throw sessionError;
 
-      if (!cancelled) {
-        if (error) {
+        if (!sessionData.session) {
           navigate({ to: "/auth", replace: true });
           return;
         }
 
-        const { data } = await supabase.auth.getUser();
+        const { data: userData, error: userError } = await supabase.auth.getUser();
+        if (cancelled) return;
+        if (userError) throw userError;
+
+        if (userData.user) {
+          navigate({ to: "/app", replace: true });
+        } else {
+          navigate({ to: "/auth", replace: true });
+        }
+      } catch (error) {
+        console.error("Auth callback failed", error);
         if (!cancelled) {
-          if (data.user) {
-            navigate({ to: "/app", replace: true });
-          } else {
-            navigate({ to: "/auth", replace: true });
-          }
+          navigate({ to: "/auth", replace: true });
         }
       }
     };

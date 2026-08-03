@@ -32,6 +32,9 @@ function RoleRouter() {
         <p className="mt-6 text-sm text-muted-foreground">
           {loading ? "Loading your workspace…" : roles.length === 0 ? "Setting up your account…" : "Redirecting…"}
         </p>
+        {!loading && roles.length === 0 && isAuthenticated && (
+          <p className="mt-2 text-xs text-muted-foreground">If this takes too long, refresh the page and sign in again.</p>
+        )}
       </div>
     </div>
   );

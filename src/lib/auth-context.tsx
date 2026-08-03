@@ -58,32 +58,56 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setActiveOrgId(null);
       return;
     }
-    const [rolesRes, ownedRes, memberRes] = await Promise.all([
-      supabase.from("user_roles").select("role").eq("user_id", userId),
-      supabase.from("organizations").select("id, name").eq("owner_id", userId),
-      supabase.from("organization_members").select("organization_id, organizations(id, name), member_permissions(permission_key)").eq("user_id", userId),
-    ]);
-    setRoles((rolesRes.data ?? []).map((r) => r.role as AppRole));
 
-    const owned: OrgMembership[] = (ownedRes.data ?? []).map((o) => ({
-      organizationId: o.id, organizationName: o.name, isOwner: true, permissions: ["*"],
-    }));
-    const memberships: OrgMembership[] = (memberRes.data ?? []).flatMap((m) => {
-      const org = Array.isArray(m.organizations) ? m.organizations[0] : m.organizations;
-      if (!org) return [];
-      const perms = (m.member_permissions ?? []).map((p) => (p as { permission_key: string }).permission_key);
-      return [{ organizationId: org.id, organizationName: org.name, isOwner: false, permissions: perms }];
-    });
-    const merged = [...owned, ...memberships.filter((m) => !owned.some((o) => o.organizationId === m.organizationId))];
-    setOrganizations(merged);
-    setActiveOrgId((current) => current && merged.some((o) => o.organizationId === current) ? current : merged[0]?.organizationId ?? null);
+    try {
+      const [rolesRes, ownedRes, memberRes] = await Promise.all([
+        supabase.from("user_roles").select("role").eq("user_id", userId),
+        supabase.from("organizations").select("id, name").eq("owner_id", userId),
+        supabase.from("organization_members").select("organization_id, organizations(id, name), member_permissions(permission_key)").eq("user_id", userId),
+      ]);
+
+      if (rolesRes.error) throw rolesRes.error;
+      if (ownedRes.error) throw ownedRes.error;
+      if (memberRes.error) throw memberRes.error;
+
+      const nextRoles = (rolesRes.data ?? []).map((r) => r.role as AppRole);
+      setRoles(nextRoles.length > 0 ? nextRoles : ["organizer"]);
+
+      const owned: OrgMembership[] = (ownedRes.data ?? []).map((o) => ({
+        organizationId: o.id, organizationName: o.name, isOwner: true, permissions: ["*"],
+      }));
+      const memberships: OrgMembership[] = (memberRes.data ?? []).flatMap((m) => {
+        const org = Array.isArray(m.organizations) ? m.organizations[0] : m.organizations;
+        if (!org) return [];
+        const perms = (m.member_permissions ?? []).map((p) => (p as { permission_key: string }).permission_key);
+        return [{ organizationId: org.id, organizationName: org.name, isOwner: false, permissions: perms }];
+      });
+      const merged = [...owned, ...memberships.filter((m) => !owned.some((o) => o.organizationId === m.organizationId))];
+      setOrganizations(merged);
+      setActiveOrgId((current) => current && merged.some((o) => o.organizationId === current) ? current : merged[0]?.organizationId ?? null);
+    } catch (error) {
+      console.error("Failed to load auth context", error);
+      setRoles(["organizer"]);
+      setOrganizations([]);
+      setActiveOrgId(null);
+    }
   }, []);
 
   const refresh = useCallback(async () => {
-    const { data } = await supabase.auth.getSession();
-    setSession(data.session);
-    await loadContext(data.session?.user.id);
-    setLoading(false);
+    try {
+      const { data, error } = await supabase.auth.getSession();
+      if (error) throw error;
+      setSession(data.session);
+      await loadContext(data.session?.user.id);
+    } catch (error) {
+      console.error("Failed to refresh auth state", error);
+      setSession(null);
+      setRoles([]);
+      setOrganizations([]);
+      setActiveOrgId(null);
+    } finally {
+      setLoading(false);
+    }
   }, [loadContext]);
 
   // Load persisted active event when active org changes
