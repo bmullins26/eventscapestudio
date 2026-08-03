@@ -1,13 +1,11 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { ENABLE_DEV_ACCESS } from "@/lib/development-access";
+import { ensureDevelopmentWorkspace } from "@/lib/development-bootstrap.functions";
 
 export type AppRole = "super_admin" | "organizer" | "staff" | "vendor";
 export type AppSurface = "studio" | "portal" | "admin";
-
-// DEVELOPMENT ONLY
-// Development Only - Remove before Production
-export const ENABLE_DEV_ACCESS = true;
 
 export interface OrgMembership {
   organizationId: string;
@@ -57,6 +55,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [activeEventId, setActiveEventIdState] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [contextError, setContextError] = useState<string | null>(null);
+  // DEVELOPMENT ONLY
+  // Auth startup can emit multiple session refreshes; share one seed request per user.
+  const developmentBootstrapRef = useRef<{ userId: string; promise: Promise<unknown> } | null>(null);
 
   const loadContext = useCallback(async (userId: string | undefined) => {
     if (!userId) {
@@ -68,6 +69,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     try {
+      // DEVELOPMENT ONLY
+      // The server function uses the authenticated caller's RLS-scoped client.
+      if (ENABLE_DEV_ACCESS) {
+        const existingBootstrap = developmentBootstrapRef.current;
+        if (existingBootstrap?.userId === userId) {
+          await existingBootstrap.promise;
+        } else {
+          const promise = ensureDevelopmentWorkspace({ data: {} }).finally(() => {
+            if (developmentBootstrapRef.current?.promise === promise) {
+              developmentBootstrapRef.current = null;
+            }
+          });
+          developmentBootstrapRef.current = { userId, promise };
+          await promise;
+        }
+      }
+
       const [rolesRes, ownedRes, memberRes] = await Promise.all([
         supabase.from("user_roles").select("role").eq("user_id", userId),
         supabase.from("organizations").select("id, name").eq("owner_id", userId),
