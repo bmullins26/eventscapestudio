@@ -63,6 +63,10 @@ function readDevelopmentVenues(orgId: string | null | undefined): VenueOption[] 
 const ACTIVE_STATUSES = ["published", "in_progress"];
 const ARCHIVED_STATUSES = ["completed", "cancelled", "archived"];
 
+function isUuid(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
 function fmtRange(start: string | null, end: string | null) {
   if (!start && !end) return "No dates set";
   const s = start ? new Date(start).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "?";
@@ -87,13 +91,29 @@ function EventLibraryPage() {
     queryKey: ["events-venues-select", activeOrg?.organizationId],
     enabled: !!activeOrg?.organizationId,
     queryFn: async () => {
+      const { data, error } = await supabase
+        .from("venues")
+        .select("id, name")
+        .eq("organization_id", activeOrg!.organizationId)
+        .is("archived_at", null)
+        .order("name");
+
+      if (!error) {
+        return data ?? [];
+      }
+
       if (isDevelopmentMode()) {
         return readDevelopmentVenues(activeOrg?.organizationId);
       }
-      const { data } = await supabase.from("venues").select("id, name").eq("organization_id", activeOrg!.organizationId).is("archived_at", null).order("name");
-      return data ?? [];
+
+      throw error;
     },
   });
+
+  const selectableVenues = useMemo(
+    () => venues.filter((venue) => isUuid(venue.id)),
+    [venues],
+  );
 
   const { data: events = [], isLoading } = useQuery({
     queryKey: ["studio-events", activeOrg?.organizationId],
@@ -231,8 +251,13 @@ function EventLibraryPage() {
               <Label>Venue</Label>
               <Select value={newEvent.venueId} onValueChange={(v) => setNewEvent({ ...newEvent, venueId: v })}>
                 <SelectTrigger><SelectValue placeholder="Choose venue" /></SelectTrigger>
-                <SelectContent>{venues.map((v) => <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>)}</SelectContent>
+                <SelectContent>{selectableVenues.map((v) => <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>)}</SelectContent>
               </Select>
+              {selectableVenues.length === 0 && (
+                <p className="text-xs text-muted-foreground">
+                  No synced venues available for event creation yet. Create or sync a venue in the database first.
+                </p>
+              )}
             </div>
             <div className="space-y-1"><Label>Event name</Label><Input value={newEvent.name} onChange={(e) => setNewEvent({ ...newEvent, name: e.target.value })} placeholder="Spring Market 2026" /></div>
             <div className="grid grid-cols-2 gap-2">
@@ -242,8 +267,12 @@ function EventLibraryPage() {
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setCreating(false)} disabled={busy}>Cancel</Button>
-            <Button disabled={busy || !newEvent.venueId || !newEvent.name.trim()} onClick={async () => {
+            <Button disabled={busy || !isUuid(newEvent.venueId) || !newEvent.name.trim()} onClick={async () => {
               if (!activeOrg) return;
+              if (!isUuid(newEvent.venueId)) {
+                toast.error("Select a synced venue before creating an event.");
+                return;
+              }
               setBusy(true);
               try {
                 await createFromTpl({ data: {
