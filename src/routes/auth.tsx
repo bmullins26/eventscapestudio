@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Brand } from "@/components/shared/brand";
@@ -8,6 +9,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ensureDevelopmentSession, isDevelopmentMode } from "@/lib/development-access";
+import { testPinLogin } from "@/lib/test-auth.functions";
+
+const SHOW_TEST_PIN_LOGIN = (import.meta.env.VITE_TEST_PIN_LOGIN_ENABLED ?? "").toString().toLowerCase() === "true";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -26,7 +30,10 @@ function AuthPage() {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [orgName, setOrgName] = useState("");
+  const [pin, setPin] = useState("");
+  const [pinLoading, setPinLoading] = useState(false);
   const [loading, setLoading] = useState(false);
+  const pinLogin = useServerFn(testPinLogin);
 
   // If already signed in, skip the auth page.
   useEffect(() => {
@@ -72,6 +79,30 @@ function AuthPage() {
       toast.error(err instanceof Error ? err.message : "Something went wrong");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handlePinLogin(e: React.FormEvent) {
+    e.preventDefault();
+    if (!pin.trim()) {
+      toast.error("Enter your test PIN");
+      return;
+    }
+
+    setPinLoading(true);
+    try {
+      const session = await pinLogin({ data: { pin: pin.trim() } });
+      const { error } = await supabase.auth.setSession({
+        access_token: session.accessToken,
+        refresh_token: session.refreshToken,
+      });
+      if (error) throw error;
+      toast.success("Signed in");
+      navigate({ to: "/app" });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "PIN login failed");
+    } finally {
+      setPinLoading(false);
     }
   }
 
@@ -149,6 +180,27 @@ function AuthPage() {
           <p className="mt-6 text-center text-xs text-muted-foreground">
             <Link to="/" className="hover:text-foreground">← Back to home</Link>
           </p>
+
+          {SHOW_TEST_PIN_LOGIN && (
+            <div className="mt-6 rounded-lg border border-border bg-secondary/40 p-4">
+              <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">Testing Access</p>
+              <form onSubmit={handlePinLogin} className="mt-3 space-y-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="test-pin">Login PIN</Label>
+                  <Input
+                    id="test-pin"
+                    type="password"
+                    value={pin}
+                    onChange={(e) => setPin(e.target.value)}
+                    placeholder="Enter test PIN"
+                  />
+                </div>
+                <Button type="submit" variant="outline" className="w-full" disabled={pinLoading}>
+                  {pinLoading ? "Signing in…" : "Sign in with PIN"}
+                </Button>
+              </form>
+            </div>
+          )}
         </div>
       </div>
     </div>
