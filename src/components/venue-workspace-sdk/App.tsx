@@ -4,7 +4,7 @@ import {
   Route, Fence, Building2, ParkingCircle, Mic2, TreePine, Ruler,
   Wand2, ImagePlus, Undo2, Redo2, Save, Play, Search, Bell,
   ChevronRight, ZoomIn, ZoomOut, Grid3x3, Magnet, Layers3,
-  ChevronDown, Package, BookTemplate, FolderOpen, Users, CalendarCheck,
+  ChevronDown, Package, BookTemplate, FolderOpen, Users,
   CalendarDays, CreditCard, Clock3, Ban, CheckCircle2,
   MessageSquare, Sparkles, Eye, EyeOff, Lock, Unlock,
   MoreHorizontal, Zap, Droplets, Star, X, Plus, PanelLeftClose,
@@ -81,7 +81,7 @@ function useBreakpoint() {
 
 // ΓöÇΓöÇΓöÇ Types ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 type BoothStatus = "available" | "reserved" | "paid" | "pending" | "sponsor" | "unavailable";
-type Mode = "design" | "reservations" | "operations";
+type Mode = "design" | "operations";
 type RentalVariant =
   | "standard_booth"
   | "table_6ft"
@@ -233,7 +233,6 @@ const LEFT_TABS = [
   { id:"assets",       icon:FolderOpen,    label:"Assets" },
   { id:"templates",    icon:BookTemplate,  label:"Templates" },
   { id:"vendors",      icon:Users,         label:"Vendors" },
-  { id:"reservations", icon:CalendarCheck, label:"Reservations" },
   { id:"ai",           icon:Sparkles,      label:"AI" },
   { id:"comments",     icon:MessageSquare, label:"Comments" },
 ];
@@ -1491,6 +1490,13 @@ export default function WorkspaceApp() {
   const [primaryId, setPrimaryId] = useState<string | null>(null);
   const [dirty, setDirty] = useState<Set<string>>(new Set());
 
+  // Mobile UX: inspector should only be reachable from Operations mode.
+  useEffect(() => {
+    if (isMobile && mode !== "operations" && sheet === "inspector") {
+      setSheet(null);
+    }
+  }, [isMobile, mode, sheet]);
+
   // ΓöÇΓöÇΓöÇ Unsaved-changes / session protection ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "dirty">("saved");
   const initialSigRef = useRef<string | null>(null);
@@ -1604,7 +1610,7 @@ export default function WorkspaceApp() {
     }
     setSelectedIds(nextSel);
     setPrimaryId(id);
-    if (isMobile) setSheet("inspector");
+    if (isMobile && mode === "operations") setSheet("inspector");
     const startWorld = clientToWorld(e.clientX, e.clientY);
     const origMap = new Map<string, {x:number;y:number}>();
     nextSel.forEach(sid => { const o = getObj(sid); if (o) origMap.set(sid, {x:o.x, y:o.y}); });
@@ -1991,7 +1997,7 @@ export default function WorkspaceApp() {
           <span className="text-foreground font-medium truncate">{ctx?.eventName || (workspaceMode === "example" ? "Example Workspace" : "Venue Workspace")}</span>
         </div>
         <div className="hidden md:flex items-center gap-0.5 bg-secondary rounded p-0.5 mr-4 shrink-0">
-          {(["design","reservations","operations"] as Mode[]).map((m)=>(
+          {(["design","operations"] as Mode[]).map((m)=>(
             <button key={m} onClick={()=>setMode(m)} className={`px-2.5 py-1 rounded text-[11px] capitalize transition-colors ${mode===m?"bg-card text-foreground shadow-sm":"text-muted-foreground hover:text-foreground"}`}>{m}</button>
           ))}
         </div>
@@ -2414,7 +2420,7 @@ export default function WorkspaceApp() {
       {/* Mobile dock + sheets */}
       <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-card border-t border-border">
         <div className="flex justify-center gap-1 px-4 pt-2">
-          {(["design","reservations","operations"] as Mode[]).map((m)=>(
+          {(["design","operations"] as Mode[]).map((m)=>(
             <button key={m} onClick={()=>setMode(m)} className={`flex-1 py-1 rounded text-[10px] capitalize font-medium transition-colors ${mode===m?"bg-primary/20 text-primary":"text-muted-foreground"}`}>{m}</button>
           ))}
         </div>
