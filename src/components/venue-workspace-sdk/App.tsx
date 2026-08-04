@@ -1118,25 +1118,25 @@ function InspectorContent({
   const statusButtons: BoothStatus[] = ["available", "reserved", "paid", "pending", "sponsor", "unavailable"];
   return (
     <div className="overflow-y-auto px-4 pb-4 pt-2" style={{scrollbarWidth:"none"}}>
-      <div className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_16px_40px_rgba(15,23,42,0.06)]">
-        <div className="flex items-start justify-between gap-4">
+      <div className="rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_16px_40px_rgba(15,23,42,0.06)] sm:p-5">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
           <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-              <h2 className="text-[28px] font-semibold tracking-tight text-slate-950">{boothTitle}</h2>
-              <span className="hidden h-8 border-l border-slate-300 sm:block" aria-hidden="true" />
-              <span className="text-[28px] font-semibold tracking-tight text-slate-950">{booth.id}</span>
+            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 sm:gap-x-3 sm:gap-y-2">
+              <h2 className="text-[20px] font-semibold tracking-tight text-slate-950 sm:text-[28px]">{boothTitle}</h2>
+              <span className="hidden h-7 border-l border-slate-300 sm:block" aria-hidden="true" />
+              <span className="text-[20px] font-semibold tracking-tight text-slate-950 sm:text-[28px]">{booth.id}</span>
             </div>
-            <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-slate-500">
+            <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-slate-500 sm:gap-4 sm:text-sm">
               <span className="flex items-center gap-2">
-                <Ruler size={18} className="text-slate-400" />
+                <Ruler size={16} className="text-slate-400 sm:size-[18px]" />
                 {boothSize}
               </span>
               <span className="flex items-center gap-2">
-                <Zap size={18} className="text-slate-400" />
+                <Zap size={16} className="text-slate-400 sm:size-[18px]" />
                 {powerText}
               </span>
               <span className="flex items-center gap-2">
-                <Users size={18} className="text-slate-400" />
+                <Users size={16} className="text-slate-400 sm:size-[18px]" />
                 {vendorText}
               </span>
             </div>
@@ -1144,38 +1144,38 @@ function InspectorContent({
           <button
             type="button"
             onClick={() => setOpen(false)}
-            className="mt-1 rounded-full p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+            className="self-end rounded-full p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 sm:mt-1"
             aria-label="Close inspector actions"
           >
-            <X size={30} strokeWidth={1.6} />
+            <X size={24} strokeWidth={1.8} className="sm:size-[30px]" />
           </button>
         </div>
 
-        <div className="mt-6 border-t border-slate-200 pt-6">
-          <div className="mb-4 flex items-center justify-between">
-            <p className="text-[13px] font-semibold uppercase tracking-[0.18em] text-slate-500">Status</p>
+        <div className="mt-5 border-t border-slate-200 pt-5 sm:mt-6 sm:pt-6">
+          <div className="mb-3 flex items-center justify-between gap-3 sm:mb-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 sm:text-[13px]">Status</p>
             <span
-              className="rounded-full border px-3 py-1 text-sm font-medium"
+              className="rounded-full border px-2.5 py-1 text-[11px] font-medium sm:px-3 sm:text-sm"
               style={{ background: c.fill, color: c.stroke, borderColor: `${c.stroke}40` }}
             >
               {c.label}
             </span>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-4">
             {statusButtons.map((s) => {
               const active = booth.status === s;
               return (
                 <button
                   key={s}
                   onClick={() => onPatch?.({ status: s })}
-                  className={`flex min-h-[68px] items-center justify-center gap-3 rounded-2xl border px-4 text-lg font-medium transition-colors ${active ? "border-red-300 bg-red-50 text-red-600" : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50"}`}
+                  className={`flex min-h-[50px] items-center justify-center gap-2 rounded-2xl border px-3 py-2 text-sm font-medium transition-colors sm:min-h-[68px] sm:gap-3 sm:px-4 sm:text-lg ${active ? "border-red-300 bg-red-50 text-red-600" : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50"}`}
                 >
-                  {s === "available" && <CheckCircle2 size={26} strokeWidth={1.8} />}
-                  {s === "reserved" && <CalendarDays size={26} strokeWidth={1.8} />}
-                  {s === "paid" && <CreditCard size={26} strokeWidth={1.8} />}
-                  {s === "pending" && <Clock3 size={26} strokeWidth={1.8} />}
-                  {s === "sponsor" && <Star size={26} strokeWidth={1.8} />}
-                  {s === "unavailable" && <Ban size={26} strokeWidth={1.8} />}
+                  {s === "available" && <CheckCircle2 size={20} strokeWidth={1.8} className="sm:size-[26px]" />}
+                  {s === "reserved" && <CalendarDays size={20} strokeWidth={1.8} className="sm:size-[26px]" />}
+                  {s === "paid" && <CreditCard size={20} strokeWidth={1.8} className="sm:size-[26px]" />}
+                  {s === "pending" && <Clock3 size={20} strokeWidth={1.8} className="sm:size-[26px]" />}
+                  {s === "sponsor" && <Star size={20} strokeWidth={1.8} className="sm:size-[26px]" />}
+                  {s === "unavailable" && <Ban size={20} strokeWidth={1.8} className="sm:size-[26px]" />}
                   <span>{STATUS_COLORS[s].label}</span>
                 </button>
               );
@@ -1183,14 +1183,14 @@ function InspectorContent({
           </div>
         </div>
 
-        <div className="mt-6 border-t border-slate-200 pt-6">
+        <div className="mt-5 border-t border-slate-200 pt-5 sm:mt-6 sm:pt-6">
           <VendorInspectorSection booth={booth} onPatch={onPatch} />
         </div>
 
-        <div className="mt-6 border-t border-slate-200 pt-6">
-          <div className="grid grid-cols-2 gap-3">
+        <div className="mt-5 border-t border-slate-200 pt-5 sm:mt-6 sm:pt-6">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="rounded-2xl bg-slate-50 p-3">
-              <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500">Price</p>
+              <p className="text-[10px] uppercase tracking-[0.16em] text-slate-500 sm:text-[11px]">Price</p>
               <input
                 type="number"
                 defaultValue={booth.price}
@@ -1198,37 +1198,37 @@ function InspectorContent({
                   const value = Number(e.currentTarget.value);
                   if (!isNaN(value)) onPatch?.({ price: value });
                 }}
-                className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-base text-slate-900 outline-none focus:border-slate-400"
+                className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-400 sm:text-base"
               />
             </div>
             <div className="rounded-2xl bg-slate-50 p-3">
-              <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500">Size</p>
-              <p className="mt-2 text-base text-slate-900">{boothSize}</p>
+              <p className="text-[10px] uppercase tracking-[0.16em] text-slate-500 sm:text-[11px]">Size</p>
+              <p className="mt-2 text-sm text-slate-900 sm:text-base">{boothSize}</p>
             </div>
           </div>
 
-          <div className="mt-4 grid grid-cols-2 gap-3">
+          <div className="mt-4 grid grid-cols-2 gap-2 sm:gap-3">
             <div className="rounded-2xl bg-slate-50 p-3">
-              <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500">X</p>
-              <input defaultValue={booth.x} onBlur={(e)=>onPatch?.({x:Number(e.currentTarget.value)||0})} className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-base text-slate-900 outline-none focus:border-slate-400"/>
+              <p className="text-[10px] uppercase tracking-[0.16em] text-slate-500 sm:text-[11px]">X</p>
+              <input defaultValue={booth.x} onBlur={(e)=>onPatch?.({x:Number(e.currentTarget.value)||0})} className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-400 sm:text-base"/>
             </div>
             <div className="rounded-2xl bg-slate-50 p-3">
-              <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500">Y</p>
-              <input defaultValue={booth.y} onBlur={(e)=>onPatch?.({y:Number(e.currentTarget.value)||0})} className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-base text-slate-900 outline-none focus:border-slate-400"/>
+              <p className="text-[10px] uppercase tracking-[0.16em] text-slate-500 sm:text-[11px]">Y</p>
+              <input defaultValue={booth.y} onBlur={(e)=>onPatch?.({y:Number(e.currentTarget.value)||0})} className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-400 sm:text-base"/>
             </div>
             <div className="rounded-2xl bg-slate-50 p-3">
-              <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500">W</p>
-              <input defaultValue={booth.w} onBlur={(e)=>onPatch?.({w:Number(e.currentTarget.value)||1})} className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-base text-slate-900 outline-none focus:border-slate-400"/>
+              <p className="text-[10px] uppercase tracking-[0.16em] text-slate-500 sm:text-[11px]">W</p>
+              <input defaultValue={booth.w} onBlur={(e)=>onPatch?.({w:Number(e.currentTarget.value)||1})} className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-400 sm:text-base"/>
             </div>
             <div className="rounded-2xl bg-slate-50 p-3">
-              <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500">H</p>
-              <input defaultValue={booth.h} onBlur={(e)=>onPatch?.({h:Number(e.currentTarget.value)||1})} className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-base text-slate-900 outline-none focus:border-slate-400"/>
+              <p className="text-[10px] uppercase tracking-[0.16em] text-slate-500 sm:text-[11px]">H</p>
+              <input defaultValue={booth.h} onBlur={(e)=>onPatch?.({h:Number(e.currentTarget.value)||1})} className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-400 sm:text-base"/>
             </div>
           </div>
 
-          <div className="mt-4 grid grid-cols-2 gap-3">
-            <button onClick={onDuplicate} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50">Duplicate</button>
-            <button onClick={onDelete} className="rounded-2xl border border-red-200 bg-white px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50">Delete</button>
+          <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3">
+            <button onClick={onDuplicate} className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 sm:py-3">Duplicate</button>
+            <button onClick={onDelete} className="rounded-2xl border border-red-200 bg-white px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 sm:py-3">Delete</button>
           </div>
         </div>
       </div>

@@ -84,7 +84,9 @@ export const requireSupabaseAuth = createMiddleware({ type: 'function' }).server
         password: DEVELOPMENT_IDENTITY_PASSWORD,
       });
 
-      if (signInResult.error || !signInResult.data.session?.access_token) {
+      let token = signInResult.data.session?.access_token ?? null;
+
+      if (signInResult.error || !token) {
         const signUpResult = await developmentClient.auth.signUp({
           email: DEVELOPMENT_IDENTITY_EMAIL,
           password: DEVELOPMENT_IDENTITY_PASSWORD,
@@ -100,12 +102,22 @@ export const requireSupabaseAuth = createMiddleware({ type: 'function' }).server
           throw new Error(`Unauthorized: Development auth bootstrap failed (${signUpResult.error.message})`);
         }
 
-        if (!signUpResult.data.session?.access_token) {
+        token = signUpResult.data.session?.access_token ?? null;
+
+        if (!token) {
+          await new Promise((resolve) => setTimeout(resolve, 2200));
+          const retrySignInResult = await developmentClient.auth.signInWithPassword({
+            email: DEVELOPMENT_IDENTITY_EMAIL,
+            password: DEVELOPMENT_IDENTITY_PASSWORD,
+          });
+          token = retrySignInResult.data.session?.access_token ?? null;
+        }
+
+        if (!token) {
           throw new Error('Unauthorized: Development auth bootstrap did not create a session');
         }
       }
 
-      const token = signInResult.data.session?.access_token ?? signInResult.data.session?.access_token;
       const supabase = createSupabaseClient(token);
       const { data, error } = await supabase.auth.getClaims(token);
       if (error || !data?.claims) {

@@ -20,6 +20,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { isDevelopmentMode } from "@/lib/development-access";
 
 export const Route = createFileRoute("/_authenticated/studio/vendors")({
   head: () => ({ meta: [{ title: "Vendor Directory · EventScape Studio" }] }),
@@ -53,6 +54,38 @@ type VendorRow = {
     social_links: SocialLinks | null;
   } | null;
 };
+
+type DevVendorDirectoryState = {
+  rows: VendorRow[];
+};
+
+const DEV_VENDOR_DIRECTORY_PREFIX = "eventscape:vendor-directory:";
+
+function getDevVendorDirectoryKey(orgId: string) {
+  return `${DEV_VENDOR_DIRECTORY_PREFIX}${orgId}`;
+}
+
+function readDevVendorDirectory(orgId: string): VendorRow[] {
+  if (typeof window === "undefined") return [];
+  const raw = window.localStorage.getItem(getDevVendorDirectoryKey(orgId));
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw) as DevVendorDirectoryState;
+    return Array.isArray(parsed.rows) ? parsed.rows : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeDevVendorDirectory(orgId: string, rows: VendorRow[]) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(getDevVendorDirectoryKey(orgId), JSON.stringify({ rows } satisfies DevVendorDirectoryState));
+}
+
+function makeDevId() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") return crypto.randomUUID();
+  return `dev-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
 
 const STATUS_TONE: Record<string, string> = {
   no_account: "bg-muted text-muted-foreground",
@@ -115,15 +148,19 @@ function VendorsPage() {
   const createVendorFn = useServerFn(createVendor);
   const updateVendorFn = useServerFn(updateVendor);
   const draft = useVendorDraft<EditState>(orgId, editing, setEditing);
+  const effectiveOrgId = orgId ?? (isDevelopmentMode() ? "development-workspace" : null);
 
   const { data: rows = [], isLoading } = useQuery({
-    queryKey: ["vendor-directory", orgId],
-    enabled: !!orgId,
+    queryKey: ["vendor-directory", effectiveOrgId],
+    enabled: !!effectiveOrgId,
     queryFn: async (): Promise<VendorRow[]> => {
+      if (isDevelopmentMode() && effectiveOrgId) {
+        return readDevVendorDirectory(effectiveOrgId);
+      }
       const { data, error } = await supabase
         .from("organization_vendors")
         .select("id, vendor_profile_id, account_status, is_favorite, years_participated, total_paid, vendor_profiles(business_name, contact_name, email, phone, website, business_description, product_categories, emergency_contact_name, emergency_contact_phone, insurance_doc_url, tax_doc_url, food_license_url, resale_cert_url, business_photos, social_links)")
-        .eq("organization_id", orgId!)
+        .eq("organization_id", effectiveOrgId!)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data as unknown as VendorRow[]) ?? [];
@@ -162,19 +199,51 @@ function VendorsPage() {
   });
 
   const persistSave = async (opts: { allowDuplicate?: boolean; matchedProfileId?: string } = {}) => {
-    if (!editing || !orgId) return;
+    if (!editing || !effectiveOrgId) return;
     if (!editing.business_name.trim()) { toast.error("Business name required"); return; }
     setSaving(true);
     try {
       const profile = buildProfilePayload(editing);
+      if (isDevelopmentMode()) {
+        const existingRows = readDevVendorDirectory(effectiveOrgId);
+        const nextRows = editing.id
+          ? existingRows.map((row) => row.id === editing.id && row.vendor_profiles ? ({
+              ...row,
+              vendor_profiles: {
+                ...row.vendor_profiles,
+                ...profile,
+              },
+            } as VendorRow) : row)
+          : [
+              {
+                id: makeDevId(),
+                vendor_profile_id: makeDevId(),
+                account_status: "no_account",
+                is_favorite: false,
+                years_participated: 0,
+                total_paid: 0,
+                vendor_profiles: profile,
+              } satisfies VendorRow,
+              ...existingRows,
+            ];
+
+        writeDevVendorDirectory(effectiveOrgId, nextRows);
+        qc.invalidateQueries({ queryKey: ["vendor-directory", effectiveOrgId] });
+        toast.success("Saved");
+        setEditing(null);
+        setScanBanner(null);
+        setDuplicates(null);
+        draft.clear();
+        return;
+      }
       if (editing.id) {
         const row = rows.find((r) => r.id === editing.id);
         if (!row) return;
-        await updateVendorFn({ data: { organizationId: orgId, vendorProfileId: row.vendor_profile_id, profile } });
+        await updateVendorFn({ data: { organizationId: effectiveOrgId, vendorProfileId: row.vendor_profile_id, profile } });
       } else {
         const result = await createVendorFn({
           data: {
-            organizationId: orgId,
+            organizationId: effectiveOrgId,
             profile,
             link: { account_status: "no_account", is_favorite: false },
             allowDuplicate: opts.allowDuplicate ?? false,
@@ -192,7 +261,7 @@ function VendorsPage() {
       setScanBanner(null);
       setDuplicates(null);
       draft.clear();
-      qc.invalidateQueries({ queryKey: ["vendor-directory", orgId] });
+      qc.invalidateQueries({ queryKey: ["vendor-directory", effectiveOrgId] });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Save failed");
     } finally {
@@ -209,7 +278,7 @@ function VendorsPage() {
     try {
       const dataUrl = await fileToDataUrl(file);
       const ext = file.name.split(".").pop() ?? "bin";
-      const uid = crypto.randomUUID();
+      const uid = makeDevId();
       const path = `vendor-intake/${orgId}/${uid}.${ext}`;
       // Upload source file for reference (best-effort, don't block on failure)
       await supabase.storage.from("application-uploads").upload(path, file, { contentType: file.type, upsert: false }).catch(() => {});
@@ -242,7 +311,7 @@ function VendorsPage() {
   const invite = async (row: VendorRow) => {
     if (!row.vendor_profiles?.email) { toast.error("Vendor has no email on file. Edit the vendor and add one first."); return; }
     if (!orgId) return;
-    const token = crypto.randomUUID();
+    const token = makeDevId();
     const code = Math.random().toString(36).slice(2, 8).toUpperCase();
     const { error: iErr } = await supabase.from("vendor_invitations").insert({
       organization_id: orgId,
@@ -468,7 +537,7 @@ function DocUploadField({ label, orgId, value, onChange }: { label: string; orgI
     setBusy(true);
     try {
       const ext = file.name.split(".").pop() ?? "bin";
-      const path = `vendor-intake/${orgId}/${crypto.randomUUID()}.${ext}`;
+      const path = `vendor-intake/${orgId}/${makeDevId()}.${ext}`;
       const { error } = await supabase.storage.from("application-uploads").upload(path, file, { contentType: file.type, upsert: false });
       if (error) throw error;
       onChange(path);
@@ -522,7 +591,7 @@ function PhotoGrid({ orgId, photos, onChange }: { orgId: string; photos: string[
       const uploaded: string[] = [];
       for (const file of toUpload) {
         const ext = file.name.split(".").pop() ?? "jpg";
-        const path = `vendor-intake/${orgId}/photos/${crypto.randomUUID()}.${ext}`;
+        const path = `vendor-intake/${orgId}/photos/${makeDevId()}.${ext}`;
         const { error } = await supabase.storage.from("application-uploads").upload(path, file, { contentType: file.type, upsert: false });
         if (error) throw error;
         uploaded.push(path);
