@@ -16,6 +16,7 @@ import {
   Map as MapIcon, Upload,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { fetchSatelliteImageForWorkspace } from "@/lib/workspace-background.functions";
 import { VendorPickerDialog } from "./VendorPickerDialog";
@@ -1140,14 +1141,6 @@ function InspectorContent({
               </span>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={() => setOpen(false)}
-            className="self-end rounded-full p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 sm:mt-1"
-            aria-label="Close inspector actions"
-          >
-            <X size={24} strokeWidth={1.8} className="sm:size-[30px]" />
-          </button>
         </div>
 
         <div className="mt-5 border-t border-slate-200 pt-5 sm:mt-6 sm:pt-6">
@@ -1358,6 +1351,7 @@ function SToggle({ label, active, onClick, icon:Icon }: { label:string; active:b
 export default function WorkspaceApp() {
   const { isMobile, isTablet, isDesktop } = useBreakpoint();
   const ctx = useWorkspaceCtx();
+  const navigate = useNavigate();
 
   const [activeTool, setActiveTool] = useState<Tool>("select");
   const [activeTab, setActiveTab] = useState("objects");
@@ -1988,6 +1982,13 @@ export default function WorkspaceApp() {
       {/* TOP BAR */}
       <header className="h-11 flex items-center gap-0 border-b border-border bg-card shrink-0 px-3 z-30">
         <div className="flex items-center gap-2 pr-3 border-r border-border mr-3 shrink-0">
+          <button
+            onClick={() => navigate({ to: "/studio" })}
+            className="h-7 rounded border border-border bg-background px-2 text-[11px] font-medium text-foreground hover:bg-muted"
+            aria-label="Back to dashboard"
+          >
+            Dashboard
+          </button>
           <div className="w-6 h-6 bg-primary rounded flex items-center justify-center shrink-0"><Layers3 size={12} className="text-white"/></div>
           <span className="text-xs font-semibold text-foreground whitespace-nowrap hidden sm:inline">EventScape</span>
         </div>

@@ -89,8 +89,11 @@ function ApplicationsPage() {
     },
   });
 
-  const eventId = activeEventId ?? events[0]?.id;
-  const activeEvent = events.find((e) => e.id === eventId);
+  const resolvedEventId = activeEventId && events.some((e) => e.id === activeEventId)
+    ? activeEventId
+    : (events[0]?.id ?? null);
+  const eventId = resolvedEventId;
+  const activeEvent = events.find((e) => e.id === eventId) ?? null;
 
   const { data: apps = [], isLoading } = useQuery({
     queryKey: ["applications", eventId],
@@ -221,7 +224,11 @@ function ApplicationsPage() {
               </Select>
             )}
             <DropdownMenu>
-              <DropdownMenuTrigger asChild><Button><Plus className="mr-2 h-4 w-4" /> Add application</Button></DropdownMenuTrigger>
+              <DropdownMenuTrigger asChild>
+                <Button disabled={!activeEvent}>
+                  <Plus className="mr-2 h-4 w-4" /> Add application
+                </Button>
+              </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => setCreating(emptyForm())}><UserPlus className="mr-2 h-4 w-4" /> Manual entry</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => fileRef.current?.click()}><Sparkles className="mr-2 h-4 w-4" /> Scan with AI</DropdownMenuItem>

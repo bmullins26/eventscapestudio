@@ -7,11 +7,10 @@ function slugify(name: string) {
   return `${base}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-// ---- Create event from a layout template ----
+// ---- Create event from its venue layout ----
 const CreateFromTemplateInput = z.object({
   organizationId: z.string().uuid(),
   venueId: z.string().uuid(),
-  layoutTemplateId: z.string().uuid(),
   name: z.string().min(1).max(200),
   startsAt: z.string().nullable().optional(),
   endsAt: z.string().nullable().optional(),
@@ -31,20 +30,12 @@ export const createEventFromTemplate = createServerFn({ method: "POST" })
     });
     if (!canWrite) throw new Error("Not authorized to create events for this organization");
 
-    const { data: tpl, error: tplErr } = await supabase
-      .from("layout_templates")
-      .select("id, venue_id, canvas_width, canvas_height")
-      .eq("id", data.layoutTemplateId)
-      .maybeSingle();
-    if (tplErr) throw tplErr;
-    if (!tpl) throw new Error("Layout template not found");
-
     const { data: created, error: insErr } = await supabase
       .from("events")
       .insert({
         organization_id: data.organizationId,
         venue_id: data.venueId,
-        layout_template_id: data.layoutTemplateId,
+        layout_template_id: null,
         name: data.name,
         slug: slugify(data.name),
         description: data.description ?? null,
@@ -59,29 +50,45 @@ export const createEventFromTemplate = createServerFn({ method: "POST" })
       .single();
     if (insErr) throw insErr;
 
-    // Copy template booths into event_booths
-    const { data: tplBooths } = await supabase
-      .from("layout_template_booths")
-      .select("*")
-      .eq("layout_template_id", data.layoutTemplateId);
+    // Materialize event_booths directly from the venue layout's booth objects.
+    const { data: layout } = await (supabase.from("venue_layouts" as never) as any)
+      .select("elements")
+      .eq("venue_id", data.venueId)
+      .maybeSingle();
 
-    if (tplBooths && tplBooths.length > 0) {
-      const rows = tplBooths.map((b) => ({
-        event_id: created.id,
-        template_booth_id: b.id,
-        code: b.code,
-        x: b.x,
-        y: b.y,
-        width: b.width,
-        height: b.height,
-        rotation: b.rotation,
-        category: b.category,
-        size_label: b.size_label,
-        price: b.price,
-        status: "available" as const,
-      }));
-      const { error: bErr } = await supabase.from("event_booths").insert(rows);
-      if (bErr) throw bErr;
+    const elements = ((layout?.elements ?? []) as Array<Record<string, unknown>>)
+      .filter((el) => el.kind === "booth");
+
+    if (elements.length > 0) {
+      const rows = elements
+        .map((el) => {
+          const objectId = typeof el.objectId === "string" ? el.objectId : null;
+          if (!objectId) return null;
+          return {
+            event_id: created.id,
+            event_object_id: objectId,
+            code: typeof el.label === "string" ? el.label : "",
+            x: Number(el.x) || 0,
+            y: Number(el.y) || 0,
+            width: Number(el.w) || 0,
+            height: Number(el.h) || 0,
+            rotation: Number(el.rotation) || 0,
+            category: typeof el.category === "string" ? el.category : null,
+            size_label: typeof el.size === "string" ? el.size : null,
+            price: typeof el.price === "number" ? el.price : null,
+            is_electric: Boolean(el.isElectric),
+            is_water: Boolean(el.isWater),
+            is_premium: Boolean(el.isPremium),
+            is_corner: Boolean(el.isCorner),
+            status: "available" as const,
+          };
+        })
+        .filter((row): row is NonNullable<typeof row> => !!row);
+
+      if (rows.length > 0) {
+        const { error: bErr } = await (supabase.from("event_booths" as never) as any).insert(rows);
+        if (bErr) throw bErr;
+      }
     }
 
     return { id: created.id };

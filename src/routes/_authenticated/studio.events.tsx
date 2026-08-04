@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { cloneEvent } from "@/lib/events.functions";
 import { createEventFromTemplate, updateEvent, deleteEvent } from "@/lib/studio.functions";
 import { useAuth } from "@/lib/auth-context";
+import { isDevelopmentMode } from "@/lib/development-access";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -43,6 +44,22 @@ type EventRow = {
   venue_id: string | null;
 };
 
+type VenueOption = { id: string; name: string; archived_at?: string | null };
+
+const DEV_VENUES_STORAGE_PREFIX = "eventscape-dev-venues:";
+
+function readDevelopmentVenues(orgId: string | null | undefined): VenueOption[] {
+  if (!orgId || typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(`${DEV_VENUES_STORAGE_PREFIX}${orgId}`);
+    if (!raw) return [];
+    const venues = JSON.parse(raw) as VenueOption[];
+    return venues.filter((venue) => !venue.archived_at);
+  } catch {
+    return [];
+  }
+}
+
 const ACTIVE_STATUSES = ["published", "in_progress"];
 const ARCHIVED_STATUSES = ["completed", "cancelled", "archived"];
 
@@ -63,23 +80,17 @@ function EventLibraryPage() {
   const [cloneName, setCloneName] = useState("");
   const [busy, setBusy] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [newEvent, setNewEvent] = useState<{ venueId: string; templateId: string; name: string; startsAt: string; endsAt: string }>({ venueId: "", templateId: "", name: "", startsAt: "", endsAt: "" });
+  const [newEvent, setNewEvent] = useState<{ venueId: string; name: string; startsAt: string; endsAt: string }>({ venueId: "", name: "", startsAt: "", endsAt: "" });
   const createFromTpl = useServerFn(createEventFromTemplate);
 
   const { data: venues = [] } = useQuery({
     queryKey: ["events-venues-select", activeOrg?.organizationId],
     enabled: !!activeOrg?.organizationId,
     queryFn: async () => {
+      if (isDevelopmentMode()) {
+        return readDevelopmentVenues(activeOrg?.organizationId);
+      }
       const { data } = await supabase.from("venues").select("id, name").eq("organization_id", activeOrg!.organizationId).is("archived_at", null).order("name");
-      return data ?? [];
-    },
-  });
-
-  const { data: templatesForVenue = [] } = useQuery({
-    queryKey: ["events-templates-select", newEvent.venueId],
-    enabled: !!newEvent.venueId,
-    queryFn: async () => {
-      const { data } = await supabase.from("layout_templates").select("id, name").eq("venue_id", newEvent.venueId).order("name");
       return data ?? [];
     },
   });
@@ -213,23 +224,15 @@ function EventLibraryPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>New event</DialogTitle>
-            <DialogDescription>Select a venue and layout template. The event will start as a draft with its own copy of the booth layout.</DialogDescription>
+            <DialogDescription>Select a venue. The event will start as a draft and use that venue's layout.</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div className="space-y-1">
               <Label>Venue</Label>
-              <Select value={newEvent.venueId} onValueChange={(v) => setNewEvent({ ...newEvent, venueId: v, templateId: "" })}>
+              <Select value={newEvent.venueId} onValueChange={(v) => setNewEvent({ ...newEvent, venueId: v })}>
                 <SelectTrigger><SelectValue placeholder="Choose venue" /></SelectTrigger>
                 <SelectContent>{venues.map((v) => <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>)}</SelectContent>
               </Select>
-            </div>
-            <div className="space-y-1">
-              <Label>Layout template</Label>
-              <Select value={newEvent.templateId} onValueChange={(v) => setNewEvent({ ...newEvent, templateId: v })} disabled={!newEvent.venueId}>
-                <SelectTrigger><SelectValue placeholder={newEvent.venueId ? "Choose template" : "Pick a venue first"} /></SelectTrigger>
-                <SelectContent>{templatesForVenue.map((t) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}</SelectContent>
-              </Select>
-              {newEvent.venueId && templatesForVenue.length === 0 && <p className="text-xs text-muted-foreground">This venue has no layout templates yet. Create one from Venue detail → Layouts.</p>}
             </div>
             <div className="space-y-1"><Label>Event name</Label><Input value={newEvent.name} onChange={(e) => setNewEvent({ ...newEvent, name: e.target.value })} placeholder="Spring Market 2026" /></div>
             <div className="grid grid-cols-2 gap-2">
@@ -239,21 +242,20 @@ function EventLibraryPage() {
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setCreating(false)} disabled={busy}>Cancel</Button>
-            <Button disabled={busy || !newEvent.venueId || !newEvent.templateId || !newEvent.name.trim()} onClick={async () => {
+            <Button disabled={busy || !newEvent.venueId || !newEvent.name.trim()} onClick={async () => {
               if (!activeOrg) return;
               setBusy(true);
               try {
                 await createFromTpl({ data: {
                   organizationId: activeOrg.organizationId,
                   venueId: newEvent.venueId,
-                  layoutTemplateId: newEvent.templateId,
                   name: newEvent.name.trim(),
                   startsAt: newEvent.startsAt || null,
                   endsAt: newEvent.endsAt || null,
                 }});
                 toast.success("Event created");
                 setCreating(false);
-                setNewEvent({ venueId: "", templateId: "", name: "", startsAt: "", endsAt: "" });
+                setNewEvent({ venueId: "", name: "", startsAt: "", endsAt: "" });
                 qc.invalidateQueries({ queryKey: ["studio-events", activeOrg.organizationId] });
               } catch (e) {
                 toast.error(e instanceof Error ? e.message : "Failed to create event");

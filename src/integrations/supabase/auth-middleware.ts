@@ -5,6 +5,166 @@ import { createClient } from '@supabase/supabase-js'
 import type { Database } from './types'
 import { DEVELOPMENT_IDENTITY_EMAIL, DEVELOPMENT_IDENTITY_PASSWORD, isDevelopmentMode } from '@/lib/development-access'
 
+type DevTokenCache = {
+  token: string;
+  expiresAt: number;
+};
+
+type DevCredential = {
+  email: string;
+  password: string;
+};
+
+let devTokenCache: DevTokenCache | null = null;
+let devBootstrapPromise: Promise<string> | null = null;
+
+function wait(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isRateLimitMessage(message: string | undefined) {
+  const text = (message ?? '').toLowerCase();
+  return text.includes('for security purposes') || text.includes('after 3 seconds') || text.includes('rate limit');
+}
+
+function isEmailNotConfirmedMessage(message: string | undefined) {
+  return (message ?? '').toLowerCase().includes('email not confirmed');
+}
+
+function getDevelopmentCredentialCandidates(): DevCredential[] {
+  const candidates: DevCredential[] = [
+    {
+      email: DEVELOPMENT_IDENTITY_EMAIL,
+      password: DEVELOPMENT_IDENTITY_PASSWORD,
+    },
+  ];
+
+  const envEmail = process.env.DEV_AUTH_EMAIL;
+  const envPassword = process.env.DEV_AUTH_PASSWORD;
+  if (envEmail && envPassword) {
+    candidates.push({ email: envEmail, password: envPassword });
+  }
+
+  const pinEmail = process.env.TEST_PIN_LOGIN_EMAIL;
+  const pinPassword = process.env.TEST_PIN_LOGIN_PASSWORD;
+  if (pinEmail && pinPassword) {
+    candidates.push({ email: pinEmail, password: pinPassword });
+  }
+
+  const unique = new Map<string, DevCredential>();
+  for (const candidate of candidates) {
+    unique.set(`${candidate.email}::${candidate.password}`, candidate);
+  }
+  return Array.from(unique.values());
+}
+
+function readJwtExp(token: string): number | null {
+  try {
+    const part = token.split('.')[1];
+    if (!part) return null;
+    const normalized = part.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), '=');
+    const payload = JSON.parse(Buffer.from(padded, 'base64').toString('utf8')) as { exp?: number };
+    return typeof payload.exp === 'number' ? payload.exp * 1000 : null;
+  } catch {
+    return null;
+  }
+}
+
+async function signInDevUser(client: ReturnType<typeof createClient<Database>>, credential: DevCredential) {
+  let result = await client.auth.signInWithPassword({
+    email: credential.email,
+    password: credential.password,
+  });
+
+  if (result.data.session?.access_token || !isRateLimitMessage(result.error?.message)) {
+    return result;
+  }
+
+  await wait(3200);
+  result = await client.auth.signInWithPassword({
+    email: credential.email,
+    password: credential.password,
+  });
+  return result;
+}
+
+async function bootstrapDevelopmentToken(client: ReturnType<typeof createClient<Database>>) {
+  const credentials = getDevelopmentCredentialCandidates();
+  let lastMessage: string | null = null;
+
+  for (const credential of credentials) {
+    const signInResult = await signInDevUser(client, credential);
+    const token = signInResult.data.session?.access_token ?? null;
+    if (token) return token;
+    if (signInResult.error?.message) {
+      lastMessage = signInResult.error.message;
+    }
+  }
+
+  const primary = credentials[0];
+  if (!primary) {
+    throw new Error('Unauthorized: Development auth bootstrap failed (No development credentials configured)');
+  }
+
+  const signUpResult = await client.auth.signUp({
+    email: primary.email,
+    password: primary.password,
+    options: {
+      data: {
+        full_name: 'Development Workspace',
+        is_development_identity: true,
+      },
+    },
+  });
+
+  if (signUpResult.error && !isRateLimitMessage(signUpResult.error.message)) {
+    throw new Error(`Unauthorized: Development auth bootstrap failed (${signUpResult.error.message})`);
+  }
+
+  let token = signUpResult.data.session?.access_token ?? null;
+  if (token) return token;
+
+  await wait(3200);
+  for (const credential of credentials) {
+    const retrySignInResult = await signInDevUser(client, credential);
+    token = retrySignInResult.data.session?.access_token ?? null;
+    if (token) return token;
+    if (retrySignInResult.error?.message) {
+      lastMessage = retrySignInResult.error.message;
+    }
+  }
+
+  const message = lastMessage ?? signUpResult.error?.message ?? 'session bootstrap failed';
+  const hint = isEmailNotConfirmedMessage(message)
+    ? ' Set TEST_PIN_LOGIN_EMAIL and TEST_PIN_LOGIN_PASSWORD to a confirmed dev account.'
+    : '';
+  throw new Error(`Unauthorized: Development auth bootstrap failed (${message}).${hint}`);
+}
+
+async function getDevelopmentToken(client: ReturnType<typeof createClient<Database>>) {
+  const now = Date.now();
+  if (devTokenCache && devTokenCache.expiresAt > now) {
+    return devTokenCache.token;
+  }
+
+  if (!devBootstrapPromise) {
+    devBootstrapPromise = (async () => {
+      const token = await bootstrapDevelopmentToken(client);
+      const expMs = readJwtExp(token);
+      const fallbackTtlMs = 10 * 60 * 1000;
+      devTokenCache = {
+        token,
+        expiresAt: expMs ? Math.max(now + 30_000, expMs - 30_000) : now + fallbackTtlMs,
+      };
+      return token;
+    })().finally(() => {
+      devBootstrapPromise = null;
+    });
+  }
+
+  return devBootstrapPromise;
+}
 
 
 function isNewSupabaseApiKey(value: string): boolean {
@@ -79,48 +239,12 @@ export const requireSupabaseAuth = createMiddleware({ type: 'function' }).server
       }
 
       const developmentClient = createSupabaseClient();
-      const signInResult = await developmentClient.auth.signInWithPassword({
-        email: DEVELOPMENT_IDENTITY_EMAIL,
-        password: DEVELOPMENT_IDENTITY_PASSWORD,
-      });
-
-      let token = signInResult.data.session?.access_token ?? null;
-
-      if (signInResult.error || !token) {
-        const signUpResult = await developmentClient.auth.signUp({
-          email: DEVELOPMENT_IDENTITY_EMAIL,
-          password: DEVELOPMENT_IDENTITY_PASSWORD,
-          options: {
-            data: {
-              full_name: 'Development Workspace',
-              is_development_identity: true,
-            },
-          },
-        });
-
-        if (signUpResult.error) {
-          throw new Error(`Unauthorized: Development auth bootstrap failed (${signUpResult.error.message})`);
-        }
-
-        token = signUpResult.data.session?.access_token ?? null;
-
-        if (!token) {
-          await new Promise((resolve) => setTimeout(resolve, 2200));
-          const retrySignInResult = await developmentClient.auth.signInWithPassword({
-            email: DEVELOPMENT_IDENTITY_EMAIL,
-            password: DEVELOPMENT_IDENTITY_PASSWORD,
-          });
-          token = retrySignInResult.data.session?.access_token ?? null;
-        }
-
-        if (!token) {
-          throw new Error('Unauthorized: Development auth bootstrap did not create a session');
-        }
-      }
+      const token = await getDevelopmentToken(developmentClient);
 
       const supabase = createSupabaseClient(token);
       const { data, error } = await supabase.auth.getClaims(token);
       if (error || !data?.claims) {
+        devTokenCache = null;
         throw new Error('Unauthorized: Invalid development token');
       }
 
