@@ -5,6 +5,7 @@ import {
   Wand2, ImagePlus, Undo2, Redo2, Save, Play, Search, Bell,
   ChevronRight, ZoomIn, ZoomOut, Grid3x3, Magnet, Layers3,
   ChevronDown, Package, BookTemplate, FolderOpen, Users, CalendarCheck,
+  CalendarDays, CreditCard, Clock3, Ban, CheckCircle2,
   MessageSquare, Sparkles, Eye, EyeOff, Lock, Unlock,
   MoreHorizontal, Zap, Droplets, Star, X, Plus, PanelLeftClose,
   PanelLeftOpen, PanelRightClose, PanelRightOpen,
@@ -179,11 +180,11 @@ const RENTAL_VARIANTS: Record<RentalVariant, {
   label: string; libraryLabel: string; w: number; h: number;
   sizeLabel: string; defaultPrice: number;
 }> = {
-  standard_booth:   { label:"Standard Booth",   libraryLabel:"Standard Booth",   w: 70,  h: 70, sizeLabel:"10ΓÇ▓ ├ù 10ΓÇ▓",     defaultPrice: 150 },
-  table_6ft:        { label:"6 Foot Table",     libraryLabel:"6 Foot Table",     w: 42,  h: 18, sizeLabel:"6ΓÇ▓ ├ù 2.5ΓÇ▓",     defaultPrice: 60  },
-  table_8ft:        { label:"8 Foot Table",     libraryLabel:"8 Foot Table",     w: 56,  h: 18, sizeLabel:"8ΓÇ▓ ├ù 2.5ΓÇ▓",     defaultPrice: 80  },
+  standard_booth:   { label:"Standard Booth",   libraryLabel:"Standard Booth",   w: 70,  h: 70, sizeLabel:"10ft x 10ft",     defaultPrice: 150 },
+  table_6ft:        { label:"6 Foot Table",     libraryLabel:"6 Foot Table",     w: 42,  h: 18, sizeLabel:"6ft x 2.5ft",     defaultPrice: 60  },
+  table_8ft:        { label:"8 Foot Table",     libraryLabel:"8 Foot Table",     w: 56,  h: 18, sizeLabel:"8ft x 2.5ft",     defaultPrice: 80  },
   round_table:      { label:"Round Table",      libraryLabel:"Round Table",      w: 35,  h: 35, sizeLabel:'60" diameter',  defaultPrice: 75  },
-  food_truck_space: { label:"Food Truck Space", libraryLabel:"Food Truck Space", w: 210, h: 84, sizeLabel:"30ΓÇ▓ ├ù 12ΓÇ▓",     defaultPrice: 400 },
+  food_truck_space: { label:"Food Truck Space", libraryLabel:"Food Truck Space", w: 210, h: 84, sizeLabel:"30ft x 12ft",     defaultPrice: 400 },
 };
 const RENTAL_TOOL_BY_VARIANT: Record<RentalVariant, Tool> = {
   standard_booth: "rental_standard", table_6ft: "rental_table6", table_8ft: "rental_table8",
@@ -218,8 +219,8 @@ const LEFT_TOOLS: { id: Tool; icon: React.ElementType; label: string; shortcut?:
   { id:"parking",  icon:ParkingCircle, label:"Parking" },
   { id:"stage",    icon:Mic2,          label:"Stage" },
   { id:"tree",     icon:TreePine,      label:"Tree" },
-  { id:"table6",   icon:RectangleHorizontal, label:"6ΓÇ▓ Table" },
-  { id:"table8",   icon:RectangleHorizontal, label:"8ΓÇ▓ Table" },
+  { id:"table6",   icon:RectangleHorizontal, label:"6ft Table" },
+  { id:"table8",   icon:RectangleHorizontal, label:"8ft Table" },
   { id:"tableRound", icon:CircleIcon,  label:"Round Table" },
   { id:"chair",    icon:Armchair,      label:"Chair" },
   { id:"measure",  icon:Ruler,         label:"Measure",     shortcut:"M" },
@@ -471,8 +472,8 @@ function RestroomSVG({ x, y, w, h }: { x:number; y:number; w:number; h:number })
       <rect x={x+2} y={y+2} width={w} height={h} fill="#000" opacity="0.22" rx="2"/>
       <rect x={x} y={y} width={half} height={h} fill="#1E88E5" stroke="#0D47A1" strokeWidth="1" rx="2"/>
       <rect x={x+half} y={y} width={half} height={h} fill="#E91E63" stroke="#880E4F" strokeWidth="1" rx="2"/>
-      <text x={x+half/2} y={y+h*0.62} textAnchor="middle" fill="#fff" fontSize={Math.min(10, h*0.4)} fontWeight="800">ΓÖé</text>
-      <text x={x+half+half/2} y={y+h*0.62} textAnchor="middle" fill="#fff" fontSize={Math.min(10, h*0.4)} fontWeight="800">ΓÖÇ</text>
+      <text x={x+half/2} y={y+h*0.62} textAnchor="middle" fill="#fff" fontSize={Math.min(10, h*0.4)} fontWeight="800">M</text>
+      <text x={x+half+half/2} y={y+h*0.62} textAnchor="middle" fill="#fff" fontSize={Math.min(10, h*0.4)} fontWeight="800">W</text>
     </g>
   );
 }
@@ -552,7 +553,7 @@ function WaterHookupSVG({ x, y, w, h }: { x:number; y:number; w:number; h:number
       <circle cx={cx+1} cy={cy+1.5} r={r} fill="#000" opacity="0.22"/>
       <circle cx={cx} cy={cy} r={r} fill="#0288D1" stroke="#01579B" strokeWidth="1"/>
       <path d={`M${cx} ${cy-r*0.55} Q${cx+r*0.55} ${cy} ${cx} ${cy+r*0.5} Q${cx-r*0.55} ${cy} ${cx} ${cy-r*0.55} Z`} fill="#BAE6FD"/>
-      <text x={cx} y={cy+r*0.85} textAnchor="middle" fill="#fff" fontSize={Math.min(5, r*0.5)} fontWeight="800" fontFamily="Inter,sans-serif">HΓééO</text>
+      <text x={cx} y={cy+r*0.85} textAnchor="middle" fill="#fff" fontSize={Math.min(5, r*0.5)} fontWeight="800" fontFamily="Inter,sans-serif">H2O</text>
     </g>
   );
 }
@@ -643,7 +644,7 @@ function BoothShape({
   const round = variant === "round_table";
   const strokeColor = isSel ? "#3B82F6" : sc.stroke;
   const strokeW = isSel ? 2.5 : 1.4;
-  const idLabel = vendor && vendor.length ? (vendor.length>16?vendor.slice(0,15)+"ΓÇª":vendor) : id;
+  const idLabel = vendor && vendor.length ? (vendor.length>16?vendor.slice(0,15)+"...":vendor) : id;
 
   // Shared status-colored reservable frame ΓÇö communicates "rentable" for every variant.
   const frame = round ? (
@@ -679,7 +680,7 @@ function BoothShape({
       </g>
     );
   } else if (variant === "table_6ft" || variant === "table_8ft") {
-    const label = variant === "table_6ft" ? "6ΓÇ▓" : "8ΓÇ▓";
+    const label = variant === "table_6ft" ? "6ft" : "8ft";
     glyph = (
       <g pointerEvents="none">
         <rect x={x+3} y={y+3} width={w-6} height={h-6} rx="2"
@@ -696,7 +697,7 @@ function BoothShape({
         <circle cx={cx} cy={cy} r={r*0.78} fill="#C69A6B" stroke="#7A4E28" strokeWidth="0.8"/>
         <circle cx={cx} cy={cy} r={r*0.14} fill="#5A3A1E" opacity="0.6"/>
         <text x={cx} y={cy+2.5} textAnchor="middle" fill="#3B2210"
-          fontSize={Math.min(8, r*0.5)} fontWeight="700" fontFamily="Inter,sans-serif">60ΓÇ│</text>
+          fontSize={Math.min(8, r*0.5)} fontWeight="700" fontFamily="Inter,sans-serif">60in</text>
       </g>
     );
   } else if (variant === "food_truck_space") {
@@ -740,8 +741,8 @@ function BoothShape({
       <text x={x+w} y={footerY} textAnchor="end" fill={sc.stroke} fontSize={Math.max(6.5, Math.min(9, w*0.12))} fontFamily="Inter,sans-serif" fontWeight="700" pointerEvents="none">
         ${booth.price}
       </text>
-      {electric && <g transform={`translate(${x+6},${y+h-10})`} pointerEvents="none"><circle r="4.5" fill="#FEF08A" stroke="#CA8A04" strokeWidth="0.8"/><text textAnchor="middle" y="1.8" fill="#92400E" fontSize="5.5" fontWeight="700">ΓÜí</text></g>}
-      {water && <g transform={`translate(${x+(electric?17:6)},${y+h-10})`} pointerEvents="none"><circle r="4.5" fill="#BAE6FD" stroke="#0284C7" strokeWidth="0.8"/><text textAnchor="middle" y="1.8" fill="#0369A1" fontSize="5.5">≡ƒÆº</text></g>}
+      {electric && <g transform={`translate(${x+6},${y+h-10})`} pointerEvents="none"><circle r="4.5" fill="#FEF08A" stroke="#CA8A04" strokeWidth="0.8"/><text textAnchor="middle" y="1.8" fill="#92400E" fontSize="5.5" fontWeight="700">E</text></g>}
+      {water && <g transform={`translate(${x+(electric?17:6)},${y+h-10})`} pointerEvents="none"><circle r="4.5" fill="#BAE6FD" stroke="#0284C7" strokeWidth="0.8"/><text textAnchor="middle" y="1.8" fill="#0369A1" fontSize="5.5">W</text></g>}
       {isSel && isPrimary && ([
         ["nw",0,0],["n",0.5,0],["ne",1,0],["e",1,0.5],["se",1,1],["s",0.5,1],["sw",0,1],["w",0,0.5],
       ] as const).map(([hName,ox,oy])=>(
@@ -865,17 +866,17 @@ function PlacedObjSVG({ o, isSel, onPointerDownBody, onPointerDownHandle }: {
       )}
       {o.kind === "table6" && (
         <g onPointerDown={(e)=>onPointerDownBody(e, o.id)}>
-          <RectTableSVG x={o.x} y={o.y} w={o.w} h={o.h} label={o.label ?? "6ΓÇ▓"}/>
+          <RectTableSVG x={o.x} y={o.y} w={o.w} h={o.h} label={o.label ?? "6ft"}/>
         </g>
       )}
       {o.kind === "table8" && (
         <g onPointerDown={(e)=>onPointerDownBody(e, o.id)}>
-          <RectTableSVG x={o.x} y={o.y} w={o.w} h={o.h} label={o.label ?? "8ΓÇ▓"}/>
+          <RectTableSVG x={o.x} y={o.y} w={o.w} h={o.h} label={o.label ?? "8ft"}/>
         </g>
       )}
       {o.kind === "tableRound" && (
         <g onPointerDown={(e)=>onPointerDownBody(e, o.id)}>
-          <RoundTableSVG x={o.x} y={o.y} w={o.w} h={o.h} label={o.label ?? "60ΓÇ│"}/>
+          <RoundTableSVG x={o.x} y={o.y} w={o.w} h={o.h} label={o.label ?? "60in"}/>
         </g>
       )}
       {o.kind === "chair" && (
@@ -911,7 +912,7 @@ function PlacedObjSVG({ o, isSel, onPointerDownBody, onPointerDownHandle }: {
       )}
 
       {/* Furniture (non-rentable) ΓÇö reuse existing SVGs; add lightweight variants for the rest */}
-      {o.kind === "furn_table4" && (<g onPointerDown={(e)=>onPointerDownBody(e, o.id)}><RectTableSVG x={o.x} y={o.y} w={o.w} h={o.h} label={o.label ?? "4ΓÇ▓"}/></g>)}
+      {o.kind === "furn_table4" && (<g onPointerDown={(e)=>onPointerDownBody(e, o.id)}><RectTableSVG x={o.x} y={o.y} w={o.w} h={o.h} label={o.label ?? "4ft"}/></g>)}
       {o.kind === "furn_banquet" && (<g onPointerDown={(e)=>onPointerDownBody(e, o.id)}><RectTableSVG x={o.x} y={o.y} w={o.w} h={o.h} label={o.label ?? "Banquet"}/></g>)}
       {(o.kind === "furn_folding_chair" || o.kind === "furn_banquet_chair" || o.kind === "furn_ceremony_chair" || o.kind === "furn_bar_stool") && (
         <g onPointerDown={(e)=>onPointerDownBody(e, o.id)}>
@@ -1015,41 +1016,57 @@ function VendorInspectorSection({
 
   return (
     <>
-      <Section label="Vendor">
-        {booth.vendor ? (
-          <>
-            <Row label="Business" value={booth.vendor} />
-            <Row label="Category" value={booth.category || "ΓÇö"} />
-            {canPick && (
-              <div className="flex gap-1.5 mt-1.5">
-                <button
-                  onClick={() => setOpen(true)}
-                  className="flex-1 text-[11px] py-1.5 rounded border border-border text-foreground bg-secondary hover:bg-muted"
-                >
-                  Change
-                </button>
-                <button
-                  onClick={clearAssignment}
-                  className="flex-1 text-[11px] py-1.5 rounded border border-destructive/40 text-destructive hover:bg-destructive/10"
-                >
-                  Remove
-                </button>
+      <div className="px-4 pb-4">
+        <p className="mb-2 text-[12px] font-semibold uppercase tracking-[0.16em] text-slate-500">Vendor</p>
+        <div className="rounded-2xl border border-dashed border-red-200 bg-red-50/50 p-4">
+          {booth.vendor ? (
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500">
+                <Users size={22} strokeWidth={1.8} />
               </div>
-            )}
-          </>
-        ) : (
-          <button
-            className="w-full text-xs text-primary border border-dashed border-primary/30 rounded py-2 hover:bg-primary/10 disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={!canPick}
-            onClick={() => {
-              if (!canPick) return;
-              setOpen(true);
-            }}
-          >
-            + Assign Vendor
-          </button>
-        )}
-      </Section>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-base font-medium text-slate-700">{booth.vendor}</p>
+                <p className="mt-0.5 truncate text-sm text-slate-500">{booth.category || "Unassigned"}</p>
+              </div>
+              {canPick && (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setOpen(true)}
+                    className="rounded-xl border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
+                  >
+                    Change
+                  </button>
+                  <button
+                    onClick={clearAssignment}
+                    className="rounded-xl border border-transparent px-4 py-2 text-sm font-medium text-slate-500 hover:bg-slate-100"
+                  >
+                    Remove
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500">
+                  <Users size={22} strokeWidth={1.8} />
+                </div>
+                <p className="text-base text-slate-700">No vendor assigned</p>
+              </div>
+              <button
+                className="rounded-xl border border-red-300 bg-white px-5 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={!canPick}
+                onClick={() => {
+                  if (!canPick) return;
+                  setOpen(true);
+                }}
+              >
+                Assign Vendor
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
       {canPick && (
         <VendorPickerDialog
           open={open}
@@ -1094,51 +1111,126 @@ function InspectorContent({
     </div>
   );
   const c = STATUS_COLORS[booth.status];
+  const boothTitle = (booth.variant && RENTAL_VARIANTS[booth.variant]?.label) || "Rentable Space";
+  const boothSize = (booth.variant && RENTAL_VARIANTS[booth.variant]?.sizeLabel) || `${booth.w} x ${booth.h}`;
+  const powerText = booth.electric ? "Power: 12A" : "Power: Not available";
+  const vendorText = booth.vendor || "Unassigned";
+  const statusButtons: BoothStatus[] = ["available", "reserved", "paid", "pending", "sponsor", "unavailable"];
   return (
-    <div className="overflow-y-auto" style={{scrollbarWidth:"none"}}>
-      <div className="px-3 py-3 border-b border-border">
-        <div className="flex items-center justify-between mb-1">
-          <span className="text-xs font-semibold text-foreground">{(booth.variant && RENTAL_VARIANTS[booth.variant]?.label) || "Rentable Space"} ┬╖ {booth.id}{count>1 && ` +${count-1}`}</span>
-          <span className="text-[10px] px-1.5 py-0.5 rounded border" style={{background:c.fill, color:c.stroke, borderColor:c.stroke+"60"}}>{c.label}</span>
+    <div className="overflow-y-auto px-4 pb-4 pt-2" style={{scrollbarWidth:"none"}}>
+      <div className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_16px_40px_rgba(15,23,42,0.06)]">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+              <h2 className="text-[28px] font-semibold tracking-tight text-slate-950">{boothTitle}</h2>
+              <span className="hidden h-8 border-l border-slate-300 sm:block" aria-hidden="true" />
+              <span className="text-[28px] font-semibold tracking-tight text-slate-950">{booth.id}</span>
+            </div>
+            <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-slate-500">
+              <span className="flex items-center gap-2">
+                <Ruler size={18} className="text-slate-400" />
+                {boothSize}
+              </span>
+              <span className="flex items-center gap-2">
+                <Zap size={18} className="text-slate-400" />
+                {powerText}
+              </span>
+              <span className="flex items-center gap-2">
+                <Users size={18} className="text-slate-400" />
+                {vendorText}
+              </span>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            className="mt-1 rounded-full p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+            aria-label="Close inspector actions"
+          >
+            <X size={30} strokeWidth={1.6} />
+          </button>
         </div>
-        <p className="text-[11px] text-muted-foreground">{(booth.variant && RENTAL_VARIANTS[booth.variant]?.sizeLabel) || `${booth.w}ΓÇ▓├ù${booth.h}ΓÇ▓`} ┬╖ {booth.category||"Unassigned"}</p>
 
-      </div>
-      <Section label="Status">
-        <div className="grid grid-cols-2 gap-1">
-          {(Object.keys(STATUS_COLORS) as BoothStatus[]).map((s)=>(
-            <button key={s} onClick={()=>onPatch?.({status:s})}
-              className={`text-[10px] px-1.5 py-1 rounded border ${booth.status===s?"border-primary text-foreground bg-primary/10":"border-border text-muted-foreground hover:bg-secondary"}`}>
-              {STATUS_COLORS[s].label}
-            </button>
-          ))}
+        <div className="mt-6 border-t border-slate-200 pt-6">
+          <div className="mb-4 flex items-center justify-between">
+            <p className="text-[13px] font-semibold uppercase tracking-[0.18em] text-slate-500">Status</p>
+            <span
+              className="rounded-full border px-3 py-1 text-sm font-medium"
+              style={{ background: c.fill, color: c.stroke, borderColor: `${c.stroke}40` }}
+            >
+              {c.label}
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            {statusButtons.map((s) => {
+              const active = booth.status === s;
+              return (
+                <button
+                  key={s}
+                  onClick={() => onPatch?.({ status: s })}
+                  className={`flex min-h-[68px] items-center justify-center gap-3 rounded-2xl border px-4 text-lg font-medium transition-colors ${active ? "border-red-300 bg-red-50 text-red-600" : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50"}`}
+                >
+                  {s === "available" && <CheckCircle2 size={26} strokeWidth={1.8} />}
+                  {s === "reserved" && <CalendarDays size={26} strokeWidth={1.8} />}
+                  {s === "paid" && <CreditCard size={26} strokeWidth={1.8} />}
+                  {s === "pending" && <Clock3 size={26} strokeWidth={1.8} />}
+                  {s === "sponsor" && <Star size={26} strokeWidth={1.8} />}
+                  {s === "unavailable" && <Ban size={26} strokeWidth={1.8} />}
+                  <span>{STATUS_COLORS[s].label}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </Section>
-      <VendorInspectorSection booth={booth} onPatch={onPatch} />
 
-      <Section label="Reservation">
-        <Row label="Price" value={`$${booth.price}`}/>
-        <input type="number" defaultValue={booth.price} onBlur={(e)=>{
-          const v = Number(e.currentTarget.value); if (!isNaN(v)) onPatch?.({price:v});
-        }} className="w-full text-[11px] bg-input rounded px-2 py-1 text-foreground border border-border/50"/>
-      </Section>
-      <Section label="Position">
-        <div className="grid grid-cols-2 gap-2">
-          <div><p className="text-[9px] text-muted-foreground mb-0.5">X</p><input defaultValue={booth.x} onBlur={(e)=>onPatch?.({x:Number(e.currentTarget.value)||0})} className="w-full text-[11px] bg-input rounded px-2 py-1 text-foreground border border-border/50"/></div>
-          <div><p className="text-[9px] text-muted-foreground mb-0.5">Y</p><input defaultValue={booth.y} onBlur={(e)=>onPatch?.({y:Number(e.currentTarget.value)||0})} className="w-full text-[11px] bg-input rounded px-2 py-1 text-foreground border border-border/50"/></div>
-          <div><p className="text-[9px] text-muted-foreground mb-0.5">W</p><input defaultValue={booth.w} onBlur={(e)=>onPatch?.({w:Number(e.currentTarget.value)||1})} className="w-full text-[11px] bg-input rounded px-2 py-1 text-foreground border border-border/50"/></div>
-          <div><p className="text-[9px] text-muted-foreground mb-0.5">H</p><input defaultValue={booth.h} onBlur={(e)=>onPatch?.({h:Number(e.currentTarget.value)||1})} className="w-full text-[11px] bg-input rounded px-2 py-1 text-foreground border border-border/50"/></div>
+        <div className="mt-6 border-t border-slate-200 pt-6">
+          <VendorInspectorSection booth={booth} onPatch={onPatch} />
         </div>
-      </Section>
-      <Section label="Utilities">
-        <Toggle label="Electric" icon={Zap} active={booth.electric} onClick={()=>onPatch?.({electric:!booth.electric})}/>
-        <Toggle label="Water" icon={Droplets} active={booth.water} onClick={()=>onPatch?.({water:!booth.water})}/>
-        <Toggle label="Corner" icon={Square} active={booth.corner} onClick={()=>onPatch?.({corner:!booth.corner})}/>
-        <Toggle label="Premium" icon={Star} active={booth.premium} onClick={()=>onPatch?.({premium:!booth.premium})}/>
-      </Section>
-      <div className="p-3 flex flex-col gap-1.5">
-        <button onClick={onDuplicate} className="w-full text-xs py-2 bg-secondary text-secondary-foreground rounded hover:bg-muted flex items-center justify-center gap-1.5"><Copy size={12}/> Duplicate</button>
-        <button onClick={onDelete} className="w-full text-xs py-2 bg-destructive/10 text-destructive rounded hover:bg-destructive/20 flex items-center justify-center gap-1.5"><Trash2 size={12}/> Delete</button>
+
+        <div className="mt-6 border-t border-slate-200 pt-6">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-2xl bg-slate-50 p-3">
+              <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500">Price</p>
+              <input
+                type="number"
+                defaultValue={booth.price}
+                onBlur={(e) => {
+                  const value = Number(e.currentTarget.value);
+                  if (!isNaN(value)) onPatch?.({ price: value });
+                }}
+                className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-base text-slate-900 outline-none focus:border-slate-400"
+              />
+            </div>
+            <div className="rounded-2xl bg-slate-50 p-3">
+              <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500">Size</p>
+              <p className="mt-2 text-base text-slate-900">{boothSize}</p>
+            </div>
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <div className="rounded-2xl bg-slate-50 p-3">
+              <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500">X</p>
+              <input defaultValue={booth.x} onBlur={(e)=>onPatch?.({x:Number(e.currentTarget.value)||0})} className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-base text-slate-900 outline-none focus:border-slate-400"/>
+            </div>
+            <div className="rounded-2xl bg-slate-50 p-3">
+              <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500">Y</p>
+              <input defaultValue={booth.y} onBlur={(e)=>onPatch?.({y:Number(e.currentTarget.value)||0})} className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-base text-slate-900 outline-none focus:border-slate-400"/>
+            </div>
+            <div className="rounded-2xl bg-slate-50 p-3">
+              <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500">W</p>
+              <input defaultValue={booth.w} onBlur={(e)=>onPatch?.({w:Number(e.currentTarget.value)||1})} className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-base text-slate-900 outline-none focus:border-slate-400"/>
+            </div>
+            <div className="rounded-2xl bg-slate-50 p-3">
+              <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500">H</p>
+              <input defaultValue={booth.h} onBlur={(e)=>onPatch?.({h:Number(e.currentTarget.value)||1})} className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-base text-slate-900 outline-none focus:border-slate-400"/>
+            </div>
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <button onClick={onDuplicate} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50">Duplicate</button>
+            <button onClick={onDelete} className="rounded-2xl border border-red-200 bg-white px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50">Delete</button>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -1153,7 +1245,7 @@ function ObjectLibrary({ onPick }: { onPick: (item: string) => void }) {
       <div className="px-3 py-2 sticky top-0 bg-card z-10 border-b border-border">
         <div className="flex items-center gap-2 bg-input rounded px-2 py-1.5">
           <Search size={11} className="text-muted-foreground shrink-0"/>
-          <input placeholder="Search objectsΓÇª" className="flex-1 bg-transparent text-xs outline-none text-foreground placeholder:text-muted-foreground"/>
+          <input placeholder="Search objects..." className="flex-1 bg-transparent text-xs outline-none text-foreground placeholder:text-muted-foreground"/>
         </div>
       </div>
       {OBJ_CATEGORIES.map((cat)=>(
@@ -1806,7 +1898,7 @@ export default function WorkspaceApp() {
 
   // Save
   const handleSave = useCallback(async () => {
-    if (ctx?.readOnly) { toast.message("Read-only example ΓÇö save disabled"); return; }
+    if (ctx?.readOnly) { toast.message("Read-only example - save disabled"); return; }
     if (ctx?.onSave) {
       setSaveStatus("saving");
       try {
@@ -1904,8 +1996,8 @@ export default function WorkspaceApp() {
           ))}
         </div>
         <div className="hidden md:flex items-center gap-0.5 mr-3 shrink-0">
-          <TBtn icon={Undo2} label="Undo (ΓîÿZ)" onClick={undo}/>
-          <TBtn icon={Redo2} label="Redo (ΓîÿΓçºZ)" onClick={redo}/>
+          <TBtn icon={Undo2} label="Undo (Ctrl+Z)" onClick={undo}/>
+          <TBtn icon={Redo2} label="Redo (Ctrl+Shift+Z)" onClick={redo}/>
           <div className="w-px h-4 bg-border mx-1"/>
           <TBtn icon={MapIcon} label="Background (map or image)" onClick={()=>setBgPanelOpen(v=>!v)}/>
         </div>
@@ -1914,7 +2006,7 @@ export default function WorkspaceApp() {
         <div className="flex items-center gap-1">
           <div className="hidden sm:flex items-center gap-1.5 bg-input rounded px-2.5 py-1 mr-2">
             <Search size={11} className="text-muted-foreground"/>
-            <span className="text-[11px] text-muted-foreground">Search or ΓîÿK</span>
+            <span className="text-[11px] text-muted-foreground">Search or Ctrl+K</span>
           </div>
           <TBtn icon={Bell} label="Notifications" onClick={()=>toast.message("No new notifications")}/>
           <TBtn icon={Sparkles} label="AI" accent onClick={()=>toast.message("AI panel coming soon")}/>
@@ -1963,7 +2055,7 @@ export default function WorkspaceApp() {
               {activeTab!=="objects" && activeTab!=="layers" && (
                 <div className="flex flex-col items-center justify-center h-full gap-2 text-muted-foreground px-4">
                   <Package size={24} strokeWidth={1.5}/>
-                  <p className="text-xs text-center capitalize">{LEFT_TABS.find(t=>t.id===activeTab)?.label} panel ΓÇö coming soon</p>
+                  <p className="text-xs text-center capitalize">{LEFT_TABS.find(t=>t.id===activeTab)?.label} panel - coming soon</p>
                 </div>
               )}
             </div>
@@ -2097,8 +2189,8 @@ export default function WorkspaceApp() {
                 <div className="mt-4 grid grid-cols-2 gap-2">
                   <button onClick={()=>{ setLeftOpen(true); setActiveTab("objects"); }} className="rounded-lg bg-primary text-primary-foreground text-xs font-medium py-2 hover:opacity-90">Add Object</button>
                   <button onClick={()=>setBgPanelOpen(true)} className="rounded-lg bg-secondary border border-border text-foreground text-xs font-medium py-2 hover:bg-muted">Import Drawing</button>
-                  <button onClick={()=>toast.message("AI Import ΓÇö coming soon")} className="rounded-lg bg-secondary border border-border text-foreground text-xs font-medium py-2 hover:bg-muted">AI Import</button>
-                  <button onClick={()=>toast.message("Templates ΓÇö coming soon")} className="rounded-lg bg-secondary border border-border text-foreground text-xs font-medium py-2 hover:bg-muted">Start From Template</button>
+                  <button onClick={()=>toast.message("AI Import - coming soon")} className="rounded-lg bg-secondary border border-border text-foreground text-xs font-medium py-2 hover:bg-muted">AI Import</button>
+                  <button onClick={()=>toast.message("Templates - coming soon")} className="rounded-lg bg-secondary border border-border text-foreground text-xs font-medium py-2 hover:bg-muted">Start From Template</button>
                 </div>
               </div>
             </div>
@@ -2120,7 +2212,7 @@ export default function WorkspaceApp() {
           {/* Tool hint */}
           {activeTool !== "select" && activeTool !== "pan" && (
             <div className="absolute top-2 right-2 z-10 bg-primary/15 text-primary text-[11px] px-2 py-1 rounded border border-primary/30">
-              Click canvas to place: {LEFT_TOOLS.find(t=>t.id===activeTool)?.label} ┬╖ Esc to cancel
+              Click canvas to place: {LEFT_TOOLS.find(t=>t.id===activeTool)?.label} - Esc to cancel
             </div>
           )}
 
@@ -2222,7 +2314,7 @@ export default function WorkspaceApp() {
                     />
                   </div>
                   <div className="text-[10px] text-muted-foreground">
-                    {background.locked ? "Locked ΓÇö unlock to move, resize, and rotate on canvas" : "Drag image to move ┬╖ Corner handles resize ┬╖ Top handle rotates"}
+                    {background.locked ? "Locked - unlock to move, resize, and rotate on canvas" : "Drag image to move - Corner handles resize - Top handle rotates"}
                   </div>
                   <div className="flex gap-1.5">
                     <button
@@ -2313,10 +2405,10 @@ export default function WorkspaceApp() {
         <div className="w-px h-3 bg-border"/>
         {selectedIds.size
           ? <span className="text-[10px] text-primary">{selectedIds.size} selected</span>
-          : <span className="text-[10px] text-muted-foreground">{booths.length} booths ┬╖ {placed.length} objects</span>}
+          : <span className="text-[10px] text-muted-foreground">{booths.length} booths - {placed.length} objects</span>}
         <div className="flex-1"/>
         <div className="flex items-center gap-1"><Activity size={11} className="text-green-500"/><span className="text-[10px] text-muted-foreground">AI Ready</span></div>
-        <div className="flex items-center gap-1"><div className={`w-1.5 h-1.5 rounded-full ${saveStatus==="saving"?"bg-blue-500 animate-pulse":saveStatus==="dirty"?"bg-amber-500":"bg-green-500"}`}/><span className="text-[10px] text-muted-foreground">{saveStatus==="saving"?"SavingΓÇª":saveStatus==="dirty"?"Unsaved Changes":"Saved"}</span></div>
+        <div className="flex items-center gap-1"><div className={`w-1.5 h-1.5 rounded-full ${saveStatus==="saving"?"bg-blue-500 animate-pulse":saveStatus==="dirty"?"bg-amber-500":"bg-green-500"}`}/><span className="text-[10px] text-muted-foreground">{saveStatus==="saving"?"Saving...":saveStatus==="dirty"?"Unsaved Changes":"Saved"}</span></div>
       </footer>
 
       {/* Mobile dock + sheets */}
