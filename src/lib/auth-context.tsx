@@ -1,7 +1,7 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import { DEVELOPMENT_IDENTITY_EMAIL, ENABLE_DEV_ACCESS, ensureDevelopmentSession, isDevelopmentAccessEnabled, isDevelopmentSuperAdminUser } from "@/lib/development-access";
+import { DEV_ACCESS_SIGNED_OUT_KEY, ensureDevelopmentSession, isDevelopmentAccessEnabled, isDevelopmentSuperAdminUser } from "@/lib/development-access";
 
 export type AppRole = "super_admin" | "organizer" | "staff" | "vendor";
 export type AppSurface = "studio" | "portal" | "admin";
@@ -54,10 +54,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [activeEventId, setActiveEventIdState] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [contextError, setContextError] = useState<string | null>(null);
-  // DEVELOPMENT ONLY
-  // Auth startup can emit multiple session refreshes; share one seed request per user.
-  const developmentBootstrapRef = useRef<{ userId: string; promise: Promise<unknown> } | null>(null);
-
   const loadContext = useCallback(async (userId: string | undefined) => {
     if (!userId && !isDevelopmentAccessEnabled()) {
       setRoles([]);
@@ -79,6 +75,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           },
         ]);
         setActiveOrgId((current) => current && current === "development-workspace" ? current : "development-workspace");
+        setContextError(null);
+        return;
+      }
+
+      if (!userId) {
+        setRoles([]);
+        setOrganizations([]);
+        setActiveOrgId(null);
         setContextError(null);
         return;
       }
@@ -121,21 +125,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(async () => {
     try {
       if (isDevelopmentAccessEnabled()) {
-        const fallbackSession = {
-          access_token: "development-token",
-          user: {
-            id: "development-user",
-            email: DEVELOPMENT_IDENTITY_EMAIL,
-            app_metadata: {},
-            user_metadata: {},
-            aud: "authenticated",
-            created_at: new Date().toISOString(),
-            role: "authenticated",
-          },
-        } as Session;
+        const { data, error } = await supabase.auth.getSession();
+        if (error) throw error;
 
-        setSession(fallbackSession);
-        await loadContext(fallbackSession.user.id);
+        const devSession = data.session ?? await ensureDevelopmentSession();
+        if (!devSession) {
+          setSession(null);
+          setRoles([]);
+          setOrganizations([]);
+          setActiveOrgId(null);
+          setContextError(null);
+          return;
+        }
+
+        setSession(devSession);
+        await loadContext(devSession.user.id);
         return;
       }
 
@@ -195,15 +199,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [refresh, loadContext]);
 
   const signOut = useCallback(async () => {
-    if (!isDevelopmentAccessEnabled()) {
-      await supabase.auth.signOut();
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(DEV_ACCESS_SIGNED_OUT_KEY, "1");
     }
+
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error("Failed to sign out", error);
+    }
+
     setSession(null); setRoles([]); setOrganizations([]); setActiveOrgId(null); setActiveEventIdState(null); setContextError(null);
+
+    if (typeof window !== "undefined") {
+      window.location.assign("/auth");
+    }
   }, []);
 
   const value = useMemo<AuthState>(() => {
     const activeOrg = organizations.find((o) => o.organizationId === activeOrgId) ?? null;
-    const hasDevelopmentAccess = ENABLE_DEV_ACCESS && !!session;
+    const hasDevelopmentAccess = isDevelopmentAccessEnabled() && !!session;
     const isExplicitDeveloperSuperAdmin = hasDevelopmentAccess && isDevelopmentSuperAdminUser(session?.user ?? null);
     const bootstrapMessage = hasDevelopmentAccess ? null : contextError ? "We couldn't load your Studio access." : null;
     const effectiveContextError = hasDevelopmentAccess ? null : contextError;
@@ -238,6 +253,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       hasPermission,
       primaryRole,
       primarySurface: hasDevelopmentAccess ? "studio" : roleToSurface(primaryRole),
+      setActiveOrgId,
+      setActiveEventId,
       refresh,
       signOut,
     };

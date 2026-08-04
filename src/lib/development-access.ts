@@ -2,6 +2,8 @@
 // Development Only - Remove before Production
 import { supabase } from "@/integrations/supabase/client";
 
+export const DEV_ACCESS_SIGNED_OUT_KEY = "eventscape.devAccess.signedOut";
+
 function isEnabled(value: string | undefined) {
   const normalized = (value ?? "").trim().toLowerCase();
   return normalized === "1" || normalized === "true" || normalized === "yes" || normalized === "on";
@@ -33,6 +35,11 @@ export function isDevelopmentMode() {
 }
 
 export function isDevelopmentAccessEnabled() {
+  if (typeof window !== "undefined") {
+    const wasExplicitlySignedOut = window.localStorage.getItem(DEV_ACCESS_SIGNED_OUT_KEY) === "1";
+    if (wasExplicitlySignedOut) return false;
+  }
+
   if (typeof window !== "undefined" && isLocalDevelopmentHost(window.location.hostname)) {
     return true;
   }
@@ -53,13 +60,23 @@ export async function ensureDevelopmentSession() {
   if (!isDevelopmentAccessEnabled()) return null;
 
   const { data: currentSession } = await supabase.auth.getSession();
-  if (currentSession.session?.access_token) return currentSession.session;
+  if (currentSession.session?.access_token) {
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem(DEV_ACCESS_SIGNED_OUT_KEY);
+    }
+    return currentSession.session;
+  }
 
   const signInResult = await supabase.auth.signInWithPassword({
     email: DEVELOPMENT_IDENTITY_EMAIL,
     password: DEVELOPMENT_IDENTITY_PASSWORD,
   });
-  if (signInResult.data.session?.access_token) return signInResult.data.session;
+  if (signInResult.data.session?.access_token) {
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem(DEV_ACCESS_SIGNED_OUT_KEY);
+    }
+    return signInResult.data.session;
+  }
 
   const signUpResult = await supabase.auth.signUp({
     email: DEVELOPMENT_IDENTITY_EMAIL,
@@ -71,14 +88,24 @@ export async function ensureDevelopmentSession() {
       },
     },
   });
-  if (signUpResult.data.session?.access_token) return signUpResult.data.session;
+  if (signUpResult.data.session?.access_token) {
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem(DEV_ACCESS_SIGNED_OUT_KEY);
+    }
+    return signUpResult.data.session;
+  }
 
   await new Promise((resolve) => setTimeout(resolve, 2200));
   const retryResult = await supabase.auth.signInWithPassword({
     email: DEVELOPMENT_IDENTITY_EMAIL,
     password: DEVELOPMENT_IDENTITY_PASSWORD,
   });
-  if (retryResult.data.session?.access_token) return retryResult.data.session;
+  if (retryResult.data.session?.access_token) {
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem(DEV_ACCESS_SIGNED_OUT_KEY);
+    }
+    return retryResult.data.session;
+  }
 
   throw new Error("Unable to bootstrap development session");
 }
