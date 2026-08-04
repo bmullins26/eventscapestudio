@@ -3,7 +3,7 @@ import { createMiddleware } from '@tanstack/react-start'
 import { getRequest } from '@tanstack/react-start/server'
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from './types'
-import { DEVELOPMENT_IDENTITY_EMAIL, DEVELOPMENT_IDENTITY_PASSWORD, isDevelopmentMode } from '@/lib/development-access'
+import { DEVELOPMENT_IDENTITY_EMAIL, DEVELOPMENT_IDENTITY_PASSWORD, isDevelopmentAccessEnabled } from '@/lib/development-access'
 
 type DevTokenCache = {
   token: string;
@@ -234,7 +234,7 @@ export const requireSupabaseAuth = createMiddleware({ type: 'function' }).server
     );
 
     if (!authHeader) {
-      if (!isDevelopmentMode()) {
+      if (!isDevelopmentAccessEnabled()) {
         throw new Error('Unauthorized: No authorization header provided');
       }
 

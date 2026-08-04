@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import { DEVELOPMENT_IDENTITY_EMAIL, ENABLE_DEV_ACCESS, ensureDevelopmentSession, isDevelopmentMode, isDevelopmentSuperAdminUser } from "@/lib/development-access";
+import { DEVELOPMENT_IDENTITY_EMAIL, ENABLE_DEV_ACCESS, ensureDevelopmentSession, isDevelopmentAccessEnabled, isDevelopmentSuperAdminUser } from "@/lib/development-access";
 
 export type AppRole = "super_admin" | "organizer" | "staff" | "vendor";
 export type AppSurface = "studio" | "portal" | "admin";
@@ -59,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const developmentBootstrapRef = useRef<{ userId: string; promise: Promise<unknown> } | null>(null);
 
   const loadContext = useCallback(async (userId: string | undefined) => {
-    if (!userId && !isDevelopmentMode()) {
+    if (!userId && !isDevelopmentAccessEnabled()) {
       setRoles([]);
       setOrganizations([]);
       setActiveOrgId(null);
@@ -68,7 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      if (isDevelopmentMode()) {
+      if (isDevelopmentAccessEnabled()) {
         setRoles(["super_admin", "organizer"]);
         setOrganizations([
           {
@@ -120,7 +120,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async () => {
     try {
-      if (isDevelopmentMode()) {
+      if (isDevelopmentAccessEnabled()) {
         const fallbackSession = {
           access_token: "development-token",
           user: {
@@ -157,7 +157,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Load persisted active event when active org changes
   useEffect(() => {
-    if (isDevelopmentMode() || !session?.user?.id || !activeOrgId) { setActiveEventIdState(null); return; }
+    if (isDevelopmentAccessEnabled() || !session?.user?.id || !activeOrgId) { setActiveEventIdState(null); return; }
     void supabase
       .from("user_org_prefs")
       .select("active_event_id")
@@ -169,7 +169,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const setActiveEventId = useCallback(async (id: string | null) => {
     setActiveEventIdState(id);
-    if (isDevelopmentMode() || !session?.user?.id || !activeOrgId) return;
+    if (isDevelopmentAccessEnabled() || !session?.user?.id || !activeOrgId) return;
     await supabase.from("user_org_prefs").upsert({
       user_id: session.user.id,
       organization_id: activeOrgId,
@@ -181,7 +181,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (typeof window === "undefined") { setLoading(false); return; }
     void refresh();
 
-    if (isDevelopmentMode()) {
+    if (isDevelopmentAccessEnabled()) {
       return;
     }
 
@@ -195,7 +195,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [refresh, loadContext]);
 
   const signOut = useCallback(async () => {
-    if (!isDevelopmentMode()) {
+    if (!isDevelopmentAccessEnabled()) {
       await supabase.auth.signOut();
     }
     setSession(null); setRoles([]); setOrganizations([]); setActiveOrgId(null); setActiveEventIdState(null); setContextError(null);

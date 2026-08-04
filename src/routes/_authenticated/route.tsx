@@ -1,11 +1,11 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
-import { isDevelopmentMode } from "@/lib/development-access";
+import { isDevelopmentAccessEnabled } from "@/lib/development-access";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
   beforeLoad: async () => {
-    if (isDevelopmentMode()) {
+    if (isDevelopmentAccessEnabled()) {
       return { user: null };
     }
 

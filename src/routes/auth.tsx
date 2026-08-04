@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ensureDevelopmentSession, isDevelopmentMode } from "@/lib/development-access";
+import { ensureDevelopmentSession, isDevelopmentAccessEnabled } from "@/lib/development-access";
 import { testPinLogin } from "@/lib/test-auth.functions";
 
 const SHOW_TEST_PIN_LOGIN = (import.meta.env.VITE_TEST_PIN_LOGIN_ENABLED ?? "").toString().toLowerCase() === "true";
@@ -39,7 +39,7 @@ function AuthPage() {
   useEffect(() => {
     let cancelled = false;
 
-    if (isDevelopmentMode()) {
+    if (isDevelopmentAccessEnabled()) {
       if (!cancelled) navigate({ to: "/app", replace: true });
       return;
     }
@@ -50,7 +50,7 @@ function AuthPage() {
     return () => { cancelled = true; };
   }, [navigate]);
 
-  if (isDevelopmentMode()) {
+  if (isDevelopmentAccessEnabled()) {
     return null;
   }
 

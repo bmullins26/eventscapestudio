@@ -2,7 +2,16 @@
 // Development Only - Remove before Production
 import { supabase } from "@/integrations/supabase/client";
 
-export const ENABLE_DEV_ACCESS = true;
+function isEnabled(value: string | undefined) {
+  const normalized = (value ?? "").trim().toLowerCase();
+  return normalized === "1" || normalized === "true" || normalized === "yes" || normalized === "on";
+}
+
+const VITE_ENABLE_DEV_ACCESS = isEnabled(
+  (import.meta.env.VITE_ENABLE_DEV_ACCESS ?? process.env.VITE_ENABLE_DEV_ACCESS ?? "").toString(),
+);
+
+export const ENABLE_DEV_ACCESS = VITE_ENABLE_DEV_ACCESS;
 
 const rawAppMode = (import.meta.env.VITE_APP_MODE ?? import.meta.env.MODE ?? process.env.APP_MODE ?? "production").toString();
 export const APP_MODE = rawAppMode.toLowerCase();
@@ -23,13 +32,25 @@ export function isDevelopmentMode() {
   return APP_MODE === "development" || APP_MODE === "dev" || import.meta.env.DEV;
 }
 
+export function isDevelopmentAccessEnabled() {
+  if (typeof window !== "undefined" && isLocalDevelopmentHost(window.location.hostname)) {
+    return true;
+  }
+
+  if (ENABLE_DEV_ACCESS) {
+    return true;
+  }
+
+  return APP_MODE === "development" || APP_MODE === "dev" || import.meta.env.DEV;
+}
+
 export function isDevelopmentSuperAdminUser(user: { email?: string | null } | null | undefined) {
   if (!user?.email) return false;
   return DEV_SUPER_ADMIN_EMAILS.includes(user.email.toLowerCase());
 }
 
 export async function ensureDevelopmentSession() {
-  if (!isDevelopmentMode()) return null;
+  if (!isDevelopmentAccessEnabled()) return null;
 
   const { data: currentSession } = await supabase.auth.getSession();
   if (currentSession.session?.access_token) return currentSession.session;
