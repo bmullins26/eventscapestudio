@@ -4,56 +4,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Search, Star, X, Check } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { listOrgVendors, type PickerVendor } from "@/lib/vendor-picker.functions";
-import { isDevelopmentMode } from "@/lib/development-access";
-
-type DevVendorDirectoryState = {
-  rows: Array<{
-    vendor_profile_id: string;
-    account_status: string;
-    is_favorite: boolean;
-    vendor_profiles: {
-      business_name: string;
-      contact_name: string | null;
-      email: string | null;
-      phone: string | null;
-      product_categories?: string[] | null;
-      categories?: string[] | null;
-    } | null;
-  }>;
-};
-
-const DEV_VENDOR_DIRECTORY_PREFIX = "eventscape:vendor-directory:";
-
-function readDevVendorDirectory(organizationId: string): PickerVendor[] {
-  if (typeof window === "undefined") return [];
-  const raw = window.localStorage.getItem(`${DEV_VENDOR_DIRECTORY_PREFIX}${organizationId}`);
-  if (!raw) return [];
-  try {
-    const parsed = JSON.parse(raw) as DevVendorDirectoryState;
-    return (parsed.rows ?? [])
-      .map((row) => {
-        const profile = row.vendor_profiles;
-        if (!profile) return null;
-        const categories = Array.isArray(profile.product_categories) && profile.product_categories.length
-          ? profile.product_categories
-          : Array.isArray(profile.categories) ? profile.categories : [];
-        return {
-          vendor_profile_id: row.vendor_profile_id,
-          business_name: profile.business_name,
-          contact_name: profile.contact_name,
-          email: profile.email,
-          phone: profile.phone,
-          categories,
-          is_favorite: !!row.is_favorite,
-          account_status: row.account_status ?? "no_account",
-          status: "prospect",
-        } satisfies PickerVendor;
-      })
-      .filter((row): row is PickerVendor => row !== null);
-  } catch {
-    return [];
-  }
-}
 
 export function VendorPickerDialog({
   open,
@@ -70,11 +20,8 @@ export function VendorPickerDialog({
 }) {
   const list = useServerFn(listOrgVendors);
   const q = useQuery({
-    queryKey: ["org-vendors", organizationId, isDevelopmentMode() ? "dev" : "prod"],
-    queryFn: async () => {
-      if (isDevelopmentMode()) return readDevVendorDirectory(organizationId);
-      return list({ data: { organizationId } });
-    },
+    queryKey: ["org-vendors", organizationId],
+    queryFn: async () => list({ data: { organizationId } }),
     enabled: open && !!organizationId,
   });
 

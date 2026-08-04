@@ -33,7 +33,7 @@ export const listOrgVendors = createServerFn({ method: "GET" })
         "vendor_profile_id, is_favorite, account_status, status, vendor_profiles(id, business_name, contact_name, email, phone, product_categories, categories)",
       )
       .eq("organization_id", data.organizationId)
-      .neq("status", "archived");
+      .or("status.is.null,status.neq.archived");
     if (error) throw error;
 
     return (rows ?? [])

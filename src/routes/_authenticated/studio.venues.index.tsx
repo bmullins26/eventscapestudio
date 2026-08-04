@@ -5,7 +5,6 @@ import { MapPin, Plus, Search, MoreHorizontal, Archive, ArchiveRestore, Trash2, 
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
-import { isDevelopmentMode } from "@/lib/development-access";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Button } from "@/components/ui/button";
@@ -59,32 +58,6 @@ type VenueDocumentRow = {
   name: string;
 };
 
-const DEV_VENUES_STORAGE_PREFIX = "eventscape-dev-venues:";
-const DEV_VENUE_MAPS_STORAGE_PREFIX = "eventscape-dev-venue-maps:";
-const DEV_LAYOUT_TEMPLATES_STORAGE_PREFIX = "eventscape-dev-layout-templates:";
-const DEV_VENUE_DOCS_STORAGE_PREFIX = "eventscape-dev-venue-docs:";
-
-function createDevVenueId() {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
-  return `dev-venue-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-}
-
-function readDevelopmentVenues(orgId: string | null | undefined): Venue[] {
-  if (!orgId || typeof window === "undefined") return [];
-  try {
-    const raw = window.localStorage.getItem(`${DEV_VENUES_STORAGE_PREFIX}${orgId}`);
-    if (!raw) return [];
-    return JSON.parse(raw) as Venue[];
-  } catch {
-    return [];
-  }
-}
-
-function writeDevelopmentVenues(orgId: string | null | undefined, venues: Venue[]) {
-  if (!orgId || typeof window === "undefined") return;
-  window.localStorage.setItem(`${DEV_VENUES_STORAGE_PREFIX}${orgId}`, JSON.stringify(venues));
-}
-
 function requestName(message: string, fallback: string) {
   try {
     if (typeof window !== "undefined" && typeof window.prompt === "function") {
@@ -95,49 +68,6 @@ function requestName(message: string, fallback: string) {
     // Some runtimes disallow prompt; fallback keeps add actions usable.
   }
   return fallback;
-}
-
-function readDevelopmentVenueMaps(orgId: string | null | undefined, venueId: string | null | undefined): VenueMap[] {
-  if (!orgId || !venueId || typeof window === "undefined") return [];
-  try {
-    const raw = window.localStorage.getItem(`${DEV_VENUE_MAPS_STORAGE_PREFIX}${orgId}:${venueId}`);
-    if (!raw) return [];
-    return JSON.parse(raw) as VenueMap[];
-  } catch {
-    return [];
-  }
-}
-
-function writeDevelopmentVenueMaps(orgId: string | null | undefined, venueId: string | null | undefined, maps: VenueMap[]) {
-  if (!orgId || !venueId || typeof window === "undefined") return;
-  window.localStorage.setItem(`${DEV_VENUE_MAPS_STORAGE_PREFIX}${orgId}:${venueId}`, JSON.stringify(maps));
-}
-
-function readDevelopmentLayoutTemplates(orgId: string | null | undefined, venueId: string | null | undefined): LayoutTemplateRow[] {
-  if (!orgId || !venueId || typeof window === "undefined") return [];
-  try {
-    const raw = window.localStorage.getItem(`${DEV_LAYOUT_TEMPLATES_STORAGE_PREFIX}${orgId}:${venueId}`);
-    if (!raw) return [];
-    return JSON.parse(raw) as LayoutTemplateRow[];
-  } catch {
-    return [];
-  }
-}
-
-function writeDevelopmentLayoutTemplates(orgId: string | null | undefined, venueId: string | null | undefined, templates: LayoutTemplateRow[]) {
-  if (!orgId || !venueId || typeof window === "undefined") return;
-  window.localStorage.setItem(`${DEV_LAYOUT_TEMPLATES_STORAGE_PREFIX}${orgId}:${venueId}`, JSON.stringify(templates));
-}
-
-function readDevelopmentVenueDocuments(orgId: string | null | undefined, venueId: string | null | undefined): VenueDocumentRow[] {
-  if (!orgId || !venueId || typeof window === "undefined") return [];
-  try {
-    const raw = window.localStorage.getItem(`${DEV_VENUE_DOCS_STORAGE_PREFIX}${orgId}:${venueId}`);
-    if (!raw) return [];
-    return JSON.parse(raw) as VenueDocumentRow[];
-  } catch {
-    return [];
-  }
 }
 
 function VenuesPage() {
@@ -153,11 +83,6 @@ function VenuesPage() {
     queryKey: ["venues", orgId, showArchived],
     enabled: !!orgId,
     queryFn: async (): Promise<Venue[]> => {
-      if (isDevelopmentMode()) {
-        const stored = readDevelopmentVenues(orgId);
-        return showArchived ? stored : stored.filter((venue) => !venue.archived_at);
-      }
-
       const q = supabase.from("venues").select("id, name, address_line1, city, state, postal_code, parking_info, utilities_info, notes, archived_at").eq("organization_id", orgId!).order("name");
       const { data, error } = showArchived ? await q : await q.is("archived_at", null);
       if (error) throw error;
@@ -187,20 +112,6 @@ function VenuesPage() {
       notes: editing.notes || null,
     };
 
-    if (isDevelopmentMode()) {
-      const existing = readDevelopmentVenues(orgId);
-      const nextVenues = editing.id
-        ? existing.map((venue) => (venue.id === editing.id ? { ...venue, ...payload, id: venue.id } : venue))
-        : [...existing, { id: createDevVenueId(), ...payload, archived_at: null } as Venue];
-
-      writeDevelopmentVenues(orgId, nextVenues);
-      qc.setQueryData(["venues", orgId, showArchived], showArchived ? nextVenues : nextVenues.filter((venue) => !venue.archived_at));
-      qc.invalidateQueries({ queryKey: ["venues", orgId] });
-      toast.success(editing.id ? "Venue updated" : "Venue created");
-      setEditing(null);
-      return;
-    }
-
     const { error } = editing.id
       ? await supabase.from("venues").update(payload).eq("id", editing.id)
       : await supabase.from("venues").insert(payload);
@@ -211,16 +122,6 @@ function VenuesPage() {
   };
 
   const archive = async (v: Venue, restore = false) => {
-    if (isDevelopmentMode()) {
-      const existing = readDevelopmentVenues(orgId);
-      const nextVenues = existing.map((venue) => (venue.id === v.id ? { ...venue, archived_at: restore ? null : new Date().toISOString() } : venue));
-      writeDevelopmentVenues(orgId, nextVenues);
-      qc.setQueryData(["venues", orgId, showArchived], showArchived ? nextVenues : nextVenues.filter((venue) => !venue.archived_at));
-      qc.invalidateQueries({ queryKey: ["venues", orgId] });
-      toast.success(restore ? "Restored" : "Archived");
-      return;
-    }
-
     const { error } = await supabase.from("venues").update({ archived_at: restore ? null : new Date().toISOString() }).eq("id", v.id);
     if (error) toast.error(error.message);
     else { toast.success(restore ? "Restored" : "Archived"); qc.invalidateQueries({ queryKey: ["venues", orgId] }); }
@@ -228,15 +129,6 @@ function VenuesPage() {
 
   const remove = async (v: Venue) => {
     if (!confirm(`Delete ${v.name}? This cannot be undone.`)) return;
-    if (isDevelopmentMode()) {
-      const existing = readDevelopmentVenues(orgId);
-      const nextVenues = existing.filter((venue) => venue.id !== v.id);
-      writeDevelopmentVenues(orgId, nextVenues);
-      qc.setQueryData(["venues", orgId, showArchived], showArchived ? nextVenues : nextVenues.filter((venue) => !venue.archived_at));
-      qc.invalidateQueries({ queryKey: ["venues", orgId] });
-      toast.success("Deleted");
-      return;
-    }
 
     const { error } = await supabase.from("venues").delete().eq("id", v.id);
     if (error) toast.error(error.message);
@@ -358,10 +250,6 @@ function VenueDetailSheet({ orgId, venueId, onClose }: { orgId: string | null | 
     queryKey: ["venue", venueId],
     enabled: !!venueId,
     queryFn: async () => {
-      if (isDevelopmentMode()) {
-        return readDevelopmentVenues(orgId).find((candidate) => candidate.id === venueId) ?? null;
-      }
-
       const { data, error } = await supabase.from("venues").select("*").eq("id", venueId!).maybeSingle();
       if (error) throw error;
       return data;
@@ -372,9 +260,6 @@ function VenueDetailSheet({ orgId, venueId, onClose }: { orgId: string | null | 
     queryKey: ["venue-maps", venueId],
     enabled: !!venueId,
     queryFn: async () => {
-      if (isDevelopmentMode()) {
-        return readDevelopmentVenueMaps(orgId, venueId);
-      }
       const { data, error } = await supabase.from("venue_maps").select("*").eq("venue_id", venueId!).order("sort_order");
       if (error) throw error;
       return data;
@@ -385,9 +270,6 @@ function VenueDetailSheet({ orgId, venueId, onClose }: { orgId: string | null | 
     queryKey: ["venue-layouts", venueId],
     enabled: !!venueId,
     queryFn: async () => {
-      if (isDevelopmentMode()) {
-        return readDevelopmentLayoutTemplates(orgId, venueId);
-      }
       const { data, error } = await supabase.from("layout_templates").select("id, name, description, is_default").eq("venue_id", venueId!).order("name");
       if (error) throw error;
       return data;
@@ -398,9 +280,6 @@ function VenueDetailSheet({ orgId, venueId, onClose }: { orgId: string | null | 
     queryKey: ["venue-docs", venueId],
     enabled: !!venueId,
     queryFn: async () => {
-      if (isDevelopmentMode()) {
-        return readDevelopmentVenueDocuments(orgId, venueId);
-      }
       const { data, error } = await supabase.from("venue_documents").select("*").eq("venue_id", venueId!).order("created_at", { ascending: false });
       if (error) throw error;
       return data;
@@ -411,23 +290,6 @@ function VenueDetailSheet({ orgId, venueId, onClose }: { orgId: string | null | 
     const name = requestName("Map name (e.g. Main Hall, Parking):", `Map ${maps.length + 1}`).trim();
     if (!name || !venueId) return;
 
-    if (isDevelopmentMode()) {
-      const existing = readDevelopmentVenueMaps(orgId, venueId);
-      const map: VenueMap = {
-        id: createDevVenueId(),
-        venue_id: venueId,
-        name,
-        description: null,
-        sort_order: existing.length,
-      };
-      const next = [...existing, map];
-      writeDevelopmentVenueMaps(orgId, venueId, next);
-      qc.setQueryData(["venue-maps", venueId], next);
-      qc.invalidateQueries({ queryKey: ["venue-maps", venueId] });
-      toast.success("Map added");
-      return;
-    }
-
     const { error } = await supabase.from("venue_maps").insert({ venue_id: venueId, name });
     if (error) toast.error(error.message);
     else { toast.success("Map added"); qc.invalidateQueries({ queryKey: ["venue-maps", venueId] }); }
@@ -436,23 +298,6 @@ function VenueDetailSheet({ orgId, venueId, onClose }: { orgId: string | null | 
   const addTemplate = async () => {
     const name = requestName("Template name (e.g. Holiday Layout):", `Template ${templates.length + 1}`).trim();
     if (!name || !venueId) return;
-
-    if (isDevelopmentMode()) {
-      const existing = readDevelopmentLayoutTemplates(orgId, venueId);
-      const template: LayoutTemplateRow = {
-        id: createDevVenueId(),
-        venue_id: venueId,
-        name,
-        description: null,
-        is_default: false,
-      };
-      const next = [...existing, template];
-      writeDevelopmentLayoutTemplates(orgId, venueId, next);
-      qc.setQueryData(["venue-layouts", venueId], next);
-      qc.invalidateQueries({ queryKey: ["venue-layouts", venueId] });
-      toast.success("Template created — open the Booth Builder to design it");
-      return;
-    }
 
     const { error } = await supabase.from("layout_templates").insert({ venue_id: venueId, name });
     if (error) toast.error(error.message);

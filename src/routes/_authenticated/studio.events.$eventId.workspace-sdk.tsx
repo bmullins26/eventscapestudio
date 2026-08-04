@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo } from "react";
+import { toast } from "sonner";
 import WorkspaceApp, { WorkspaceDataProvider, type WorkspaceCtx } from "@/components/venue-workspace-sdk/App";
 import { getEventWorkspaceSdk, patchEventBooth, patchVenueLayer } from "@/lib/workspace-sdk.functions";
 
@@ -61,6 +62,11 @@ function WorkspaceRoute() {
   const boothMut = useMutation({
     mutationFn: patchBooth,
     onSuccess: () => qc.invalidateQueries({ queryKey: ["workspace-sdk", eventId] }),
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : "Failed to update booth";
+      console.error("Failed to patch booth", error);
+      toast.error(message);
+    },
   });
   const layerMut = useMutation({
     mutationFn: patchLayer,
