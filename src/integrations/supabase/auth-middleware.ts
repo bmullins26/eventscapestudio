@@ -3,6 +3,7 @@ import { createMiddleware } from '@tanstack/react-start'
 import { getRequest } from '@tanstack/react-start/server'
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from './types'
+import { DEVELOPMENT_IDENTITY_EMAIL, DEVELOPMENT_IDENTITY_PASSWORD, isDevelopmentMode } from '@/lib/development-access'
 
 
 
@@ -54,8 +55,74 @@ export const requireSupabaseAuth = createMiddleware({ type: 'function' }).server
 
     const authHeader = request.headers.get('authorization');
 
+    const createSupabaseClient = (token?: string) => createClient<Database>(
+      SUPABASE_URL!,
+      SUPABASE_PUBLISHABLE_KEY!,
+      {
+        global: {
+          fetch: createSupabaseFetch(SUPABASE_PUBLISHABLE_KEY!),
+          headers: token ? {
+            Authorization: `Bearer ${token}`,
+          } : undefined,
+        },
+        auth: {
+          storage: undefined,
+          persistSession: false,
+          autoRefreshToken: false,
+        },
+      }
+    );
+
     if (!authHeader) {
-      throw new Error('Unauthorized: No authorization header provided');
+      if (!isDevelopmentMode()) {
+        throw new Error('Unauthorized: No authorization header provided');
+      }
+
+      const developmentClient = createSupabaseClient();
+      const signInResult = await developmentClient.auth.signInWithPassword({
+        email: DEVELOPMENT_IDENTITY_EMAIL,
+        password: DEVELOPMENT_IDENTITY_PASSWORD,
+      });
+
+      if (signInResult.error || !signInResult.data.session?.access_token) {
+        const signUpResult = await developmentClient.auth.signUp({
+          email: DEVELOPMENT_IDENTITY_EMAIL,
+          password: DEVELOPMENT_IDENTITY_PASSWORD,
+          options: {
+            data: {
+              full_name: 'Development Workspace',
+              is_development_identity: true,
+            },
+          },
+        });
+
+        if (signUpResult.error) {
+          throw new Error(`Unauthorized: Development auth bootstrap failed (${signUpResult.error.message})`);
+        }
+
+        if (!signUpResult.data.session?.access_token) {
+          throw new Error('Unauthorized: Development auth bootstrap did not create a session');
+        }
+      }
+
+      const token = signInResult.data.session?.access_token ?? signInResult.data.session?.access_token;
+      const supabase = createSupabaseClient(token);
+      const { data, error } = await supabase.auth.getClaims(token);
+      if (error || !data?.claims) {
+        throw new Error('Unauthorized: Invalid development token');
+      }
+
+      if (!data.claims.sub) {
+        throw new Error('Unauthorized: No user ID found in development token');
+      }
+
+      return next({
+        context: {
+          supabase,
+          userId: data.claims.sub,
+          claims: data.claims,
+        },
+      });
     }
 
     if (!authHeader.startsWith('Bearer ')) {
@@ -71,23 +138,7 @@ export const requireSupabaseAuth = createMiddleware({ type: 'function' }).server
       throw new Error('Unauthorized: Invalid token');
     }
 
-    const supabase = createClient<Database>(
-      SUPABASE_URL!,
-      SUPABASE_PUBLISHABLE_KEY!,
-      {
-        global: {
-          fetch: createSupabaseFetch(SUPABASE_PUBLISHABLE_KEY!),
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-        auth: {
-          storage: undefined,
-          persistSession: false,
-          autoRefreshToken: false,
-        },
-      }
-    );
+    const supabase = createSupabaseClient(token);
 
     const { data, error } = await supabase.auth.getClaims(token);
     if (error || !data?.claims) {

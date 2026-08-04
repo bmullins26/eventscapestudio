@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { isDevelopmentMode } from "@/lib/development-access";
 
 export const Route = createFileRoute("/auth/callback")({
   component: AuthCallbackPage,
@@ -14,6 +15,11 @@ function AuthCallbackPage() {
 
     const completeAuth = async () => {
       try {
+        if (isDevelopmentMode()) {
+          navigate({ to: "/app", replace: true });
+          return;
+        }
+
         const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
         if (cancelled) return;
         if (sessionError) throw sessionError;

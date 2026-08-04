@@ -20,7 +20,7 @@ import { fetchSatelliteImageForWorkspace } from "@/lib/workspace-background.func
 import { VendorPickerDialog } from "./VendorPickerDialog";
 
 
-// ─── Data context ────────────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇ Data context ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 type LayerRow = { id: string; name: string; color: string | null; visible: boolean; locked: boolean; kind: string };
 type WorkspaceMode = "blank" | "example";
 export type WorkspaceSaveState = {
@@ -38,11 +38,11 @@ export type WorkspaceCtx = {
   objects?: PlacedObj[] | null;
   /** Initial background layer. */
   initialBackground?: WorkspaceSaveState["background"];
-  /** Initial world canvas dimensions (world units). Optional; defaults to 1110×560. */
+  /** Initial world canvas dimensions (world units). Optional; defaults to 1110├ù560. */
   initialCanvas?: { w: number; h: number };
   /** Blank is production default; examples must opt in explicitly. */
   workspaceMode?: WorkspaceMode;
-  /** Read-only demo mode — disables save/publish. */
+  /** Read-only demo mode ΓÇö disables save/publish. */
   readOnly?: boolean;
   /** Save handler. When provided, receives full workspace snapshot. */
   onSave?: (state: WorkspaceSaveState) => Promise<void> | void;
@@ -51,7 +51,7 @@ export type WorkspaceCtx = {
   onCheckOut?: (id: string) => void;
   onOpenVendor?: (vendorProfileId: string) => void;
   onLayerToggle?: (id: string, patch: { visible?: boolean; locked?: boolean }) => void;
-  /** Organization id — required to enable vendor picker. */
+  /** Organization id ΓÇö required to enable vendor picker. */
   organizationId?: string;
   /** Assign or clear a vendor for a booth. Pass null to clear. */
   onAssignVendor?: (
@@ -67,7 +67,7 @@ function useWorkspaceCtx(): WorkspaceCtx | null {
   return useContext(WorkspaceDataContext);
 }
 
-// ─── Breakpoint ──────────────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇ Breakpoint ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function useBreakpoint() {
   const [w, setW] = useState(() => typeof window !== "undefined" ? window.innerWidth : 1200);
   useEffect(() => {
@@ -78,7 +78,7 @@ function useBreakpoint() {
   return { isMobile: w < 768, isTablet: w >= 768 && w < 1100, isDesktop: w >= 1100 };
 }
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇ Types ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 type BoothStatus = "available" | "reserved" | "paid" | "pending" | "sponsor" | "unavailable";
 type Mode = "design" | "reservations" | "operations";
 type RentalVariant =
@@ -120,10 +120,7 @@ interface Booth {
   variant?: RentalVariant;
   rotation?: number;
   locked?: boolean;
-  hidden?: boolean;
   notes?: string;
-  tags?: string[];
-  layer_id?: string;
 }
 
 
@@ -143,17 +140,14 @@ export interface PlacedObj {
   x: number; y: number; w: number; h: number; label?: string;
   rotation?: number;
   locked?: boolean;
-  hidden?: boolean;
   notes?: string;
   tags?: string[];
-  layer_id?: string;
-  /** Furniture flag — drives inspector variant. Rental Options are Booths, not PlacedObj. */
+  /** Furniture flag ΓÇö drives inspector variant. Rental Options are Booths, not PlacedObj. */
   furniture?: boolean;
 }
 
 
-
-// ─── Constants ───────────────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇ Constants ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 const STATUS_COLORS: Record<BoothStatus, { fill: string; stroke: string; label: string }> = {
   available:   { fill: "#E8F5E9", stroke: "#2E7D32", label: "Available" },
   reserved:    { fill: "#E3F0FF", stroke: "#1565C0", label: "Reserved" },
@@ -179,17 +173,17 @@ const DEFAULT_CANOPY = { top: "#3A4A5A", mid: "#4A5A6A" };
 const DEFAULT_WORLD_W = 1110, DEFAULT_WORLD_H = 560;
 const GRID_SIZE = 12;
 
-// ─── Rental Options registry (extensible: add a variant → renderer picks it up) ─
-// px scale roughly ~7 px per foot to match the existing 10×10 booth footprint.
+// ΓöÇΓöÇΓöÇ Rental Options registry (extensible: add a variant ΓåÆ renderer picks it up) ΓöÇ
+// px scale roughly ~7 px per foot to match the existing 10├ù10 booth footprint.
 const RENTAL_VARIANTS: Record<RentalVariant, {
   label: string; libraryLabel: string; w: number; h: number;
   sizeLabel: string; defaultPrice: number;
 }> = {
-  standard_booth:   { label:"Standard Booth",   libraryLabel:"Standard Booth",   w: 70,  h: 70, sizeLabel:"10′ × 10′",     defaultPrice: 150 },
-  table_6ft:        { label:"6 Foot Table",     libraryLabel:"6 Foot Table",     w: 42,  h: 18, sizeLabel:"6′ × 2.5′",     defaultPrice: 60  },
-  table_8ft:        { label:"8 Foot Table",     libraryLabel:"8 Foot Table",     w: 56,  h: 18, sizeLabel:"8′ × 2.5′",     defaultPrice: 80  },
+  standard_booth:   { label:"Standard Booth",   libraryLabel:"Standard Booth",   w: 70,  h: 70, sizeLabel:"10ΓÇ▓ ├ù 10ΓÇ▓",     defaultPrice: 150 },
+  table_6ft:        { label:"6 Foot Table",     libraryLabel:"6 Foot Table",     w: 42,  h: 18, sizeLabel:"6ΓÇ▓ ├ù 2.5ΓÇ▓",     defaultPrice: 60  },
+  table_8ft:        { label:"8 Foot Table",     libraryLabel:"8 Foot Table",     w: 56,  h: 18, sizeLabel:"8ΓÇ▓ ├ù 2.5ΓÇ▓",     defaultPrice: 80  },
   round_table:      { label:"Round Table",      libraryLabel:"Round Table",      w: 35,  h: 35, sizeLabel:'60" diameter',  defaultPrice: 75  },
-  food_truck_space: { label:"Food Truck Space", libraryLabel:"Food Truck Space", w: 210, h: 84, sizeLabel:"30′ × 12′",     defaultPrice: 400 },
+  food_truck_space: { label:"Food Truck Space", libraryLabel:"Food Truck Space", w: 210, h: 84, sizeLabel:"30ΓÇ▓ ├ù 12ΓÇ▓",     defaultPrice: 400 },
 };
 const RENTAL_TOOL_BY_VARIANT: Record<RentalVariant, Tool> = {
   standard_booth: "rental_standard", table_6ft: "rental_table6", table_8ft: "rental_table8",
@@ -200,7 +194,7 @@ const RENTAL_VARIANT_BY_TOOL: Partial<Record<Tool, RentalVariant>> = {
   rental_round: "round_table", rental_foodtruck: "food_truck_space",
 };
 
-// ─── Booth factory (used when the user adds new booths on the canvas) ───────
+// ΓöÇΓöÇΓöÇ Booth factory (used when the user adds new booths on the canvas) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function makeBooth(id: string, row: string, col: number, x: number, y: number, w: number, h: number, status: BoothStatus, opts: Partial<Booth> = {}): Booth {
   const variant = opts.variant ?? "standard_booth";
   const spec = RENTAL_VARIANTS[variant];
@@ -224,8 +218,8 @@ const LEFT_TOOLS: { id: Tool; icon: React.ElementType; label: string; shortcut?:
   { id:"parking",  icon:ParkingCircle, label:"Parking" },
   { id:"stage",    icon:Mic2,          label:"Stage" },
   { id:"tree",     icon:TreePine,      label:"Tree" },
-  { id:"table6",   icon:RectangleHorizontal, label:"6′ Table" },
-  { id:"table8",   icon:RectangleHorizontal, label:"8′ Table" },
+  { id:"table6",   icon:RectangleHorizontal, label:"6ΓÇ▓ Table" },
+  { id:"table8",   icon:RectangleHorizontal, label:"8ΓÇ▓ Table" },
   { id:"tableRound", icon:CircleIcon,  label:"Round Table" },
   { id:"chair",    icon:Armchair,      label:"Chair" },
   { id:"measure",  icon:Ruler,         label:"Measure",     shortcut:"M" },
@@ -258,7 +252,7 @@ const OBJ_CATEGORIES = [
 ];
 
 
-// ─── Small deco SVGs ─────────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇ Small deco SVGs ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function TreeSVG({ cx, cy, r = 16 }: { cx:number; cy:number; r?:number }) {
   return (
     <g pointerEvents="none">
@@ -313,7 +307,7 @@ function StageSVG({ x, y, w, h }: { x:number; y:number; w:number; h:number }) {
   );
 }
 
-// ─── Roads / Walkways ────────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇ Roads / Walkways ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function RoadSVG({ x, y, w, h }: { x:number; y:number; w:number; h:number }) {
   const horizontal = w >= h;
   const cx = x + w/2, cy = y + h/2;
@@ -350,7 +344,7 @@ function WalkwaySVG({ x, y, w, h }: { x:number; y:number; w:number; h:number }) 
   );
 }
 
-// ─── Tables & Chairs ─────────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇ Tables & Chairs ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function RectTableSVG({ x, y, w, h, label }: { x:number; y:number; w:number; h:number; label?:string }) {
   // Rectangular banquet table with wood top and darker legs
   const legT = Math.max(2, Math.min(w, h) * 0.06);
@@ -393,7 +387,7 @@ function ChairSVG({ x, y, w, h }: { x:number; y:number; w:number; h:number }) {
   );
 }
 
-// ─── Extended library glyphs (all unique) ────────────────────────────────────
+// ΓöÇΓöÇΓöÇ Extended library glyphs (all unique) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function PavilionSVG({ x, y, w, h }: { x:number; y:number; w:number; h:number }) {
   const roofH = Math.max(6, h*0.32);
   return (
@@ -477,8 +471,8 @@ function RestroomSVG({ x, y, w, h }: { x:number; y:number; w:number; h:number })
       <rect x={x+2} y={y+2} width={w} height={h} fill="#000" opacity="0.22" rx="2"/>
       <rect x={x} y={y} width={half} height={h} fill="#1E88E5" stroke="#0D47A1" strokeWidth="1" rx="2"/>
       <rect x={x+half} y={y} width={half} height={h} fill="#E91E63" stroke="#880E4F" strokeWidth="1" rx="2"/>
-      <text x={x+half/2} y={y+h*0.62} textAnchor="middle" fill="#fff" fontSize={Math.min(10, h*0.4)} fontWeight="800">♂</text>
-      <text x={x+half+half/2} y={y+h*0.62} textAnchor="middle" fill="#fff" fontSize={Math.min(10, h*0.4)} fontWeight="800">♀</text>
+      <text x={x+half/2} y={y+h*0.62} textAnchor="middle" fill="#fff" fontSize={Math.min(10, h*0.4)} fontWeight="800">ΓÖé</text>
+      <text x={x+half+half/2} y={y+h*0.62} textAnchor="middle" fill="#fff" fontSize={Math.min(10, h*0.4)} fontWeight="800">ΓÖÇ</text>
     </g>
   );
 }
@@ -558,7 +552,7 @@ function WaterHookupSVG({ x, y, w, h }: { x:number; y:number; w:number; h:number
       <circle cx={cx+1} cy={cy+1.5} r={r} fill="#000" opacity="0.22"/>
       <circle cx={cx} cy={cy} r={r} fill="#0288D1" stroke="#01579B" strokeWidth="1"/>
       <path d={`M${cx} ${cy-r*0.55} Q${cx+r*0.55} ${cy} ${cx} ${cy+r*0.5} Q${cx-r*0.55} ${cy} ${cx} ${cy-r*0.55} Z`} fill="#BAE6FD"/>
-      <text x={cx} y={cy+r*0.85} textAnchor="middle" fill="#fff" fontSize={Math.min(5, r*0.5)} fontWeight="800" fontFamily="Inter,sans-serif">H₂O</text>
+      <text x={cx} y={cy+r*0.85} textAnchor="middle" fill="#fff" fontSize={Math.min(5, r*0.5)} fontWeight="800" fontFamily="Inter,sans-serif">HΓééO</text>
     </g>
   );
 }
@@ -631,7 +625,7 @@ function CocktailTableSVG({ x, y, w, h }: { x:number; y:number; w:number; h:numb
 
 
 
-// ─── Rentable Space SVG (interactive) ───────────────────────────────────────
+// ΓöÇΓöÇΓöÇ Rentable Space SVG (interactive) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 // Every rental variant renders through this component so status color, selection,
 // utilities, price, and vendor labels stay consistent across booth/table/food-truck.
 function BoothShape({
@@ -649,9 +643,9 @@ function BoothShape({
   const round = variant === "round_table";
   const strokeColor = isSel ? "#3B82F6" : sc.stroke;
   const strokeW = isSel ? 2.5 : 1.4;
-  const idLabel = vendor && vendor.length ? (vendor.length>16?vendor.slice(0,15)+"…":vendor) : id;
+  const idLabel = vendor && vendor.length ? (vendor.length>16?vendor.slice(0,15)+"ΓÇª":vendor) : id;
 
-  // Shared status-colored reservable frame — communicates "rentable" for every variant.
+  // Shared status-colored reservable frame ΓÇö communicates "rentable" for every variant.
   const frame = round ? (
     <ellipse cx={cx} cy={cy} rx={w/2} ry={h/2}
       fill={status==="unavailable"?"#D0CCC8":sc.fill}
@@ -666,7 +660,7 @@ function BoothShape({
       onPointerDown={(e)=>onPointerDownBody(e, id)}/>
   );
 
-  // Variant-specific inner glyph (visual difference only — behavior is identical).
+  // Variant-specific inner glyph (visual difference only ΓÇö behavior is identical).
   let glyph: React.ReactNode = null;
   if (variant === "standard_booth") {
     const cH = Math.max(10, Math.round(h * 0.33));
@@ -685,7 +679,7 @@ function BoothShape({
       </g>
     );
   } else if (variant === "table_6ft" || variant === "table_8ft") {
-    const label = variant === "table_6ft" ? "6′" : "8′";
+    const label = variant === "table_6ft" ? "6ΓÇ▓" : "8ΓÇ▓";
     glyph = (
       <g pointerEvents="none">
         <rect x={x+3} y={y+3} width={w-6} height={h-6} rx="2"
@@ -702,7 +696,7 @@ function BoothShape({
         <circle cx={cx} cy={cy} r={r*0.78} fill="#C69A6B" stroke="#7A4E28" strokeWidth="0.8"/>
         <circle cx={cx} cy={cy} r={r*0.14} fill="#5A3A1E" opacity="0.6"/>
         <text x={cx} y={cy+2.5} textAnchor="middle" fill="#3B2210"
-          fontSize={Math.min(8, r*0.5)} fontWeight="700" fontFamily="Inter,sans-serif">60″</text>
+          fontSize={Math.min(8, r*0.5)} fontWeight="700" fontFamily="Inter,sans-serif">60ΓÇ│</text>
       </g>
     );
   } else if (variant === "food_truck_space") {
@@ -727,7 +721,7 @@ function BoothShape({
     );
   }
 
-  // Label + footer bar (id/vendor + price) — placed just outside the frame so it never occludes tiny variants.
+  // Label + footer bar (id/vendor + price) ΓÇö placed just outside the frame so it never occludes tiny variants.
   const footerY = y + h + 8;
   const rot = booth.rotation ?? 0;
   return (
@@ -746,8 +740,8 @@ function BoothShape({
       <text x={x+w} y={footerY} textAnchor="end" fill={sc.stroke} fontSize={Math.max(6.5, Math.min(9, w*0.12))} fontFamily="Inter,sans-serif" fontWeight="700" pointerEvents="none">
         ${booth.price}
       </text>
-      {electric && <g transform={`translate(${x+6},${y+h-10})`} pointerEvents="none"><circle r="4.5" fill="#FEF08A" stroke="#CA8A04" strokeWidth="0.8"/><text textAnchor="middle" y="1.8" fill="#92400E" fontSize="5.5" fontWeight="700">⚡</text></g>}
-      {water && <g transform={`translate(${x+(electric?17:6)},${y+h-10})`} pointerEvents="none"><circle r="4.5" fill="#BAE6FD" stroke="#0284C7" strokeWidth="0.8"/><text textAnchor="middle" y="1.8" fill="#0369A1" fontSize="5.5">💧</text></g>}
+      {electric && <g transform={`translate(${x+6},${y+h-10})`} pointerEvents="none"><circle r="4.5" fill="#FEF08A" stroke="#CA8A04" strokeWidth="0.8"/><text textAnchor="middle" y="1.8" fill="#92400E" fontSize="5.5" fontWeight="700">ΓÜí</text></g>}
+      {water && <g transform={`translate(${x+(electric?17:6)},${y+h-10})`} pointerEvents="none"><circle r="4.5" fill="#BAE6FD" stroke="#0284C7" strokeWidth="0.8"/><text textAnchor="middle" y="1.8" fill="#0369A1" fontSize="5.5">≡ƒÆº</text></g>}
       {isSel && isPrimary && ([
         ["nw",0,0],["n",0.5,0],["ne",1,0],["e",1,0.5],["se",1,1],["s",0.5,1],["sw",0,1],["w",0,0.5],
       ] as const).map(([hName,ox,oy])=>(
@@ -771,7 +765,7 @@ function BoothShape({
 
 }
 
-// ─── Blank canvas chrome (non-interactive, never creates venue objects) ──────
+// ΓöÇΓöÇΓöÇ Blank canvas chrome (non-interactive, never creates venue objects) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function CanvasChrome({ showGrid, worldW, worldH }: { showGrid: boolean; worldW: number; worldH: number }) {
   const W = worldW, H = worldH;
   const rulerSize = 24;
@@ -819,7 +813,7 @@ function PlacedObjSVG({ o, isSel, onPointerDownBody, onPointerDownHandle }: {
   const rot = o.rotation ?? 0;
   return (
     <g style={{cursor: isSel?"move":"pointer"}} transform={rot ? `rotate(${rot} ${cx} ${cy})` : undefined}>
-      {/* Invisible hit surface — inner glyphs use pointerEvents="none" for perf */}
+      {/* Invisible hit surface ΓÇö inner glyphs use pointerEvents="none" for perf */}
       <rect
         x={o.x} y={o.y} width={Math.max(o.w, 1)} height={Math.max(o.h, 1)}
         fill="transparent"
@@ -871,17 +865,17 @@ function PlacedObjSVG({ o, isSel, onPointerDownBody, onPointerDownHandle }: {
       )}
       {o.kind === "table6" && (
         <g onPointerDown={(e)=>onPointerDownBody(e, o.id)}>
-          <RectTableSVG x={o.x} y={o.y} w={o.w} h={o.h} label={o.label ?? "6′"}/>
+          <RectTableSVG x={o.x} y={o.y} w={o.w} h={o.h} label={o.label ?? "6ΓÇ▓"}/>
         </g>
       )}
       {o.kind === "table8" && (
         <g onPointerDown={(e)=>onPointerDownBody(e, o.id)}>
-          <RectTableSVG x={o.x} y={o.y} w={o.w} h={o.h} label={o.label ?? "8′"}/>
+          <RectTableSVG x={o.x} y={o.y} w={o.w} h={o.h} label={o.label ?? "8ΓÇ▓"}/>
         </g>
       )}
       {o.kind === "tableRound" && (
         <g onPointerDown={(e)=>onPointerDownBody(e, o.id)}>
-          <RoundTableSVG x={o.x} y={o.y} w={o.w} h={o.h} label={o.label ?? "60″"}/>
+          <RoundTableSVG x={o.x} y={o.y} w={o.w} h={o.h} label={o.label ?? "60ΓÇ│"}/>
         </g>
       )}
       {o.kind === "chair" && (
@@ -916,8 +910,8 @@ function PlacedObjSVG({ o, isSel, onPointerDownBody, onPointerDownHandle }: {
         </g>
       )}
 
-      {/* Furniture (non-rentable) — reuse existing SVGs; add lightweight variants for the rest */}
-      {o.kind === "furn_table4" && (<g onPointerDown={(e)=>onPointerDownBody(e, o.id)}><RectTableSVG x={o.x} y={o.y} w={o.w} h={o.h} label={o.label ?? "4′"}/></g>)}
+      {/* Furniture (non-rentable) ΓÇö reuse existing SVGs; add lightweight variants for the rest */}
+      {o.kind === "furn_table4" && (<g onPointerDown={(e)=>onPointerDownBody(e, o.id)}><RectTableSVG x={o.x} y={o.y} w={o.w} h={o.h} label={o.label ?? "4ΓÇ▓"}/></g>)}
       {o.kind === "furn_banquet" && (<g onPointerDown={(e)=>onPointerDownBody(e, o.id)}><RectTableSVG x={o.x} y={o.y} w={o.w} h={o.h} label={o.label ?? "Banquet"}/></g>)}
       {(o.kind === "furn_folding_chair" || o.kind === "furn_banquet_chair" || o.kind === "furn_ceremony_chair" || o.kind === "furn_bar_stool") && (
         <g onPointerDown={(e)=>onPointerDownBody(e, o.id)}>
@@ -967,7 +961,7 @@ function PlacedObjSVG({ o, isSel, onPointerDownBody, onPointerDownHandle }: {
   );
 }
 
-// ─── UI Fragments ────────────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇ UI Fragments ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function Section({ label, children }: { label:string; children:React.ReactNode }) {
   return (
     <div className="border-b border-border px-3 py-2.5">
@@ -998,7 +992,7 @@ function Toggle({ label, icon:Icon, active, onClick }: { label:string; icon:Reac
   );
 }
 
-// ─── Vendor section (inside Inspector) ──────────────────────────────────────
+// ΓöÇΓöÇΓöÇ Vendor section (inside Inspector) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function VendorInspectorSection({
   booth,
   onPatch,
@@ -1025,7 +1019,7 @@ function VendorInspectorSection({
         {booth.vendor ? (
           <>
             <Row label="Business" value={booth.vendor} />
-            <Row label="Category" value={booth.category || "—"} />
+            <Row label="Category" value={booth.category || "ΓÇö"} />
             {canPick && (
               <div className="flex gap-1.5 mt-1.5">
                 <button
@@ -1084,7 +1078,7 @@ function VendorInspectorSection({
 }
 
 
-// ─── Inspector ───────────────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇ Inspector ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function InspectorContent({
   booth, count, onPatch, onDelete, onDuplicate,
 }: {
@@ -1104,10 +1098,10 @@ function InspectorContent({
     <div className="overflow-y-auto" style={{scrollbarWidth:"none"}}>
       <div className="px-3 py-3 border-b border-border">
         <div className="flex items-center justify-between mb-1">
-          <span className="text-xs font-semibold text-foreground">{(booth.variant && RENTAL_VARIANTS[booth.variant]?.label) || "Rentable Space"} · {booth.id}{count>1 && ` +${count-1}`}</span>
+          <span className="text-xs font-semibold text-foreground">{(booth.variant && RENTAL_VARIANTS[booth.variant]?.label) || "Rentable Space"} ┬╖ {booth.id}{count>1 && ` +${count-1}`}</span>
           <span className="text-[10px] px-1.5 py-0.5 rounded border" style={{background:c.fill, color:c.stroke, borderColor:c.stroke+"60"}}>{c.label}</span>
         </div>
-        <p className="text-[11px] text-muted-foreground">{(booth.variant && RENTAL_VARIANTS[booth.variant]?.sizeLabel) || `${booth.w}′×${booth.h}′`} · {booth.category||"Unassigned"}</p>
+        <p className="text-[11px] text-muted-foreground">{(booth.variant && RENTAL_VARIANTS[booth.variant]?.sizeLabel) || `${booth.w}ΓÇ▓├ù${booth.h}ΓÇ▓`} ┬╖ {booth.category||"Unassigned"}</p>
 
       </div>
       <Section label="Status">
@@ -1150,7 +1144,7 @@ function InspectorContent({
   );
 }
 
-// ─── Object Library ──────────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇ Object Library ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function ObjectLibrary({ onPick }: { onPick: (item: string) => void }) {
   const [open, setOpen] = useState<string[]>(["Rental Options"]);
   const toggle = (l:string) => setOpen(o=>o.includes(l)?o.filter(x=>x!==l):[...o,l]);
@@ -1159,7 +1153,7 @@ function ObjectLibrary({ onPick }: { onPick: (item: string) => void }) {
       <div className="px-3 py-2 sticky top-0 bg-card z-10 border-b border-border">
         <div className="flex items-center gap-2 bg-input rounded px-2 py-1.5">
           <Search size={11} className="text-muted-foreground shrink-0"/>
-          <input placeholder="Search objects…" className="flex-1 bg-transparent text-xs outline-none text-foreground placeholder:text-muted-foreground"/>
+          <input placeholder="Search objectsΓÇª" className="flex-1 bg-transparent text-xs outline-none text-foreground placeholder:text-muted-foreground"/>
         </div>
       </div>
       {OBJ_CATEGORIES.map((cat)=>(
@@ -1187,7 +1181,7 @@ function ObjectLibrary({ onPick }: { onPick: (item: string) => void }) {
   );
 }
 
-// ─── Layers Panel ────────────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇ Layers Panel ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function LayersPanel() {
   const ctx = useWorkspaceCtx();
   const [local, setLocal] = useState(ctx?.layers ?? []);
@@ -1218,7 +1212,7 @@ function LayersPanel() {
   );
 }
 
-// ─── Legend ──────────────────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇ Legend ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function Legend({ booths }: { booths: Booth[] }) {
   const counts: Record<BoothStatus,number> = { available:0,reserved:0,paid:0,pending:0,sponsor:0,unavailable:0 };
   booths.forEach(b=>counts[b.status]++);
@@ -1234,7 +1228,7 @@ function Legend({ booths }: { booths: Booth[] }) {
   );
 }
 
-// ─── Bottom sheet & mobile dock (unchanged look) ─────────────────────────────
+// ΓöÇΓöÇΓöÇ Bottom sheet & mobile dock (unchanged look) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function BottomSheet({ open, title, onClose, children }: { open:boolean; title:string; onClose:()=>void; children:React.ReactNode }) {
   return (
     <>
@@ -1269,7 +1263,7 @@ function SToggle({ label, active, onClick, icon:Icon }: { label:string; active:b
   );
 }
 
-// ─── App ─────────────────────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇ App ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 export default function WorkspaceApp() {
   const { isMobile, isTablet, isDesktop } = useBreakpoint();
   const ctx = useWorkspaceCtx();
@@ -1285,7 +1279,7 @@ export default function WorkspaceApp() {
 
   const workspaceMode: WorkspaceMode = ctx?.workspaceMode ?? "blank";
 
-  // Booth state (editable copy of ctx.booths). NEVER fall back to demo data —
+  // Booth state (editable copy of ctx.booths). NEVER fall back to demo data ΓÇö
   // an empty venue must render an empty canvas. Example data is only used when a
   // caller explicitly passes it via WorkspaceDataProvider in example mode.
   const [booths, setBooths] = useState<Booth[]>(() => ctx?.booths ?? []);
@@ -1405,7 +1399,7 @@ export default function WorkspaceApp() {
   const [primaryId, setPrimaryId] = useState<string | null>(null);
   const [dirty, setDirty] = useState<Set<string>>(new Set());
 
-  // ─── Unsaved-changes / session protection ─────────────────────────────────
+  // ΓöÇΓöÇΓöÇ Unsaved-changes / session protection ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "dirty">("saved");
   const initialSigRef = useRef<string | null>(null);
   const currentSig = useMemo(
@@ -1564,7 +1558,7 @@ export default function WorkspaceApp() {
 
   const placeObjectAt = (tool: Tool, wx: number, wy: number) => {
     pushHistory();
-    // Rental Options — all placements create a Rentable Space (Booth object).
+    // Rental Options ΓÇö all placements create a Rentable Space (Booth object).
     const rentalVariant: RentalVariant | undefined =
       tool === "booth" ? "standard_booth" : RENTAL_VARIANT_BY_TOOL[tool];
     if (rentalVariant) {
@@ -1580,7 +1574,7 @@ export default function WorkspaceApp() {
       return;
     }
 
-    // Furniture tools → placed objects with furniture=true (non-rentable).
+    // Furniture tools ΓåÆ placed objects with furniture=true (non-rentable).
     const furnitureKindMap: Partial<Record<Tool, PlacedObj["kind"]>> = {
       furn_table4:"furn_table4", furn_table6:"table6", furn_table8:"table8", furn_tableRound:"tableRound",
       furn_cocktail:"cocktail_table", furn_banquet:"furn_banquet",
@@ -1602,13 +1596,13 @@ export default function WorkspaceApp() {
       cocktail_table:"cocktail_table", service_road:"service_road", emergency_lane:"emergency_lane",
       ...(furnitureKindMap as Record<string, PlacedObj["kind"]>),
     };
-    const kind = kindMap[tool]; if (!kind) { toast.message(`Tool "${tool}" — click canvas to place`); return; }
+    const kind = kindMap[tool]; if (!kind) { toast.message(`Tool "${tool}" ΓÇö click canvas to place`); return; }
     const defaults: Record<string,{w:number;h:number;label?:string}> = {
       tree:{w:32,h:32}, building:{w:90,h:60,label:"BUILDING"}, stage:{w:120,h:60}, parking:{w:80,h:60,label:"PARKING"},
       fence:{w:120,h:8}, rect:{w:80,h:60}, text:{w:80,h:20,label:"Text"},
       road:{w:160,h:28}, walkway:{w:120,h:20},
-      table6:{w:60,h:25,label:"6′"}, table8:{w:80,h:25,label:"8′"},
-      tableRound:{w:50,h:50,label:"60″"}, chair:{w:14,h:14},
+      table6:{w:60,h:25,label:"6ΓÇ▓"}, table8:{w:80,h:25,label:"8ΓÇ▓"},
+      tableRound:{w:50,h:50,label:"60ΓÇ│"}, chair:{w:14,h:14},
       pavilion:{w:140,h:80}, tent:{w:80,h:70}, ticket_booth:{w:60,h:50}, info_booth:{w:56,h:50},
       food_truck:{w:110,h:50}, restroom:{w:70,h:50}, atm:{w:36,h:44}, trash:{w:24,h:28},
       bench:{w:48,h:16}, picnic_table:{w:70,h:36},
@@ -1617,7 +1611,7 @@ export default function WorkspaceApp() {
       cocktail_table:{w:28,h:28},
       service_road:{w:120,h:22}, emergency_lane:{w:160,h:22},
       // Furniture defaults
-      furn_table4:{w:42,h:18,label:"4′"}, furn_table6:{w:60,h:18,label:"6′"}, furn_table8:{w:80,h:18,label:"8′"},
+      furn_table4:{w:42,h:18,label:"4ΓÇ▓"}, furn_table6:{w:60,h:18,label:"6ΓÇ▓"}, furn_table8:{w:80,h:18,label:"8ΓÇ▓"},
       furn_tableRound:{w:50,h:50,label:'60"'}, furn_cocktail:{w:28,h:28}, furn_banquet:{w:96,h:34,label:"Banquet"},
       furn_folding_chair:{w:14,h:14}, furn_banquet_chair:{w:14,h:14},
       furn_ceremony_chair:{w:14,h:14}, furn_bar_stool:{w:14,h:14},
@@ -1739,32 +1733,6 @@ export default function WorkspaceApp() {
     return () => window.removeEventListener("keydown", onKey);
   });
 
-  const handleSave = async () => {
-    if (ctx?.onSave) {
-      setSaveStatus("saving");
-      try {
-        await ctx.onSave({
-          booths,
-          objects: placed,
-          background,
-          canvas: canvasSize,
-        });
-        setSaveStatus("saved");
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Save failed");
-        setSaveStatus("dirty");
-      }
-      return;
-    }
-
-    if (workspaceMode === "blank") {
-      setSaveStatus("saved");
-      return;
-    }
-
-    setSaveStatus("saved");
-  };
-
   const duplicateSelection = () => {
     if (!selectedIds.size) return;
     pushHistory();
@@ -1779,7 +1747,7 @@ export default function WorkspaceApp() {
         newIds.push(nid);
       } else {
         const b = booths.find(x=>x.id===id); if (!b) return;
-        const nid = `${b.id}·${Math.random().toString(36).slice(2,4)}`;
+        const nid = `${b.id}┬╖${Math.random().toString(36).slice(2,4)}`;
         newBooths.push({ ...b, id: nid, x: b.x + 20, y: b.y + 20 });
         newIds.push(nid);
         setDirty(d=>{const n=new Set(d);n.add(nid);return n;});
@@ -1823,18 +1791,557 @@ export default function WorkspaceApp() {
     if (items.length < 3) { toast.message("Select 3+ to distribute"); return; }
     pushHistory();
     const sorted = [...items].sort((a,b)=> axis==="x" ? (a.x+a.w/2)-(b.x+b.w/2) : (a.y+a.h/2)-(b.y+b.h/2));
-    const first = sorted[0];
-    const last = sorted[sorted.length - 1];
-    const firstC = axis === "x" ? first.x + first.w / 2 : first.y + first.h / 2;
-    const lastC = axis === "x" ? last.x + last.w / 2 : last.y + last.h / 2;
-    const step = (lastC - firstC) / (sorted.length - 1);
-    sorted.forEach((item, i) => {
-      if (i === 0 || i === sorted.length - 1) return;
-      const target = firstC + step * i;
-      const nx = axis === "x" ? target - item.w / 2 : item.x;
-      const ny = axis === "y" ? target - item.h / 2 : item.y;
-      setObjPos(item.id, nx, ny);
+    const first = sorted[0], last = sorted[sorted.length-1];
+    const start = axis==="x" ? first.x + first.w/2 : first.y + first.h/2;
+    const end = axis==="x" ? last.x + last.w/2 : last.y + last.h/2;
+    const step = (end - start) / (sorted.length - 1);
+    sorted.forEach((it, i) => {
+      if (i === 0 || i === sorted.length-1) return;
+      const target = start + step*i;
+      const nx = axis==="x" ? target - it.w/2 : it.x;
+      const ny = axis==="y" ? target - it.h/2 : it.y;
+      setObjPos(it.id, snap(nx), snap(ny));
     });
   };
-}
 
+  // Save
+  const handleSave = useCallback(async () => {
+    if (ctx?.readOnly) { toast.message("Read-only example ΓÇö save disabled"); return; }
+    if (ctx?.onSave) {
+      setSaveStatus("saving");
+      try {
+        await ctx.onSave({ booths, objects: placed, background, canvas: canvasSize });
+        initialSigRef.current = JSON.stringify({ b: booths, p: placed, bg: background, cv: canvasSize });
+        setSaveStatus("saved");
+        setDirty(new Set());
+        toast.success("Layout saved");
+      } catch (err) {
+        setSaveStatus("dirty");
+        toast.error(err instanceof Error ? err.message : "Save failed");
+      }
+      return;
+    }
+    // Legacy per-booth patch fallback.
+    if (!ctx?.onPatchBooth) { toast.success("Layout saved"); setDirty(new Set()); setSaveStatus("saved"); return; }
+    if (!dirty.size) { toast.message("Nothing changed"); return; }
+    dirty.forEach(id => {
+      const b = booths.find(x=>x.id===id); if (!b) return;
+      ctx.onPatchBooth?.(id, { x: b.x, y: b.y, w: b.w, h: b.h, status: b.status, price: b.price, electric: b.electric, water: b.water, corner: b.corner, premium: b.premium });
+    });
+    toast.success(`Saved ${dirty.size} change${dirty.size===1?"":"s"}`);
+    setDirty(new Set());
+    setSaveStatus("saved");
+  }, [ctx, booths, placed, background, dirty]);
+
+  const primaryBooth = primaryId && !primaryId.startsWith("p:") ? booths.find(b=>b.id===primaryId) ?? null : null;
+  const patchPrimary = (patch: Partial<Booth>) => {
+    if (!primaryId) return;
+    pushHistory();
+    setBooths(bs=>bs.map(b=>b.id===primaryId?{...b,...patch}:b));
+    setDirty(d=>{const n=new Set(d);n.add(primaryId);return n;});
+  };
+
+  // Onboard library click -> switch tool
+  const onLibraryPick = (item: string) => {
+    const map: Record<string, Tool> = {
+      // Rental Options ΓåÆ each creates a Rentable Space (Booth object) with its own renderer + defaults
+      "standard booth":"rental_standard",
+      "6 foot rental table":"rental_table6",
+      "8 foot rental table":"rental_table8",
+      "round rental table":"rental_round",
+      "food truck space":"rental_foodtruck",
+      // Structures (planning objects)
+      "building":"building", "stage":"stage", "pavilion":"pavilion", "tent":"tent",
+      "ticket booth":"ticket_booth", "info booth":"info_booth",
+      // Roads
+      "main road":"road", "service road":"service_road", "walkway":"walkway", "emergency lane":"emergency_lane",
+      // Furniture (non-rentable)
+      "4 foot table":"furn_table4", "6 foot table":"furn_table6", "8 foot table":"furn_table8",
+      "round table":"furn_tableRound", "cocktail table":"furn_cocktail", "banquet table":"furn_banquet",
+      "folding chair":"furn_folding_chair", "banquet chair":"furn_banquet_chair",
+      "ceremony chair":"furn_ceremony_chair", "bar stool":"furn_bar_stool",
+      "display table":"furn_display_table", "display rack":"furn_display_rack",
+      "display shelf":"furn_display_shelf", "podium":"furn_podium",
+      "couch":"furn_couch", "bench":"furn_bench", "picnic table":"furn_picnic",
+      // Utilities
+      "electrical panel":"electrical", "generator":"generator",
+      "water hookup":"water_hookup", "sewer access":"sewer",
+      // Landscape
+      "oak tree":"oak_tree", "pine tree":"pine_tree", "shrub":"shrub", "flower bed":"flower_bed",
+      // Amenities
+      "restroom":"restroom", "atm":"atm", "trash station":"trash",
+    };
+
+    const tool = map[item.toLowerCase()] ?? "rect";
+    setActiveTool(tool);
+    toast.message(`Click the canvas to place: ${item}`);
+  };
+
+
+  const closeSheet = () => setSheet(null);
+
+  const cursorForTool =
+    activeTool === "pan" ? "grab" :
+    activeTool === "select" ? "default" :
+    "crosshair";
+
+  return (
+    <div className="flex flex-col w-screen bg-background text-foreground overflow-hidden select-none" style={{fontFamily:"Inter,sans-serif",fontSize:13,height:"100dvh"}}>
+      {/* TOP BAR */}
+      <header className="h-11 flex items-center gap-0 border-b border-border bg-card shrink-0 px-3 z-30">
+        <div className="flex items-center gap-2 pr-3 border-r border-border mr-3 shrink-0">
+          <div className="w-6 h-6 bg-primary rounded flex items-center justify-center shrink-0"><Layers3 size={12} className="text-white"/></div>
+          <span className="text-xs font-semibold text-foreground whitespace-nowrap hidden sm:inline">EventScape</span>
+        </div>
+        <div className="flex items-center gap-1 text-xs text-muted-foreground mr-2 sm:mr-3 min-w-0 overflow-hidden">
+          <span className="hidden sm:inline shrink-0">{ctx?.venueName ?? "Untitled Venue"}</span>
+          <ChevronRight size={12} className="hidden sm:inline shrink-0"/>
+          <span className="text-foreground font-medium truncate">{ctx?.eventName || (workspaceMode === "example" ? "Example Workspace" : "Venue Workspace")}</span>
+        </div>
+        <div className="hidden md:flex items-center gap-0.5 bg-secondary rounded p-0.5 mr-4 shrink-0">
+          {(["design","reservations","operations"] as Mode[]).map((m)=>(
+            <button key={m} onClick={()=>setMode(m)} className={`px-2.5 py-1 rounded text-[11px] capitalize transition-colors ${mode===m?"bg-card text-foreground shadow-sm":"text-muted-foreground hover:text-foreground"}`}>{m}</button>
+          ))}
+        </div>
+        <div className="hidden md:flex items-center gap-0.5 mr-3 shrink-0">
+          <TBtn icon={Undo2} label="Undo (ΓîÿZ)" onClick={undo}/>
+          <TBtn icon={Redo2} label="Redo (ΓîÿΓçºZ)" onClick={redo}/>
+          <div className="w-px h-4 bg-border mx-1"/>
+          <TBtn icon={MapIcon} label="Background (map or image)" onClick={()=>setBgPanelOpen(v=>!v)}/>
+        </div>
+
+        <div className="flex-1"/>
+        <div className="flex items-center gap-1">
+          <div className="hidden sm:flex items-center gap-1.5 bg-input rounded px-2.5 py-1 mr-2">
+            <Search size={11} className="text-muted-foreground"/>
+            <span className="text-[11px] text-muted-foreground">Search or ΓîÿK</span>
+          </div>
+          <TBtn icon={Bell} label="Notifications" onClick={()=>toast.message("No new notifications")}/>
+          <TBtn icon={Sparkles} label="AI" accent onClick={()=>toast.message("AI panel coming soon")}/>
+          <button onClick={handleSave} className="hidden sm:flex items-center gap-1.5 text-[11px] bg-secondary border border-border text-foreground px-2.5 py-1.5 rounded hover:bg-muted transition-colors shrink-0">
+            <Save size={11}/> {saveStatus === "saving" ? "SavingΓÇª" : saveStatus === "dirty" ? "Save*" : "Save"}
+          </button>
+          <button onClick={()=>toast.success("PublishingΓÇª")} className="flex items-center gap-1.5 text-[11px] bg-primary text-primary-foreground px-2.5 py-1.5 rounded hover:opacity-90 shrink-0">
+            <Play size={11}/>
+            <span className="hidden sm:inline">Publish</span>
+          </button>
+          <div className="w-7 h-7 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center ml-1 shrink-0">
+            <span className="text-[10px] font-semibold text-primary">JK</span>
+          </div>
+        </div>
+      </header>
+
+      {/* BODY */}
+      <div className="flex flex-1 overflow-hidden min-h-0">
+        {/* Left toolbar */}
+        <div className="hidden md:flex w-11 flex-col items-center py-2 gap-0.5 bg-card border-r border-border shrink-0 overflow-y-auto z-20" style={{scrollbarWidth:"none"}}>
+          {LEFT_TOOLS.map((t,i)=>(
+            <div key={t.id} className="flex flex-col items-center w-full">
+              {(i===2||i===6||i===13) && <div className="w-6 h-px bg-border my-1"/>}
+              <button title={`${t.label}${t.shortcut?` (${t.shortcut})`:""}`} onClick={()=>setActiveTool(t.id)}
+                className={`w-8 h-8 flex items-center justify-center rounded transition-colors ${activeTool===t.id?"bg-primary/20 text-primary":"text-muted-foreground hover:bg-secondary hover:text-foreground"}`}>
+                <t.icon size={15} strokeWidth={1.5}/>
+              </button>
+            </div>
+          ))}
+        </div>
+
+        {/* Left sidebar */}
+        {(isDesktop || (isTablet && leftOpen)) && (
+          <div className="w-56 flex-col bg-card border-r border-border shrink-0 z-20 hidden md:flex">
+            <div className="flex overflow-x-auto border-b border-border" style={{scrollbarWidth:"none"}}>
+              {LEFT_TABS.map((tab)=>(
+                <button key={tab.id} title={tab.label} onClick={()=>setActiveTab(tab.id)}
+                  className={`flex items-center justify-center shrink-0 w-10 h-9 transition-colors ${activeTab===tab.id?"text-primary border-b-2 border-primary":"text-muted-foreground hover:text-foreground"}`}>
+                  <tab.icon size={14} strokeWidth={1.5}/>
+                </button>
+              ))}
+            </div>
+            <div className="flex-1 overflow-hidden">
+              {activeTab==="objects" && <ObjectLibrary onPick={onLibraryPick}/>}
+              {activeTab==="layers"  && <LayersPanel/>}
+              {activeTab!=="objects" && activeTab!=="layers" && (
+                <div className="flex flex-col items-center justify-center h-full gap-2 text-muted-foreground px-4">
+                  <Package size={24} strokeWidth={1.5}/>
+                  <p className="text-xs text-center capitalize">{LEFT_TABS.find(t=>t.id===activeTab)?.label} panel ΓÇö coming soon</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* CENTER CANVAS */}
+        <div className="flex-1 relative overflow-hidden bg-[#111113] min-w-0">
+          {/* Tablet toggles */}
+          {isTablet && (
+            <>
+              <button onClick={()=>setLeftOpen(v=>!v)} className="absolute left-2 top-2 z-20 w-8 h-8 bg-card border border-border rounded flex items-center justify-center shadow-md">
+                {leftOpen?<PanelLeftClose size={14} className="text-muted-foreground"/>:<PanelLeftOpen size={14} className="text-muted-foreground"/>}
+              </button>
+              <button onClick={()=>setRightOpen(v=>!v)} className="absolute right-2 top-2 z-20 w-8 h-8 bg-card border border-border rounded flex items-center justify-center shadow-md">
+                {rightOpen?<PanelRightClose size={14} className="text-muted-foreground"/>:<PanelRightOpen size={14} className="text-muted-foreground"/>}
+              </button>
+            </>
+          )}
+
+          {/* Floating alignment bar */}
+          {selectedIds.size >= 2 && !isMobile && (
+            <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20 flex items-center gap-0.5 bg-card border border-border rounded-lg shadow-lg px-2 py-1">
+              <TBtn icon={AlignLeft} label="Align left" onClick={()=>alignAll((r,g)=>({x:g.x}))}/>
+              <TBtn icon={AlignCenter} label="Align center H" onClick={()=>alignAll((r,g)=>({x:g.x+(g.w-r.w)/2}))}/>
+              <TBtn icon={AlignRight} label="Align right" onClick={()=>alignAll((r,g)=>({x:g.x+g.w-r.w}))}/>
+              <div className="w-px h-4 bg-border mx-1"/>
+              <TBtn icon={AlignStartVertical} label="Align top" onClick={()=>alignAll((r,g)=>({y:g.y}))}/>
+              <TBtn icon={AlignCenterVertical} label="Align center V" onClick={()=>alignAll((r,g)=>({y:g.y+(g.h-r.h)/2}))}/>
+              <TBtn icon={AlignEndVertical} label="Align bottom" onClick={()=>alignAll((r,g)=>({y:g.y+g.h-r.h}))}/>
+              <div className="w-px h-4 bg-border mx-1"/>
+              <TBtn icon={AlignHorizontalDistributeCenter} label="Distribute H" onClick={()=>distribute("x")}/>
+              <TBtn icon={AlignVerticalDistributeCenter} label="Distribute V" onClick={()=>distribute("y")}/>
+              <div className="w-px h-4 bg-border mx-1"/>
+              <TBtn icon={Copy} label="Duplicate (ΓîÿD)" onClick={duplicateSelection}/>
+              <TBtn icon={Trash2} label="Delete" onClick={deleteSelection}/>
+              <TBtn icon={X} label="Clear" onClick={()=>{setSelectedIds(new Set()); setPrimaryId(null);}}/>
+            </div>
+          )}
+
+          {/* Canvas */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <svg
+              ref={svgRef}
+              viewBox={`0 0 ${WORLD_W} ${WORLD_H}`}
+              className="w-full h-full"
+              style={{cursor: cursorForTool, touchAction: "none"}}
+              onPointerDown={onSvgPointerDown}
+              onPointerMove={onSvgPointerMove}
+              onPointerUp={onSvgPointerUp}
+              onPointerCancel={onSvgPointerUp}
+              onWheel={(e)=>{
+                if (!e.ctrlKey && !e.metaKey) return;
+                e.preventDefault();
+                const delta = -e.deltaY * 0.002;
+                setZoom(z => Math.min(4, Math.max(0.25, z * (1 + delta))));
+              }}
+            >
+              <g transform={`translate(${pan.x} ${pan.y}) scale(${zoom})`}>
+                <CanvasChrome showGrid={showGrid} worldW={WORLD_W} worldH={WORLD_H}/>
+                {background && (() => {
+                  const cx = background.x + background.w/2;
+                  const cy = background.y + background.h/2;
+                  const rot = background.rotation ?? 0;
+                  return (
+                  <g transform={`rotate(${rot} ${cx} ${cy})`}>
+                    <image
+                      href={background.url}
+                      x={background.x} y={background.y}
+                      width={background.w} height={background.h}
+                      opacity={background.opacity}
+                      preserveAspectRatio="none"
+                      pointerEvents={background.locked ? "none" : "auto"}
+                      style={{ cursor: background.locked ? "default" : "move" }}
+                      onPointerDown={onBgPointerDown}
+                    />
+                    {bgPanelOpen && !background.locked && (
+                      <>
+                        <rect x={background.x} y={background.y} width={background.w} height={background.h}
+                          fill="none" stroke="#3B82F6" strokeWidth={2/zoom} strokeDasharray={`${6/zoom} ${4/zoom}`} pointerEvents="none"/>
+                        {(["nw","ne","sw","se","n","s","e","w"] as const).map(hn => {
+                          const hx = hn.includes("w") ? background.x : hn.includes("e") ? background.x+background.w : background.x+background.w/2;
+                          const hy = hn.includes("n") ? background.y : hn.includes("s") ? background.y+background.h : background.y+background.h/2;
+                          const s = 10/zoom;
+                          return <rect key={hn} x={hx-s/2} y={hy-s/2} width={s} height={s}
+                            fill="#fff" stroke="#3B82F6" strokeWidth={1.5/zoom}
+                            style={{ cursor: hn.length===2 ? `${hn}-resize` : `${hn}-resize` }}
+                            onPointerDown={(e)=>onBgHandlePointerDown(e, hn)}/>;
+                        })}
+                        {/* rotate handle above top edge */}
+                        <line x1={cx} y1={background.y} x2={cx} y2={background.y - 22/zoom}
+                          stroke="#3B82F6" strokeWidth={1.5/zoom} pointerEvents="none"/>
+                        <circle cx={cx} cy={background.y - 22/zoom} r={7/zoom}
+                          fill="#fff" stroke="#3B82F6" strokeWidth={1.5/zoom}
+                          style={{ cursor: "grab" }}
+                          onPointerDown={(e)=>onBgHandlePointerDown(e, "rotate")}/>
+                      </>
+                    )}
+                  </g>
+                  );
+                })()}
+
+
+                {placed.map(p => (
+                  <PlacedObjSVG key={p.id} o={p} isSel={selectedIds.has(p.id)}
+                    onPointerDownBody={onPointerDownBoothBody}
+                    onPointerDownHandle={onPointerDownHandle}/>
+                ))}
+                {booths.map(b => (
+                  <BoothShape key={b.id} booth={b}
+                    isSel={selectedIds.has(b.id)}
+                    isPrimary={primaryId === b.id}
+                    onPointerDownBody={onPointerDownBoothBody}
+                    onPointerDownHandle={onPointerDownHandle}/>
+                ))}
+                {marquee && (
+                  <rect x={marquee.x} y={marquee.y} width={marquee.w} height={marquee.h}
+                    fill="#3B82F620" stroke="#3B82F6" strokeWidth={1} strokeDasharray="4 3" pointerEvents="none"/>
+                )}
+              </g>
+            </svg>
+          </div>
+
+          {/* Empty-state onboarding card */}
+          {booths.length === 0 && placed.length === 0 && !background && (
+            <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
+              <div className="pointer-events-auto max-w-md rounded-2xl border border-border/70 bg-card/95 backdrop-blur px-6 py-5 shadow-xl text-center">
+                <div className="mb-1 text-xs font-medium uppercase tracking-[0.2em] text-primary">Venue Designer</div>
+                <h2 className="text-lg font-semibold text-foreground">This venue is empty</h2>
+                <p className="mt-1 text-xs text-muted-foreground">Add objects, import a drawing, or start from a template.</p>
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <button onClick={()=>{ setLeftOpen(true); setActiveTab("objects"); }} className="rounded-lg bg-primary text-primary-foreground text-xs font-medium py-2 hover:opacity-90">Add Object</button>
+                  <button onClick={()=>setBgPanelOpen(true)} className="rounded-lg bg-secondary border border-border text-foreground text-xs font-medium py-2 hover:bg-muted">Import Drawing</button>
+                  <button onClick={()=>toast.message("AI Import ΓÇö coming soon")} className="rounded-lg bg-secondary border border-border text-foreground text-xs font-medium py-2 hover:bg-muted">AI Import</button>
+                  <button onClick={()=>toast.message("Templates ΓÇö coming soon")} className="rounded-lg bg-secondary border border-border text-foreground text-xs font-medium py-2 hover:bg-muted">Start From Template</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Legend */}
+          <div className="absolute bottom-14 md:bottom-10 left-3 z-10 bg-card/85 backdrop-blur-sm border border-border/50 rounded px-2.5 py-1.5">
+            <Legend booths={booths}/>
+          </div>
+
+          {/* Zoom (mobile floating) */}
+          {isMobile && (
+            <div className="absolute bottom-14 right-3 z-10 flex flex-col gap-1">
+              <button onClick={()=>setZoom(z=>Math.min(4,z+0.25))} className="w-10 h-10 bg-card border border-border rounded-lg flex items-center justify-center shadow-md"><ZoomIn size={18}/></button>
+              <button onClick={()=>setZoom(z=>Math.max(0.25,z-0.25))} className="w-10 h-10 bg-card border border-border rounded-lg flex items-center justify-center shadow-md"><ZoomOut size={18}/></button>
+            </div>
+          )}
+
+          {/* Tool hint */}
+          {activeTool !== "select" && activeTool !== "pan" && (
+            <div className="absolute top-2 right-2 z-10 bg-primary/15 text-primary text-[11px] px-2 py-1 rounded border border-primary/30">
+              Click canvas to place: {LEFT_TOOLS.find(t=>t.id===activeTool)?.label} ┬╖ Esc to cancel
+            </div>
+          )}
+
+          {/* Background panel (map / image) */}
+          {bgPanelOpen && (
+            <div className="absolute top-2 left-1/2 -translate-x-1/2 z-30 w-[360px] bg-card border border-border rounded-lg shadow-xl p-3 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-[12px] font-semibold text-foreground">
+                  <MapIcon size={13}/> Background
+                </div>
+                <button onClick={()=>setBgPanelOpen(false)} className="text-muted-foreground hover:text-foreground"><X size={14}/></button>
+              </div>
+
+              <div>
+                <div className="text-[10px] font-medium text-muted-foreground mb-1 uppercase tracking-wide">Satellite from address</div>
+                <div className="flex gap-1.5">
+                  <input
+                    value={bgAddress}
+                    onChange={(e)=>setBgAddress(e.target.value)}
+                    onKeyDown={(e)=>{ if (e.key==="Enter") onFetchSatellite(); }}
+                    placeholder="123 Main St, City, State"
+                    className="flex-1 h-8 text-[11px] px-2 rounded border border-border bg-input text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                  />
+                  <button
+                    onClick={onFetchSatellite}
+                    disabled={bgLoading}
+                    className="h-8 px-2.5 text-[11px] bg-primary text-primary-foreground rounded hover:opacity-90 disabled:opacity-50"
+                  >{bgLoading ? "ΓÇª" : "Load"}</button>
+                </div>
+              </div>
+
+              <div className="border-t border-border pt-2">
+                <div className="text-[10px] font-medium text-muted-foreground mb-1 uppercase tracking-wide">Upload image / PDF snapshot</div>
+                <label className="flex items-center gap-1.5 text-[11px] cursor-pointer bg-secondary hover:bg-muted border border-border rounded px-2.5 py-1.5 w-fit">
+                  <Upload size={12}/> Choose file
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e)=>{ const f = e.target.files?.[0]; if (f) onUploadImage(f); e.currentTarget.value=""; }}
+                  />
+                </label>
+              </div>
+
+              {background && (
+                <div className="border-t border-border pt-2 space-y-2">
+                  <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide truncate" title={background.label}>
+                    Current: {background.label}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-muted-foreground w-14">Opacity</span>
+                    <input
+                      type="range" min={0.1} max={1} step={0.05}
+                      value={background.opacity}
+                      onChange={(e)=>setBackground(b => b ? {...b, opacity: Number(e.target.value)} : b)}
+                      className="flex-1"
+                    />
+                    <span className="text-[10px] text-muted-foreground w-8 text-right">{Math.round(background.opacity*100)}%</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-muted-foreground w-14">Width</span>
+                    <input
+                      type="range" min={100} max={WORLD_W*2} step={10}
+                      value={background.w}
+                      onChange={(e)=>{
+                        const w = Number(e.target.value);
+                        setBackground(b => b ? {...b, w} : b);
+                      }}
+                      className="flex-1"
+                    />
+                    <span className="text-[10px] text-muted-foreground w-10 text-right">{Math.round(background.w)}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-muted-foreground w-14">Height</span>
+                    <input
+                      type="range" min={100} max={WORLD_H*2} step={10}
+                      value={background.h}
+                      onChange={(e)=>{
+                        const h = Number(e.target.value);
+                        setBackground(b => b ? {...b, h} : b);
+                      }}
+                      className="flex-1"
+                    />
+                    <span className="text-[10px] text-muted-foreground w-10 text-right">{Math.round(background.h)}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-muted-foreground w-14">Rotation</span>
+                    <input
+                      type="range" min={0} max={360} step={1}
+                      value={background.rotation ?? 0}
+                      onChange={(e)=>{ const r = Number(e.target.value); setBackground(b => b ? {...b, rotation: r} : b); }}
+                      className="flex-1"
+                    />
+                    <input
+                      type="number" min={0} max={360}
+                      value={Math.round(background.rotation ?? 0)}
+                      onChange={(e)=>{ const r = Number(e.target.value); setBackground(b => b ? {...b, rotation: isNaN(r)?0:r} : b); }}
+                      className="w-14 h-6 text-[10px] px-1 rounded border border-border bg-input text-foreground text-right"
+                    />
+                  </div>
+                  <div className="text-[10px] text-muted-foreground">
+                    {background.locked ? "Locked ΓÇö unlock to move, resize, and rotate on canvas" : "Drag image to move ┬╖ Corner handles resize ┬╖ Top handle rotates"}
+                  </div>
+                  <div className="flex gap-1.5">
+                    <button
+                      onClick={()=>setBackground(b => b ? {...b, locked: !b.locked} : b)}
+                      className="flex-1 h-7 text-[10px] bg-secondary hover:bg-muted border border-border rounded"
+                    >{background.locked ? "Unlock" : "Lock"}</button>
+                    <button
+                      onClick={()=>setBackground(b => b ? {...b, x: (WORLD_W-b.w)/2, y: (WORLD_H-b.h)/2} : b)}
+                      className="flex-1 h-7 text-[10px] bg-secondary hover:bg-muted border border-border rounded"
+                    >Center</button>
+                    <button
+                      onClick={()=>{ setBackground(null); try { window.localStorage.removeItem(bgStorageKey); } catch { /* ignore */ } toast.message("Background removed"); }}
+                      className="flex-1 h-7 text-[10px] bg-destructive/10 hover:bg-destructive/20 text-destructive border border-destructive/30 rounded flex items-center justify-center gap-1"
+                    ><Trash2 size={10}/> Remove</button>
+                  </div>
+
+                </div>
+              )}
+
+              <div className="border-t border-border pt-2 space-y-2">
+                <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Canvas size</div>
+                <div className="flex items-center gap-1.5">
+                  <label className="text-[10px] text-muted-foreground w-10">Width</label>
+                  <input
+                    type="number" min={200} max={20000} step={10}
+                    value={canvasSize.w}
+                    onChange={(e)=>{ const w = Number(e.target.value); if (!isNaN(w) && w>=200) setCanvasSize(s=>({ ...s, w })); }}
+                    className="flex-1 h-7 text-[11px] px-2 rounded border border-border bg-input text-foreground"
+                  />
+                  <label className="text-[10px] text-muted-foreground w-10 pl-1">Height</label>
+                  <input
+                    type="number" min={200} max={20000} step={10}
+                    value={canvasSize.h}
+                    onChange={(e)=>{ const h = Number(e.target.value); if (!isNaN(h) && h>=200) setCanvasSize(s=>({ ...s, h })); }}
+                    className="flex-1 h-7 text-[11px] px-2 rounded border border-border bg-input text-foreground"
+                  />
+                </div>
+                <div className="flex gap-1.5">
+                  {[
+                    { label: "Small", w: 800, h: 500 },
+                    { label: "Default", w: DEFAULT_WORLD_W, h: DEFAULT_WORLD_H },
+                    { label: "Large", w: 2000, h: 1200 },
+                    { label: "Huge", w: 4000, h: 2400 },
+                  ].map(p => (
+                    <button key={p.label}
+                      onClick={()=>setCanvasSize({ w: p.w, h: p.h })}
+                      className="flex-1 h-7 text-[10px] bg-secondary hover:bg-muted border border-border rounded"
+                    >{p.label}</button>
+                  ))}
+                </div>
+                <div className="text-[10px] text-muted-foreground">World units (feet-ish). Change resizes the workspace stage.</div>
+              </div>
+            </div>
+          )}
+        </div>
+
+
+
+        {/* RIGHT inspector */}
+        {!isMobile && (isDesktop || (isTablet && rightOpen)) && (
+          <div className="w-64 flex-col bg-card border-l border-border shrink-0 z-20 hidden md:flex">
+            <div className="h-9 flex items-center justify-between px-3 border-b border-border shrink-0">
+              <span className="text-[11px] font-semibold text-foreground">Inspector</span>
+              <SlidersHorizontal size={13} className="text-muted-foreground"/>
+            </div>
+            <InspectorContent
+              booth={primaryBooth}
+              count={selectedIds.size}
+              onPatch={patchPrimary}
+              onDelete={deleteSelection}
+              onDuplicate={duplicateSelection}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Status bar */}
+      <footer className="hidden md:flex h-7 items-center gap-4 px-3 bg-card border-t border-border shrink-0 z-20">
+        <div className="flex items-center gap-1">
+          <button onClick={()=>setZoom(z=>Math.max(0.25,z-0.1))} className="hover:text-foreground text-muted-foreground"><ZoomOut size={12}/></button>
+          <span className="text-[10px] text-muted-foreground w-12 text-center" style={{fontFamily:"JetBrains Mono,monospace"}}>{Math.round(zoom*100)}%</span>
+          <button onClick={()=>setZoom(z=>Math.min(4,z+0.1))} className="hover:text-foreground text-muted-foreground"><ZoomIn size={12}/></button>
+          <button onClick={()=>{setZoom(1); setPan({x:0,y:0});}} className="text-[10px] text-muted-foreground hover:text-foreground ml-1">Fit</button>
+        </div>
+        <div className="w-px h-3 bg-border"/>
+        <SToggle label="Grid" active={showGrid} onClick={()=>setShowGrid(v=>!v)} icon={Grid3x3}/>
+        <SToggle label="Snap" active={snapEnabled} onClick={()=>setSnapEnabled(v=>!v)} icon={Magnet}/>
+        <div className="w-px h-3 bg-border"/>
+        {selectedIds.size
+          ? <span className="text-[10px] text-primary">{selectedIds.size} selected</span>
+          : <span className="text-[10px] text-muted-foreground">{booths.length} booths ┬╖ {placed.length} objects</span>}
+        <div className="flex-1"/>
+        <div className="flex items-center gap-1"><Activity size={11} className="text-green-500"/><span className="text-[10px] text-muted-foreground">AI Ready</span></div>
+        <div className="flex items-center gap-1"><div className={`w-1.5 h-1.5 rounded-full ${saveStatus==="saving"?"bg-blue-500 animate-pulse":saveStatus==="dirty"?"bg-amber-500":"bg-green-500"}`}/><span className="text-[10px] text-muted-foreground">{saveStatus==="saving"?"SavingΓÇª":saveStatus==="dirty"?"Unsaved Changes":"Saved"}</span></div>
+      </footer>
+
+      {/* Mobile dock + sheets */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-card border-t border-border">
+        <div className="flex justify-center gap-1 px-4 pt-2">
+          {(["design","reservations","operations"] as Mode[]).map((m)=>(
+            <button key={m} onClick={()=>setMode(m)} className={`flex-1 py-1 rounded text-[10px] capitalize font-medium transition-colors ${mode===m?"bg-primary/20 text-primary":"text-muted-foreground"}`}>{m}</button>
+          ))}
+        </div>
+        <div className="flex items-center justify-around px-2 py-2 pb-safe">
+          {([{id:"select",icon:MousePointer2,label:"Select"},{id:"pan",icon:Hand,label:"Pan"},{id:"booth",icon:LayoutGrid,label:"Booth"},{id:"measure",icon:Ruler,label:"Measure"}] as {id:Tool;icon:React.ElementType;label:string}[]).map((t)=>(
+            <button key={t.id} onClick={()=>setActiveTool(t.id)} className={`flex flex-col items-center gap-0.5 min-w-[48px] min-h-[48px] justify-center rounded-xl transition-colors ${activeTool===t.id?"bg-primary/15 text-primary":"text-muted-foreground"}`}>
+              <t.icon size={20} strokeWidth={1.5}/><span className="text-[9px]">{t.label}</span>
+            </button>
+          ))}
+          <div className="w-px h-8 bg-border mx-1"/>
+          <button onClick={()=>setSheet("objects")} className="flex flex-col items-center gap-0.5 min-w-[48px] min-h-[48px] justify-center rounded-xl text-muted-foreground"><Package size={20}/><span className="text-[9px]">Objects</span></button>
+          <button onClick={()=>setSheet("layers")} className="flex flex-col items-center gap-0.5 min-w-[48px] min-h-[48px] justify-center rounded-xl text-muted-foreground"><Layers3 size={20}/><span className="text-[9px]">Layers</span></button>
+        </div>
+      </div>
+      <BottomSheet open={sheet==="objects"} title="Object Library" onClose={closeSheet}><ObjectLibrary onPick={(i)=>{onLibraryPick(i); closeSheet();}}/></BottomSheet>
+      <BottomSheet open={sheet==="layers"} title="Layers" onClose={closeSheet}><LayersPanel/></BottomSheet>
+      <BottomSheet open={sheet==="inspector"} title={primaryBooth?`Booth ${primaryBooth.id}`:"Inspector"} onClose={closeSheet}>
+        <InspectorContent booth={primaryBooth} count={selectedIds.size} onPatch={patchPrimary} onDelete={deleteSelection} onDuplicate={duplicateSelection}/>
+      </BottomSheet>
+    </div>
+  );
+}

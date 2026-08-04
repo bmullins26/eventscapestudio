@@ -1,9 +1,15 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { Brand } from "@/components/shared/brand";
 import { Button } from "@/components/ui/button";
 import { ClipboardCheck, Map, Store, DollarSign, Megaphone, Heart } from "lucide-react";
+import { isDevelopmentMode } from "@/lib/development-access";
 
 export const Route = createFileRoute("/")({
+  beforeLoad: () => {
+    if (isDevelopmentMode()) {
+      throw redirect({ to: "/app" });
+    }
+  },
   component: Landing,
 });
 
@@ -17,6 +23,8 @@ const FEATURES = [
 ];
 
 function Landing() {
+  const appDestination = isDevelopmentMode() ? "/app" : "/auth";
+
   return (
     <div className="min-h-screen bg-background">
       <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
@@ -28,8 +36,8 @@ function Landing() {
           <Link to="/contact" className="hover:text-foreground">Contact</Link>
         </nav>
         <div className="flex items-center gap-2">
-          <Link to="/auth"><Button variant="ghost" size="sm">Sign in</Button></Link>
-          <Link to="/auth"><Button size="sm">Get started</Button></Link>
+          <Link to={appDestination}><Button variant="ghost" size="sm">{isDevelopmentMode() ? "Open workspace" : "Sign in"}</Button></Link>
+          <Link to={appDestination}><Button size="sm">{isDevelopmentMode() ? "Open studio" : "Get started"}</Button></Link>
         </div>
       </header>
 
@@ -44,8 +52,8 @@ function Landing() {
             EventScape is the all-in-one platform for craft shows, vendor markets, festivals, and community events. Manage applications, booths, vendors, and payments — beautifully.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Link to="/auth"><Button size="lg" className="rounded-full px-8">Start your studio</Button></Link>
-            <Link to="/auth"><Button size="lg" variant="outline" className="rounded-full px-8">I'm a vendor</Button></Link>
+            <Link to={appDestination}><Button size="lg" className="rounded-full px-8">{isDevelopmentMode() ? "Open workspace" : "Start your studio"}</Button></Link>
+            <Link to={appDestination}><Button size="lg" variant="outline" className="rounded-full px-8">{isDevelopmentMode() ? "Open portal" : "I'm a vendor"}</Button></Link>
           </div>
         </div>
       </section>

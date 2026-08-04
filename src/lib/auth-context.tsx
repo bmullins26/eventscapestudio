@@ -1,8 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import { ENABLE_DEV_ACCESS, isDevelopmentSuperAdminUser } from "@/lib/development-access";
-import { ensureDevelopmentWorkspace } from "@/lib/development-bootstrap.functions";
+import { DEVELOPMENT_IDENTITY_EMAIL, ENABLE_DEV_ACCESS, ensureDevelopmentSession, isDevelopmentMode, isDevelopmentSuperAdminUser } from "@/lib/development-access";
 
 export type AppRole = "super_admin" | "organizer" | "staff" | "vendor";
 export type AppSurface = "studio" | "portal" | "admin";
@@ -60,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const developmentBootstrapRef = useRef<{ userId: string; promise: Promise<unknown> } | null>(null);
 
   const loadContext = useCallback(async (userId: string | undefined) => {
-    if (!userId) {
+    if (!userId && !isDevelopmentMode()) {
       setRoles([]);
       setOrganizations([]);
       setActiveOrgId(null);
@@ -69,21 +68,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      // DEVELOPMENT ONLY
-      // The server function uses the authenticated caller's RLS-scoped client.
-      if (ENABLE_DEV_ACCESS) {
-        const existingBootstrap = developmentBootstrapRef.current;
-        if (existingBootstrap?.userId === userId) {
-          await existingBootstrap.promise;
-        } else {
-          const promise = ensureDevelopmentWorkspace({ data: {} }).finally(() => {
-            if (developmentBootstrapRef.current?.promise === promise) {
-              developmentBootstrapRef.current = null;
-            }
-          });
-          developmentBootstrapRef.current = { userId, promise };
-          await promise;
-        }
+      if (isDevelopmentMode()) {
+        setRoles(["super_admin", "organizer"]);
+        setOrganizations([
+          {
+            organizationId: "development-workspace",
+            organizationName: "Developer Studio",
+            isOwner: true,
+            permissions: ["*"],
+          },
+        ]);
+        setActiveOrgId((current) => current && current === "development-workspace" ? current : "development-workspace");
+        setContextError(null);
+        return;
       }
 
       const [rolesRes, ownedRes, memberRes] = await Promise.all([
@@ -123,6 +120,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async () => {
     try {
+      if (isDevelopmentMode()) {
+        const fallbackSession = {
+          access_token: "development-token",
+          user: {
+            id: "development-user",
+            email: DEVELOPMENT_IDENTITY_EMAIL,
+            app_metadata: {},
+            user_metadata: {},
+            aud: "authenticated",
+            created_at: new Date().toISOString(),
+            role: "authenticated",
+          },
+        } as Session;
+
+        setSession(fallbackSession);
+        await loadContext(fallbackSession.user.id);
+        return;
+      }
+
       const { data, error } = await supabase.auth.getSession();
       if (error) throw error;
       setSession(data.session);
@@ -141,7 +157,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Load persisted active event when active org changes
   useEffect(() => {
-    if (!session?.user?.id || !activeOrgId) { setActiveEventIdState(null); return; }
+    if (isDevelopmentMode() || !session?.user?.id || !activeOrgId) { setActiveEventIdState(null); return; }
     void supabase
       .from("user_org_prefs")
       .select("active_event_id")
@@ -153,7 +169,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const setActiveEventId = useCallback(async (id: string | null) => {
     setActiveEventIdState(id);
-    if (!session?.user?.id || !activeOrgId) return;
+    if (isDevelopmentMode() || !session?.user?.id || !activeOrgId) return;
     await supabase.from("user_org_prefs").upsert({
       user_id: session.user.id,
       organization_id: activeOrgId,
@@ -164,6 +180,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (typeof window === "undefined") { setLoading(false); return; }
     void refresh();
+
+    if (isDevelopmentMode()) {
+      return;
+    }
+
     const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
       if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "USER_UPDATED") {
         setSession(s);
@@ -174,7 +195,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [refresh, loadContext]);
 
   const signOut = useCallback(async () => {
-    await supabase.auth.signOut();
+    if (!isDevelopmentMode()) {
+      await supabase.auth.signOut();
+    }
     setSession(null); setRoles([]); setOrganizations([]); setActiveOrgId(null); setActiveEventIdState(null); setContextError(null);
   }, []);
 

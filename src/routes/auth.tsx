@@ -2,12 +2,12 @@ import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { signInWithSupabaseOAuth } from "@/integrations/supabase/auth";
 import { Brand } from "@/components/shared/brand";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ensureDevelopmentSession, isDevelopmentMode } from "@/lib/development-access";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -31,11 +31,21 @@ function AuthPage() {
   // If already signed in, skip the auth page.
   useEffect(() => {
     let cancelled = false;
+
+    if (isDevelopmentMode()) {
+      if (!cancelled) navigate({ to: "/app", replace: true });
+      return;
+    }
+
     supabase.auth.getUser().then(({ data }) => {
       if (!cancelled && data.user) navigate({ to: "/app", replace: true });
     });
     return () => { cancelled = true; };
   }, [navigate]);
+
+  if (isDevelopmentMode()) {
+    return null;
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -60,26 +70,6 @@ function AuthPage() {
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Something went wrong");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleGoogle() {
-    setLoading(true);
-    try {
-      const redirectTo = window.location.origin + "/auth/callback";
-      const { data, error } = await signInWithSupabaseOAuth("google", redirectTo);
-
-      if (error) throw error;
-      if (data?.url) {
-        window.location.assign(data.url);
-        return;
-      }
-
-      navigate({ to: "/app" });
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Google sign-in failed");
     } finally {
       setLoading(false);
     }
@@ -155,15 +145,6 @@ function AuthPage() {
               </form>
             </TabsContent>
           </Tabs>
-
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
-            <div className="relative flex justify-center text-xs uppercase"><span className="bg-background px-2 text-muted-foreground">Or</span></div>
-          </div>
-
-          <Button type="button" variant="outline" className="w-full" onClick={handleGoogle} disabled={loading}>
-            Continue with Google
-          </Button>
 
           <p className="mt-6 text-center text-xs text-muted-foreground">
             <Link to="/" className="hover:text-foreground">← Back to home</Link>
